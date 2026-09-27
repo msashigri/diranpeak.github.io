@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, Mail, Globe, DollarSign, User as UserIcon, LogOut, CalendarCheck, ChevronDown } from 'lucide-react';
+import { Phone, Mail, Globe, ChevronDown, CalendarCheck, LogOut, ShieldCheck } from 'lucide-react';
 import { useAuth, Currency } from '../context/AuthContext';
 
 interface TopbarProps {
@@ -7,89 +7,87 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
-  const { user, isAuthenticated, currency, language, setCurrency, setLanguage, openLogin, openRegister, logout } = useAuth();
+  const { user, isAuthenticated, currency, language, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries } = useAuth();
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
 
+  const pendingCount = bookings.filter(b => b.status === 'Pending Verification').length + contactInquiries.filter(c => c.status === 'New').length;
+
   const currencies: Currency[] = ['USD', 'EUR', 'GBP', 'PKR'];
-  const languages = ['English', 'Deutsch', 'Français', 'Italiano', 'Español'];
+  const languages = [
+    'English', 'French', 'German', 'Italian', 'Spanish',
+    'Catalan', 'Chinese', 'Czech', 'Dutch', 'Japanese',
+    'Korean', 'Malay', 'Norwegian', 'Polish', 'Russian', 'Swedish', 'Thai'
+  ];
 
   return (
-    <div className="bg-[#1a2b48] text-[#eaeeef] text-xs py-2 border-b border-[#2c3f5f]">
+    <div className="bg-[#1a2b48] text-white text-[13px] py-2.5 border-b border-[#25395c] font-normal">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-y-2">
-        {/* Left: Contact Info */}
-        <div className="flex items-center space-x-6 text-slate-300">
+        {/* Left: Exact Socials & Phone / Email matching chogoriadventure.com */}
+        <div className="flex items-center space-x-4 text-[#d1d4da]">
+          <div className="flex items-center space-x-3">
+            <a
+              href="https://www.facebook.com/diranpeakadventure/"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white transition-colors"
+              title="Facebook"
+            >
+              <span className="font-bold text-xs">fb</span>
+            </a>
+            <a
+              href="https://www.instagram.com/diranpeakadventure/"
+              target="_blank"
+              rel="noreferrer"
+              className="hover:text-white transition-colors"
+              title="Instagram"
+            >
+              <span className="font-bold text-xs">ig</span>
+            </a>
+            <a
+              href="tel:+923456412992"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 hover:text-white transition-colors text-xs font-semibold"
+            >
+              <span>+923456412992</span>
+            </a>
+          </div>
+
+          <span className="text-[#3b4b66]">|</span>
+
           <a
-            href="tel:+923445925993"
-            className="flex items-center gap-1.5 hover:text-white transition-colors"
+            href="mailto:info@diranpeakadventure.com"
+            className="hidden sm:inline hover:text-white transition-colors text-xs text-[#d1d4da]"
           >
-            <Phone className="w-3.5 h-3.5 text-[#5191fa]" />
-            <span className="font-medium tracking-wide">+923445925993</span>
-          </a>
-          <span className="text-slate-600 hidden sm:inline">|</span>
-          <a
-            href="mailto:info@chogoriadventure.com"
-            className="hidden sm:flex items-center gap-1.5 hover:text-white transition-colors"
-          >
-            <Mail className="w-3.5 h-3.5 text-[#5191fa]" />
-            <span>info@chogoriadventure.com</span>
+            info@diranpeakadventure.com
           </a>
         </div>
 
-        {/* Right: Currency, Language & Auth */}
-        <div className="flex items-center space-x-4">
-          {/* Currency dropdown */}
+        {/* Right: Languages, Currency & Member Auth */}
+        <div className="flex items-center space-x-4 text-[#d1d4da] text-xs">
+          {/* Language selector */}
           <div className="relative">
             <button
-              onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer py-0.5 px-1.5 rounded"
-            >
-              <DollarSign className="w-3 h-3 text-[#5191fa]" />
-              <span className="font-semibold">{currency}</span>
-              <ChevronDown className="w-3 h-3 text-slate-400" />
-            </button>
-            {showCurrencyDropdown && (
-              <div className="absolute right-0 mt-1 w-24 bg-white text-slate-800 rounded-md shadow-lg border border-slate-200 py-1 z-50">
-                {currencies.map(c => (
-                  <button
-                    key={c}
-                    onClick={() => {
-                      setCurrency(c);
-                      setShowCurrencyDropdown(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 transition-colors ${
-                      currency === c ? 'font-bold text-[#5191fa] bg-blue-50/50' : ''
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Language dropdown */}
-          <div className="relative hidden md:block">
-            <button
               onClick={() => setShowLangDropdown(!showLangDropdown)}
-              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer py-0.5 px-1.5 rounded"
+              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer py-0.5"
             >
-              <Globe className="w-3 h-3 text-[#5191fa]" />
+              <Globe className="w-3.5 h-3.5 text-[#5191fa]" />
               <span>{language}</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
             {showLangDropdown && (
-              <div className="absolute right-0 mt-1 w-28 bg-white text-slate-800 rounded-md shadow-lg border border-slate-200 py-1 z-50">
-                {languages.map(l => (
+              <div className="absolute right-0 mt-1 w-36 max-h-60 overflow-y-auto bg-white text-slate-800 rounded shadow-lg border border-slate-200 py-1 z-50">
+                {languages.map((l) => (
                   <button
                     key={l}
                     onClick={() => {
                       setLanguage(l);
                       setShowLangDropdown(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 transition-colors ${
-                      language === l ? 'font-bold text-[#5191fa] bg-blue-50/50' : ''
+                    className={`w-full text-left px-3 py-1 text-xs hover:bg-slate-100 ${
+                      language === l ? 'font-bold text-[#5191fa] bg-blue-50' : ''
                     }`}
                   >
                     {l}
@@ -99,14 +97,43 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
             )}
           </div>
 
-          <span className="text-slate-600">|</span>
+          {/* Currency dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowCurrencyDropdown(!showCurrencyDropdown)}
+              className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer py-0.5 font-bold"
+            >
+              <span>{currency}</span>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+            {showCurrencyDropdown && (
+              <div className="absolute right-0 mt-1 w-24 bg-white text-slate-800 rounded shadow-lg border border-slate-200 py-1 z-50">
+                {currencies.map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => {
+                      setCurrency(c);
+                      setShowCurrencyDropdown(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-100 ${
+                      currency === c ? 'font-bold text-[#5191fa] bg-blue-50' : ''
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <span className="text-[#3b4b66]">|</span>
 
           {/* User Account / Login & Register */}
           {isAuthenticated && user ? (
             <div className="relative">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center gap-1.5 font-medium text-white hover:text-[#5191fa] transition-colors cursor-pointer py-0.5"
+                className="flex items-center gap-1.5 font-medium hover:text-white transition-colors cursor-pointer"
               >
                 <div className="w-5 h-5 rounded-full bg-[#5191fa] text-white flex items-center justify-center font-bold text-[10px]">
                   {user.firstName[0]}
@@ -115,17 +142,13 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
               {showUserDropdown && (
-                <div className="absolute right-0 mt-1.5 w-44 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-100 py-1.5 z-50">
-                  <div className="px-3 py-2 border-b border-slate-100">
-                    <p className="font-semibold text-slate-900 text-xs truncate">{user.firstName} {user.lastName}</p>
-                    <p className="text-[11px] text-slate-500 truncate">{user.email}</p>
-                  </div>
+                <div className="absolute right-0 mt-1 w-44 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-100 py-1.5 z-50">
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
                       onNavigate('dashboard');
                     }}
-                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-slate-700 transition-colors"
+                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-slate-700"
                   >
                     <CalendarCheck className="w-3.5 h-3.5 text-[#5191fa]" />
                     My Bookings
@@ -135,7 +158,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
                       setShowUserDropdown(false);
                       logout();
                     }}
-                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-rose-50 text-rose-600 transition-colors"
+                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-rose-50 text-rose-600"
                   >
                     <LogOut className="w-3.5 h-3.5 text-rose-500" />
                     Log Out
@@ -144,23 +167,37 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
               )}
             </div>
           ) : (
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={openLogin}
-                className="flex items-center gap-1 text-slate-200 hover:text-white transition-colors cursor-pointer"
+                className="hover:text-white transition-colors cursor-pointer"
               >
-                <UserIcon className="w-3.5 h-3.5 text-[#5191fa]" />
-                <span className="font-medium">Log In</span>
+                Login
               </button>
-              <span className="text-slate-600">/</span>
+              <span className="text-[#3b4b66]">/</span>
               <button
                 onClick={openRegister}
-                className="text-slate-200 hover:text-[#5191fa] transition-colors cursor-pointer font-medium"
+                className="hover:text-white transition-colors cursor-pointer"
               >
                 Sign Up
               </button>
             </div>
           )}
+
+          <span className="text-[#3b4b66]">|</span>
+
+          {/* Admin Portal quick link */}
+          <button
+            onClick={() => onNavigate('admin')}
+            className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/20 hover:bg-[#5191fa] text-sky-200 hover:text-white border border-blue-400/30 transition-all cursor-pointer font-medium text-[11px]"
+            title="Open Admin Portal to see bookings and contact leads"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#5191fa]" />
+            <span>Admin</span>
+            {pendingCount > 0 && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            )}
+          </button>
         </div>
       </div>
     </div>

@@ -33,6 +33,39 @@ export interface Booking {
   specialRequests?: string;
 }
 
+export interface ContactInquiry {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+  date: string;
+  status: 'New' | 'Contacted' | 'Closed';
+}
+
+export interface PartnerRequest {
+  id: string;
+  category: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  date: string;
+  status: 'Pending' | 'Approved' | 'Reviewing';
+}
+
+export interface NewsletterSubscriber {
+  id: string;
+  email: string;
+  date: string;
+}
+
+export interface AdminSettings {
+  notificationEmail: string;
+  notificationPhone: string;
+  webhookUrl?: string;
+}
+
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'PKR';
 
 const CURRENCY_RATES: Record<Currency, { symbol: string; rate: number }> = {
@@ -51,6 +84,10 @@ interface AuthContextType {
   currency: Currency;
   language: string;
   bookings: Booking[];
+  contactInquiries: ContactInquiry[];
+  partnerRequests: PartnerRequest[];
+  newsletterSubscribers: NewsletterSubscriber[];
+  adminSettings: AdminSettings;
   latestBooking: Booking | null;
   setCurrency: (c: Currency) => void;
   setLanguage: (lang: string) => void;
@@ -62,8 +99,18 @@ interface AuthContextType {
   register: (data: { firstName: string; last_name?: string; lastName?: string; email: string; phone?: string; password: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   createBooking: (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>) => Booking;
+  addContactInquiry: (inquiry: Omit<ContactInquiry, 'id' | 'date' | 'status'>) => ContactInquiry;
+  addPartnerRequest: (request: Omit<PartnerRequest, 'id' | 'date' | 'status'>) => PartnerRequest;
+  addNewsletterSubscriber: (email: string) => void;
+  updateBookingStatus: (id: string, status: Booking['status']) => void;
+  deleteBooking: (id: string) => void;
+  updateContactStatus: (id: string, status: ContactInquiry['status']) => void;
+  deleteContactInquiry: (id: string) => void;
+  updateAdminSettings: (settings: Partial<AdminSettings>) => void;
   formatPrice: (usdPrice: number) => string;
   dismissLatestBooking: () => void;
+  exportBookingsToCsv: () => void;
+  exportContactsToCsv: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -78,6 +125,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  const [adminSettings, setAdminSettings] = useState<AdminSettings>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_admin_settings') || localStorage.getItem('chogori_admin_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.notificationPhone === '+923445925993' || parsed.notificationPhone === '+92 344 5925993') {
+          parsed.notificationPhone = '+923456412992';
+        }
+        return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return {
+      notificationEmail: 'msa78677@gmail.com',
+      notificationPhone: '+923456412992',
+      webhookUrl: ''
+    };
+  });
+
   const [bookings, setBookings] = useState<Booking[]>(() => {
     try {
       const saved = localStorage.getItem('chogori_bookings');
@@ -88,7 +155,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [
       {
         id: 'bk-demo-1',
-        bookingCode: 'CHO-2026-9182',
+        bookingCode: 'DPA-2026-9182',
         tourId: 'k2-base-camp-trek',
         tourTitle: 'K2 Base Camp Trek',
         tourImage: '/src/assets/images/hero_karakoram_k2_1790420138291.jpg',
@@ -101,13 +168,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         airportTransfer: true,
         totalPrice: 4850,
         currency: 'USD',
-        bookingDate: '2026-03-15',
+        bookingDate: '2026-03-24',
         status: 'Confirmed',
         customerName: 'Marcus Sterling',
         customerEmail: 'marcus@alpine-expeditions.com',
         customerPhone: '+44 7911 123456',
         specialRequests: 'Vegetarian meals preferred on the glacier'
+      },
+      {
+        id: 'bk-demo-2',
+        bookingCode: 'DPA-2026-8341',
+        tourId: 'k2-gondogoro-la-trek',
+        tourTitle: 'K2 Gondogoro La Trek',
+        tourImage: '/src/assets/images/trek_baltoro_glacier_1790420152808.jpg',
+        startDate: '10 July 2026',
+        endDate: '30 July 2026',
+        duration: '21 Days',
+        adults: 1,
+        children: 0,
+        singleTent: false,
+        airportTransfer: true,
+        totalPrice: 2380,
+        currency: 'USD',
+        bookingDate: '2026-03-25',
+        status: 'Pending Verification',
+        customerName: 'Elena Rostova',
+        customerEmail: 'elena.rostova@gmail.com',
+        customerPhone: '+48 601 234567',
+        specialRequests: 'Bringing personal crampons and harness'
       }
+    ];
+  });
+
+  const [contactInquiries, setContactInquiries] = useState<ContactInquiry[]>(() => {
+    try {
+      const saved = localStorage.getItem('chogori_inquiries');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return [
+      {
+        id: 'inq-1',
+        name: 'David Thorne',
+        email: 'david.thorne@alpinist.org',
+        phone: '+1 415 555 9821',
+        subject: 'K2 Climbing Expedition (8611m)',
+        message: 'Hello, I have summited Manaslu (2024) and Denali (2022). Looking for logistics and guide assignments for the Summer 2026 K2 climbing season. Could you send the full gear list and permit schedule?',
+        date: '2026-03-26',
+        status: 'New'
+      },
+      {
+        id: 'inq-2',
+        name: 'Sophie Laurent',
+        email: 'sophie.laurent@voyage.fr',
+        phone: '+33 6 12 34 56 78',
+        subject: 'Custom Private Expedition',
+        message: 'We are a group of 6 French hikers wanting to trek to Fairy Meadows and Nanga Parbat Base Camp in September 2026. Can you customize a 10-day private itinerary?',
+        date: '2026-03-25',
+        status: 'Contacted'
+      }
+    ];
+  });
+
+  const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>(() => {
+    try {
+      const saved = localStorage.getItem('chogori_partner_requests');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return [
+      {
+        id: 'pr-1',
+        category: 'Hotels & Resorts',
+        companyName: 'Shigar River Eco Resort',
+        contactName: 'Fida Hussain',
+        email: 'manager@shigarresort.pk',
+        date: '2026-03-22',
+        status: 'Pending'
+      },
+      {
+        id: 'pr-2',
+        category: '4x4 Vehicles & Transport',
+        companyName: 'Baltistan Land Cruiser Association',
+        contactName: 'Ghulam Abbas',
+        email: 'abbas.transport@skardu.pk',
+        date: '2026-03-20',
+        status: 'Approved'
+      }
+    ];
+  });
+
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>(() => {
+    try {
+      const saved = localStorage.getItem('chogori_subscribers');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // fallback
+    }
+    return [
+      { id: 'sub-1', email: 'climber.journal@gmail.com', date: '2026-03-24' },
+      { id: 'sub-2', email: 'hiker.alex@yahoo.com', date: '2026-03-25' }
     ];
   });
 
@@ -118,6 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [currency, setCurrencyState] = useState<Currency>('USD');
   const [language, setLanguageState] = useState('English');
 
+  // Persistence
   useEffect(() => {
     if (user) {
       localStorage.setItem('chogori_user', JSON.stringify(user));
@@ -129,6 +292,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('chogori_bookings', JSON.stringify(bookings));
   }, [bookings]);
+
+  useEffect(() => {
+    localStorage.setItem('chogori_inquiries', JSON.stringify(contactInquiries));
+  }, [contactInquiries]);
+
+  useEffect(() => {
+    localStorage.setItem('chogori_partner_requests', JSON.stringify(partnerRequests));
+  }, [partnerRequests]);
+
+  useEffect(() => {
+    localStorage.setItem('chogori_subscribers', JSON.stringify(newsletterSubscribers));
+  }, [newsletterSubscribers]);
+
+  useEffect(() => {
+    localStorage.setItem('chogori_admin_settings', JSON.stringify(adminSettings));
+  }, [adminSettings]);
 
   const openLogin = () => {
     setRegisterModalOpen(false);
@@ -155,7 +334,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-    // Simulated real authentication
     if (!email || !pass) {
       return { success: false, error: 'The email and password fields are required.' };
     }
@@ -166,7 +344,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'The password must be at least 6 characters.' };
     }
 
-    // derive or fetch user
     const savedName = email.split('@')[0];
     const capitalized = savedName.charAt(0).toUpperCase() + savedName.slice(1);
     const loggedUser: User = {
@@ -174,7 +351,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       firstName: capitalized,
       lastName: 'Trekker',
       email: email.toLowerCase(),
-      phone: '+92 344 5925993',
+      phone: '+92 345 6412992',
       joinedDate: 'March 2026'
     };
 
@@ -199,7 +376,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       firstName: data.firstName.trim(),
       lastName: data.lastName?.trim() || 'Explorer',
       email: data.email.toLowerCase().trim(),
-      phone: data.phone?.trim() || '+92 344 5925993',
+      phone: data.phone?.trim() || '+92 345 6412992',
       joinedDate: 'March 2026'
     };
 
@@ -213,7 +390,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const createBooking = (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>): Booking => {
-    const randomCode = 'CHO-2026-' + Math.floor(1000 + Math.random() * 9000);
+    const randomCode = 'DPA-2026-' + Math.floor(1000 + Math.random() * 9000);
     const newBooking: Booking = {
       ...bookingData,
       id: 'bk_' + Date.now(),
@@ -224,7 +401,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setBookings(prev => [newBooking, ...prev]);
     setLatestBooking(newBooking);
+
+    // Optional webhook trigger
+    if (adminSettings.webhookUrl) {
+      try {
+        fetch(adminSettings.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'NEW_BOOKING', data: newBooking })
+        }).catch(() => {});
+      } catch {
+        // silent
+      }
+    }
+
     return newBooking;
+  };
+
+  const addContactInquiry = (inquiry: Omit<ContactInquiry, 'id' | 'date' | 'status'>): ContactInquiry => {
+    const newInquiry: ContactInquiry = {
+      ...inquiry,
+      id: 'inq_' + Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      status: 'New'
+    };
+    setContactInquiries(prev => [newInquiry, ...prev]);
+
+    if (adminSettings.webhookUrl) {
+      try {
+        fetch(adminSettings.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'CONTACT_INQUIRY', data: newInquiry })
+        }).catch(() => {});
+      } catch {
+        // silent
+      }
+    }
+
+    return newInquiry;
+  };
+
+  const addPartnerRequest = (request: Omit<PartnerRequest, 'id' | 'date' | 'status'>): PartnerRequest => {
+    const newReq: PartnerRequest = {
+      ...request,
+      id: 'pr_' + Date.now(),
+      date: new Date().toISOString().split('T')[0],
+      status: 'Pending'
+    };
+    setPartnerRequests(prev => [newReq, ...prev]);
+    return newReq;
+  };
+
+  const addNewsletterSubscriber = (email: string) => {
+    if (!email || !email.includes('@')) return;
+    const exists = newsletterSubscribers.some(s => s.email.toLowerCase() === email.toLowerCase());
+    if (!exists) {
+      const newSub: NewsletterSubscriber = {
+        id: 'sub_' + Date.now(),
+        email: email.trim().toLowerCase(),
+        date: new Date().toISOString().split('T')[0]
+      };
+      setNewsletterSubscribers(prev => [newSub, ...prev]);
+    }
+  };
+
+  const updateBookingStatus = (id: string, status: Booking['status']) => {
+    setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+  };
+
+  const deleteBooking = (id: string) => {
+    setBookings(prev => prev.filter(b => b.id !== id));
+  };
+
+  const updateContactStatus = (id: string, status: ContactInquiry['status']) => {
+    setContactInquiries(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+  };
+
+  const deleteContactInquiry = (id: string) => {
+    setContactInquiries(prev => prev.filter(c => c.id !== id));
+  };
+
+  const updateAdminSettings = (settings: Partial<AdminSettings>) => {
+    setAdminSettings(prev => ({ ...prev, ...settings }));
   };
 
   const dismissLatestBooking = () => {
@@ -235,6 +494,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const info = CURRENCY_RATES[currency];
     const converted = Math.round(usdPrice * info.rate);
     return `${info.symbol}${converted.toLocaleString()}`;
+  };
+
+  const exportBookingsToCsv = () => {
+    const headers = ['Booking Code', 'Date', 'Customer Name', 'Email', 'Phone', 'Tour Title', 'Departure Start', 'Departure End', 'Adults', 'Children', 'Single Tent', 'Airport Pickup', 'Total Price', 'Status', 'Special Requests'];
+    const rows = bookings.map(b => [
+      b.bookingCode,
+      b.bookingDate,
+      `"${b.customerName}"`,
+      b.customerEmail,
+      `"${b.customerPhone}"`,
+      `"${b.tourTitle}"`,
+      b.startDate,
+      b.endDate,
+      b.adults,
+      b.children,
+      b.singleTent ? 'Yes' : 'No',
+      b.airportTransfer ? 'Yes' : 'No',
+      b.totalPrice,
+      b.status,
+      `"${b.specialRequests || ''}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `diran-peak-bookings-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const exportContactsToCsv = () => {
+    const headers = ['Date', 'Name', 'Email', 'Phone', 'Subject', 'Message', 'Status'];
+    const rows = contactInquiries.map(c => [
+      c.date,
+      `"${c.name}"`,
+      c.email,
+      `"${c.phone}"`,
+      `"${c.subject}"`,
+      `"${c.message.replace(/"/g, '""')}"`,
+      c.status
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `diran-peak-inquiries-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -248,6 +559,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         currency,
         language,
         bookings,
+        contactInquiries,
+        partnerRequests,
+        newsletterSubscribers,
+        adminSettings,
         latestBooking,
         setCurrency: setCurrencyState,
         setLanguage: setLanguageState,
@@ -259,8 +574,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         createBooking,
+        addContactInquiry,
+        addPartnerRequest,
+        addNewsletterSubscriber,
+        updateBookingStatus,
+        deleteBooking,
+        updateContactStatus,
+        deleteContactInquiry,
+        updateAdminSettings,
         formatPrice,
-        dismissLatestBooking
+        dismissLatestBooking,
+        exportBookingsToCsv,
+        exportContactsToCsv
       }}
     >
       {children}

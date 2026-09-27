@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Tour, DepartureDate } from '../data/toursData';
 import { useAuth } from '../context/AuthContext';
+import { InteractiveRouteMap } from '../components/InteractiveRouteMap';
 import {
   MapPin, Clock, Calendar, Users, Mountain, ShieldCheck, Check, X,
-  ChevronDown, ChevronUp, Star, Phone, MessageSquare, AlertCircle, Share2, Heart
+  ChevronDown, ChevronUp, Star, Phone, MessageSquare, AlertCircle, Share2, Heart, Compass
 } from 'lucide-react';
 
 interface TourDetailPageProps {
@@ -94,7 +95,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
       currency: 'USD',
       customerName: guestName,
       customerEmail: guestEmail,
-      customerPhone: guestPhone || '+92 344 5925993',
+      customerPhone: guestPhone || '+92 345 6412992',
       specialRequests
     });
   };
@@ -136,6 +137,18 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
             </div>
 
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const el = document.getElementById('route-map-section');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-3 py-2 bg-blue-50 border border-blue-200 text-[#5191fa] hover:bg-blue-100 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                title="Jump down to interactive GPS route map"
+              >
+                <Compass className="w-4 h-4 text-[#5191fa]" />
+                <span className="hidden sm:inline">Route Map</span>
+              </button>
+
               <button
                 onClick={() => {
                   navigator.clipboard?.writeText(window.location.href);
@@ -239,6 +252,15 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                   </li>
                 ))}
               </ul>
+            </div>
+
+            {/* Interactive Leaflet Expedition & Trekking Route Map */}
+            <div id="route-map-section">
+              <InteractiveRouteMap
+                tourId={tour.id}
+                tourSlug={tour.slug}
+                tourTitle={tour.title}
+              />
             </div>
 
             {/* Fixed Departures and Costs Table */}
@@ -738,7 +760,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                       </div>
                       <h4 className="font-bold text-slate-900 text-sm mb-1">Enquiry Received!</h4>
                       <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                        Our head guide at Chogori Adventure will review your request and message you via WhatsApp / email within 6 hours.
+                        Our head guide at Diran Peak Adventure will review your request and message you via WhatsApp / email within 6 hours.
                       </p>
                       <button
                         type="button"
@@ -778,7 +800,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                           type="tel"
                           value={guestPhone}
                           onChange={(e) => setGuestPhone(e.target.value)}
-                          placeholder="+92 344 5925993"
+                          placeholder="+92 345 6412992"
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                         />
                       </div>
@@ -806,11 +828,11 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
               <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs">
                 <div className="text-slate-500">Need immediate help?</div>
                 <a
-                  href="tel:+923445925993"
+                  href="tel:+923456412992"
                   className="font-bold text-[#5191fa] hover:underline flex items-center gap-1"
                 >
                   <Phone className="w-3.5 h-3.5" />
-                  <span>+92 344 5925993</span>
+                  <span>+92 345 6412992</span>
                 </a>
               </div>
             </div>

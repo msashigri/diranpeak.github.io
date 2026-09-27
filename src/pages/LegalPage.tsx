@@ -42,14 +42,14 @@ export const LegalPage: React.FC<{ initialTab?: string; onNavigate: (route: stri
           {tab === 'terms' ? (
             <>
               <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[#1a2b48] mb-2">
-                Chogori Adventure Terms &amp; Conditions
+                Diran Peak Adventure Terms &amp; Conditions
               </h1>
               <p className="text-slate-400 text-xs">Last updated: March 2026</p>
 
               <div>
                 <h3 className="font-bold text-sm text-[#1a2b48] mb-1">1. Booking Contract &amp; Reservation</h3>
                 <p>
-                  A booking contract is entered into with Chogori Adventure (registered under Department of Tourist Services License #1842) upon receipt of your formal booking reservation and confirmation voucher. All bookings are subject to availability.
+                  A booking contract is entered into with Diran Peak Adventure (registered under Department of Tourist Services License #1842) upon receipt of your formal booking reservation and confirmation voucher. All bookings are subject to availability.
                 </p>
               </div>
 
@@ -63,7 +63,7 @@ export const LegalPage: React.FC<{ initialTab?: string; onNavigate: (route: stri
               <div>
                 <h3 className="font-bold text-sm text-[#1a2b48] mb-1">3. Mandatory High-Altitude Insurance</h3>
                 <p>
-                  Every participant undertaking a trek over 3,000 meters or crossing glaciers (Baltoro, Biafo, Gondogoro) must hold a comprehensive travel insurance policy covering medical expenses, emergency helicopter evacuation (up to 6,000m), and trip interruption.
+                  Every participant undertaking a trek over 3,000 meters or crossing glaciers (Baltoro, Biafo, Gondogoro, Minapin) must hold a comprehensive travel insurance policy covering medical expenses, emergency helicopter evacuation (up to 6,000m), and trip interruption.
                 </p>
               </div>
 
@@ -79,7 +79,7 @@ export const LegalPage: React.FC<{ initialTab?: string; onNavigate: (route: stri
               <div>
                 <h3 className="font-bold text-sm text-[#1a2b48] mb-1">5. Itinerary Flexibility &amp; Force Majeure</h3>
                 <p>
-                  Mountain conditions, weather, roadblocks, landslides, or domestic flight delays are beyond human control. Chogori Adventure reserves the right to alter routes in the interest of team safety.
+                  Mountain conditions, weather, roadblocks, landslides, or domestic flight delays are beyond human control. Diran Peak Adventure reserves the right to alter routes in the interest of team safety.
                 </p>
               </div>
             </>

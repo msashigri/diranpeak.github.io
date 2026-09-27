@@ -2,9 +2,8 @@ import React from 'react';
 import { Hero } from '../components/Hero';
 import { TrustStats } from '../components/TrustStats';
 import { FeaturedTours } from '../components/FeaturedTours';
-import { DestinationsGrid } from '../components/DestinationsGrid';
-import { WhyChooseUs } from '../components/WhyChooseUs';
 import { Testimonials } from '../components/Testimonials';
+import { LatestArticles } from '../components/LatestArticles';
 import { Tour } from '../data/toursData';
 
 interface HomePageProps {
@@ -25,13 +24,8 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectTour, onNavigate, on
         onSelectTour={onSelectTour}
         onViewAll={(category) => onNavigate('tours', category || 'all')}
       />
-      <DestinationsGrid
-        onSelectDestination={(dest) => onNavigate('tours', dest)}
-      />
-      <WhyChooseUs
-        onContactClick={() => onNavigate('contact')}
-      />
       <Testimonials />
+      <LatestArticles />
     </div>
   );
 };

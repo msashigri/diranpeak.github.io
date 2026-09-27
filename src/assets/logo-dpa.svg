@@ -1,0 +1,23 @@
+<svg viewBox="0 0 320 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Crest with DPA -->
+  <g transform="translate(10, 5) scale(0.6)">
+    <!-- Hexagonal Outer Crest -->
+    <path d="M60 4L110 32V88L60 116L10 88V32L60 4Z" fill="#0f172a" stroke="#2563eb" stroke-width="4" stroke-linejoin="round"/>
+    
+    <!-- Mountain Peaks -->
+    <path d="M60 22L82 68L70 64L60 52L50 64L38 68L60 22Z" fill="#ffffff"/>
+    <path d="M32 74L46 54L55 65L42 75H32Z" fill="#38bdf8"/>
+    <path d="M88 74L74 54L65 65L78 75H88Z" fill="#0284c7"/>
+    
+    <!-- Sun -->
+    <circle cx="60" cy="38" r="7" fill="#fbbf24"/>
+    
+    <!-- DPA Plaque -->
+    <rect x="16" y="76" width="88" height="28" rx="6" fill="#1a2b48" stroke="#38bdf8" stroke-width="2"/>
+    <text x="60" y="96" text-anchor="middle" fill="#ffffff" font-family="'Poppins', sans-serif" font-weight="900" font-size="18" letter-spacing="2.5">DPA</text>
+  </g>
+
+  <!-- Brand Typography -->
+  <text x="90" y="40" fill="#1a2b48" font-family="'Poppins', sans-serif" font-weight="900" font-size="22" letter-spacing="0.5">DIRAN PEAK <tspan fill="#5191fa">ADVENTURE</tspan></text>
+  <text x="90" y="60" fill="#5e6d77" font-family="'Poppins', sans-serif" font-weight="700" font-size="10" letter-spacing="3.5">TREKS &amp; EXPEDITIONS · PAKISTAN</text>
+</svg>

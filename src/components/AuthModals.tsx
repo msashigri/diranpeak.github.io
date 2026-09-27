@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Mail, Lock, User, Phone, CheckCircle, AlertCircle, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { DpaLogo } from './DpaLogo';
 
 export const AuthModals: React.FC = () => {
   const {
@@ -106,13 +107,16 @@ export const AuthModals: React.FC = () => {
         {loginModalOpen && (
           <div className="p-8">
             <div className="mb-6">
+              <div className="mb-4">
+                <DpaLogo variant="light" />
+              </div>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-7 h-7 rounded-md bg-[#5191fa]/10 flex items-center justify-center text-[#5191fa]">
                   <Lock className="w-4 h-4" />
                 </div>
                 <h3 className="text-2xl font-bold font-heading text-[#1a2b48]">Log In</h3>
               </div>
-              <p className="text-xs text-slate-500">Welcome back to Chogori Adventure</p>
+              <p className="text-xs text-slate-500">Welcome back to Diran Peak Adventure (DPA)</p>
             </div>
 
             {loginError && (
@@ -124,7 +128,7 @@ export const AuthModals: React.FC = () => {
 
             {/* Laravel style form */}
             <form className="bravo-form-login space-y-4" onSubmit={handleLoginSubmit}>
-              <input type="hidden" name="_token" value="csrf-token-chogori-auth-2026" />
+              <input type="hidden" name="_token" value="csrf-token-dpa-auth-2026" />
               <input type="hidden" name="redirect" value="" />
 
               <div>
@@ -217,7 +221,7 @@ export const AuthModals: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    setLoginEmail('traveler@chogori.com');
+                    setLoginEmail('traveler@diranpeakadventure.com');
                     setLoginPassword('password123');
                   }}
                   className="py-2 px-3 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
@@ -228,7 +232,7 @@ export const AuthModals: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    login('climber@chogori.com', 'expedition2026');
+                    login('climber@diranpeakadventure.com', 'expedition2026');
                   }}
                   className="py-2 px-3 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
@@ -255,13 +259,16 @@ export const AuthModals: React.FC = () => {
         {registerModalOpen && (
           <div className="p-8 max-h-[90vh] overflow-y-auto">
             <div className="mb-5">
+              <div className="mb-4">
+                <DpaLogo variant="light" />
+              </div>
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-7 h-7 rounded-md bg-[#5191fa]/10 flex items-center justify-center text-[#5191fa]">
                   <User className="w-4 h-4" />
                 </div>
                 <h3 className="text-2xl font-bold font-heading text-[#1a2b48]">Sign Up</h3>
               </div>
-              <p className="text-xs text-slate-500">Create an account to book treks & manage expeditions</p>
+              <p className="text-xs text-slate-500">Create an account with Diran Peak Adventure to book treks</p>
             </div>
 
             {registerError && (
@@ -273,7 +280,7 @@ export const AuthModals: React.FC = () => {
 
             {/* Laravel style register form */}
             <form className="form bravo-form-register space-y-3.5" onSubmit={handleRegisterSubmit}>
-              <input type="hidden" name="_token" value="csrf-token-chogori-reg-2026" />
+              <input type="hidden" name="_token" value="csrf-token-dpa-reg-2026" />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -318,7 +325,7 @@ export const AuthModals: React.FC = () => {
                     name="phone"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+92 344 5925993"
+                    placeholder="+92 345 6412992"
                     className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:border-[#5191fa] focus:bg-white"
                   />
                 </div>

@@ -1,82 +1,86 @@
 import React from 'react';
-import { Star, Quote, CheckCircle } from 'lucide-react';
+import { Star, ExternalLink } from 'lucide-react';
 
 export const Testimonials: React.FC = () => {
-  const testimonials = [
+  const reviews = [
     {
-      name: 'Karlota Perurena',
-      country: 'Spain',
-      trip: 'K2 Base Camp & Concordia Trek',
-      rating: 5,
-      date: 'August 2025',
-      text: 'Trekking to K2 Base Camp with Chogori Adventure was the most incredible alpine experience of my life. The Balti staff were exceptionally attentive, the food at 4,600m in Concordia was unbelievable, and the safety measures gave complete peace of mind. Truly the best native team in Pakistan!'
+      name: 'Roberto Bortoli',
+      text: 'We turned to Diran Peak Adventure for the discovery of Northern Pakistan. We did the trek to Nanga Parbat Base Camp and Rakaposhi Base Camp. Then we explored Hunza Valley and Nagar Valley. Everything was perfectly organized including return from Islamabad. Highly recommended to all those who want to discover Pakistan in complete safety and tranquility.'
     },
     {
-      name: 'Alexander Schmidt',
-      country: 'Germany',
-      trip: 'K2 Gondogoro La High Pass Circuit',
-      rating: 5,
-      date: 'July 2025',
-      text: 'Having local Balti guides makes all the difference compared to foreign third-party agencies. They know every crevasse of the Baltoro glacier like the back of their hand. Watching the sunrise from Gondogoro La over 4 eight-thousanders is something I will never forget.'
+      name: 'Arnaud Guerit',
+      text: 'I had the chance to make the K2 circuit with Imtiaz and I have to say that it has been the most incredible experience in my entire life.You cannot imagine how astonishing this place is. People were incredible and facing K2 was just a wonderful moment'
     },
     {
-      name: 'Sarah Jenkins & Team',
-      country: 'United Kingdom',
-      trip: 'Nanga Parbat & Fairy Meadows Trek',
-      rating: 5,
-      date: 'September 2025',
-      text: 'Flawless logistics from the moment we landed in Islamabad. Our guide and driver were courteous, knowledgeable, and always kept our spirits high. The wooden cabins in Fairy Meadows facing the huge ice wall of Nanga Parbat were simply paradise.'
+      name: 'Luis Miguel',
+      text: 'Great experience with great professionals...no doubt to repeat as soon as I can....safe....funny...calm and respectful....no doubt...very good agency'
     }
   ];
 
   return (
-    <section className="py-20 bg-[#f7f8fa]">
+    <section className="py-16 bg-[#f7f8fa] border-t border-[#eaeef3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <div className="text-xs font-bold uppercase tracking-wider text-[#5191fa] mb-1">
-            Real Trekker Reviews
-          </div>
-          <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#1a2b48]">
-            Trusted by Adventurers Worldwide
+        <div className="text-center mb-12">
+          <h2 className="relative inline-block text-3xl font-semibold text-[#1a2b48] pb-3">
+            Our happy clients
+            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-[3px] bg-[#5191fa] rounded-full" />
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 mt-2">
-            Read authentic feedback from climbers and trekkers who have conquered the Karakoram with Chogori Adventure.
+          <p className="text-sm text-[#5e6d77] mt-2">
+            Real feedback from mountaineers and travelers who explored Pakistan with Diran Peak Adventure.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {testimonials.map((t, idx) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          {reviews.map((r, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-2xl p-6 sm:p-7 shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-100 flex flex-col justify-between"
+              className="bg-white rounded p-6 shadow-sm border border-[#dfdfdf] flex flex-col justify-between"
             >
               <div>
-                {/* Rating */}
-                <div className="flex items-center gap-1 text-amber-400 mb-3">
-                  {[...Array(t.rating)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-amber-400" />
-                  ))}
-                  <span className="ml-2 text-xs font-bold text-slate-700">5.0</span>
-                </div>
-
-                <p className="text-xs sm:text-sm text-slate-600 leading-relaxed italic mb-6">
-                  &ldquo;{t.text}&rdquo;
-                </p>
-              </div>
-
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                <div>
-                  <h4 className="font-bold text-xs sm:text-sm text-[#1a2b48]">{t.name}</h4>
-                  <div className="text-[11px] text-slate-400 font-medium">
-                    {t.country} · <span className="text-[#5191fa]">{t.trip}</span>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-11 h-11 rounded-full bg-[#1a2b48] text-white flex items-center justify-center font-bold text-sm">
+                    {r.name.trim().charAt(0)}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-base text-[#1a2b48]">
+                      {r.name}
+                    </h4>
+                    <div className="flex text-[#ffdc00] mt-0.5">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="w-3.5 h-3.5 fill-current" />
+                      ))}
+                    </div>
                   </div>
                 </div>
-                <div className="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-                  <CheckCircle className="w-4 h-4" />
-                </div>
+
+                <p className="text-sm text-[#5e6d77] leading-relaxed font-normal">
+                  {r.text}
+                </p>
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Exact "Read More Reviews" Banner matching BookingCore call-to-action */}
+        <div className="bg-[#1a2b48] text-white rounded-lg p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-xl sm:text-2xl font-bold text-white mb-1">
+              Read More Reviews
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300">
+              Verified Google Reviews &amp; expedition logs from international climbers
+            </p>
+          </div>
+
+          <a
+            href="https://www.google.com/maps/place/Chogori+Adventure+Pakistan/@33.6569451,73.1584339,15z"
+            target="_blank"
+            rel="noreferrer"
+            className="px-6 py-3 bg-[#5191fa] hover:bg-[#3875dc] text-white font-semibold text-sm uppercase rounded transition-colors whitespace-nowrap flex items-center gap-2"
+          >
+            <span>More Reviews</span>
+            <ExternalLink className="w-4 h-4" />
+          </a>
         </div>
       </div>
     </section>

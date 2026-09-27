@@ -1,48 +1,68 @@
 import React from 'react';
-import { Mountain, Users, ShieldCheck, Award, HeartHandshake, Compass } from 'lucide-react';
 
 export const TrustStats: React.FC = () => {
-  const stats = [
+  const items = [
     {
-      icon: Award,
-      title: 'Best Cost Guarantee',
-      description: 'Transparent direct native pricing with no middlemen or hidden surcharges.'
+      icon: '/src/assets/best-cost.png',
+      title: 'Best Cost',
+      desc: 'Your Ultimate Travel Experience at the Best Price!'
     },
     {
-      icon: Mountain,
-      title: 'Senior High Guides',
-      description: 'Generational Balti mountaineers with 20+ years of Karakoram navigation.'
+      icon: '/src/assets/tour-guide.png',
+      title: 'Senior Guides',
+      desc: 'Expert-Led Journeys Crafted with Wisdom and Personal Touch!'
     },
     {
-      icon: Compass,
+      icon: '/src/assets/native-company.png',
       title: 'Native Company',
-      description: '100% locally owned in Skardu, reinvesting directly into indigenous communities.'
+      desc: 'No. 1 Native Travel And Tour Company Authentic Journeys, Local Expertise!'
     },
     {
-      icon: Users,
-      title: '10,000+ Trekkers',
-      description: 'Mountaineers and adventure seekers safely guided across Pakistan since 2012.'
+      icon: '/src/assets/rating-star.png',
+      title: '4.9/5',
+      desc: 'Achieving a flawless 4.9/5 review score reflects our unwavering commitment to excellence and customer satisfaction.'
+    },
+    {
+      icon: '/src/assets/customer.png',
+      title: '10000+ Customers Worlwide',
+      desc: 'Trusted by 10,000+ customers worldwide, a testament to our global reach and exceptional service.'
+    },
+    {
+      icon: '/src/assets/trips-completed.png',
+      title: '1000+ Trips Completed',
+      desc: 'Successfully completed 1,000+ trips, delivering seamless and memorable journeys every time.'
     }
   ];
 
   return (
-    <div className="bg-white border-b border-slate-200/80 py-10">
+    <div className="bravo-featured-item py-14 bg-white border-b border-[#eaeef3]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {stats.map((s, idx) => {
-            const Icon = s.icon;
-            return (
-              <div key={idx} className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#5191fa] flex items-center justify-center shrink-0 border border-blue-100">
-                  <Icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="font-heading font-bold text-slate-900 text-sm mb-1">{s.title}</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">{s.description}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {items.map((item, idx) => (
+            <div
+              key={idx}
+              className="featured-item flex items-start gap-4 p-2 transition-colors"
+            >
+              <div className="image shrink-0 w-14 h-14 flex items-center justify-center">
+                <img
+                  src={item.icon}
+                  alt={item.title}
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </div>
+              <div className="content">
+                <h3 className="title text-base font-semibold text-[#1a2b48] mb-1">
+                  {item.title}
+                </h3>
+                <div className="desc text-xs text-[#5e6d77] leading-relaxed">
+                  {item.desc}
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </div>

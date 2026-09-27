@@ -28,14 +28,14 @@ export const WhyChooseUs: React.FC<{ onContactClick: () => void }> = ({ onContac
           {/* Left Column: Narrative */}
           <div>
             <div className="text-xs font-bold uppercase tracking-wider text-[#5191fa] mb-2">
-              Why Chogori Adventure
+              Why Diran Peak Adventure
             </div>
             <h2 className="font-heading text-2xl sm:text-4xl font-extrabold text-white mb-6 leading-tight">
               We Don&apos;t Just Guide Treks.<br />
               <span className="text-[#5191fa]">We Belong to These Mountains.</span>
             </h2>
             <p className="text-sm text-slate-300 leading-relaxed mb-8">
-              Founded in Skardu, Chogori Adventure was built by local mountaineers with a clear mission: to share the breathtaking majesty of Pakistan&apos;s Karakoram while providing the highest standard of safety, ethical porter welfare, and true Balti warmth.
+              Founded in Gilgit-Baltistan, Diran Peak Adventure (DPA) was built by local mountaineers with a clear mission: to share the breathtaking majesty of Pakistan&apos;s Karakoram &amp; Himalayas while providing the highest standard of safety, ethical porter welfare, and true mountain hospitality.
             </p>
 
             <div className="space-y-4">
@@ -58,7 +58,7 @@ export const WhyChooseUs: React.FC<{ onContactClick: () => void }> = ({ onContac
                 Speak With an Expedition Specialist
               </button>
               <div className="text-xs text-slate-400">
-                Direct WhatsApp: <span className="text-white font-bold">+92 344 5925993</span>
+                Direct WhatsApp: <a href="https://wa.me/923456412992" target="_blank" rel="noreferrer" className="text-white hover:text-[#5191fa] font-bold transition-colors">+92 345 6412992</a>
               </div>
             </div>
           </div>

@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { TourCard } from './TourCard';
 import { TOURS_DATA, Tour } from '../data/toursData';
-import { ArrowRight } from 'lucide-react';
 
 interface FeaturedToursProps {
   onSelectTour: (tour: Tour) => void;
@@ -9,73 +8,103 @@ interface FeaturedToursProps {
 }
 
 export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onViewAll }) => {
-  const [activeTab, setActiveTab] = useState<string>('all');
+  // Section 1: Handpicked Best Sellers
+  const handpickedTours = TOURS_DATA.filter(t =>
+    ['k2-base-camp-trek', 'nanga-parbat-rakaposhi-base-camp-trek', 'k2-gondogoro-la-trek', 'lahore-multan-peshawar-swat-cultural-tour', 'spantik-peak-expedition', 'broad-peak-expedition'].includes(t.id)
+  );
 
-  const categories = [
-    { id: 'all', label: 'All Experiences' },
-    { id: 'trekking', label: 'Trekking Tours' },
-    { id: 'expedition', label: 'Climbing Expeditions' },
-    { id: '6000m', label: '6,000m Peaks' },
-    { id: 'cultural', label: 'Cultural & Heritage' },
-  ];
+  // Section 2: Top Rated Expeditions
+  const expeditionTours = TOURS_DATA.filter(t => t.category === 'expedition' || t.category === '6000m');
 
-  const filteredTours = activeTab === 'all'
-    ? TOURS_DATA
-    : TOURS_DATA.filter(t => t.category === activeTab);
+  // Section 3: Cultural Tours
+  const culturalTours = TOURS_DATA.filter(t => t.category === 'cultural');
 
   return (
-    <section className="py-16 bg-[#f7f8fa]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-slate-200">
-          <div>
-            <div className="text-xs font-bold text-[#5191fa] uppercase tracking-wider mb-1">
-              Top Rated Expeditions
-            </div>
-            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#1a2b48]">
-              Featured Tours &amp; Expeditions in Pakistan
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-xl">
-              From the high-altitude glaciers of the Baltoro to ancient Silk Road shrines, explore our hand-crafted adventures with fixed departures.
-            </p>
-          </div>
-
-          {/* Interactive filter tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto pb-2 md:pb-0 mt-4 md:mt-0 p-1 bg-slate-200/70 rounded-xl">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveTab(cat.id)}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
-                  activeTab === cat.id
-                    ? 'bg-white text-[#1a2b48] shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
+    <div className="space-y-16 py-12 bg-white">
+      {/* ================= SECTION 1: BEST HANDPICKED TOURS ================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10">
+          <h2 className="relative inline-block text-3xl font-semibold text-[#1a2b48] pb-3">
+            Best Handpicked Tours
+            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-[3px] bg-[#5191fa] rounded-full" />
+          </h2>
+          <p className="text-sm text-[#5e6d77] mt-2 max-w-xl mx-auto">
+            Discover our best-selling, handpicked tours, trekking and expeditions carefully crafted for an unforgettable journey.
+          </p>
         </div>
 
-        {/* Grid of Tours */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {filteredTours.slice(0, 6).map((tour) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {handpickedTours.slice(0, 6).map((tour) => (
             <TourCard key={tour.id} tour={tour} onSelect={onSelectTour} />
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="mt-12 text-center">
+        {/* Real Chogori "All Trekkings" Button matching .trekking-btn */}
+        <div className="text-center mt-8">
           <button
-            onClick={() => onViewAll(activeTab !== 'all' ? activeTab : undefined)}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 text-[#1a2b48] border border-slate-200 text-xs font-bold uppercase tracking-wider rounded-xl shadow-sm hover:shadow transition-all cursor-pointer"
+            onClick={() => onViewAll('trekking')}
+            className="trekking-btn cursor-pointer"
           >
-            <span>Explore All {filteredTours.length} Adventures</span>
-            <ArrowRight className="w-4 h-4 text-[#5191fa]" />
+            All Trekkings
           </button>
         </div>
-      </div>
-    </section>
+      </section>
+
+      {/* ================= SECTION 2: TOP RATED EXPEDITIONS IN PAKISTAN ================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div
+          style={{
+            backgroundColor: '#f5f5f5',
+            borderRadius: '12px',
+            padding: '30px'
+          }}
+        >
+          <div className="text-center mb-10">
+            <h2 className="relative inline-block text-3xl font-semibold text-[#1a2b48] pb-3">
+              Top Rated Expeditions in Pakistan
+              <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-[3px] bg-[#5191fa] rounded-full" />
+            </h2>
+            <p className="text-sm text-[#5e6d77] mt-2 max-w-xl mx-auto">
+              Climb the world&apos;s most dramatic 7000m and 8000m peaks with expert Balti expedition leadership.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {expeditionTours.slice(0, 6).map((tour) => (
+              <TourCard key={tour.id} tour={tour} onSelect={onSelectTour} />
+            ))}
+          </div>
+
+          {/* Real Chogori "All Expeditions" Button */}
+          <div className="text-center mt-8">
+            <button
+              onClick={() => onViewAll('expedition')}
+              className="trekking-btn cursor-pointer"
+            >
+              All Expeditions
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ================= SECTION 3: EXPLORE CULTURAL TOURS ================= */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10">
+          <h2 className="relative inline-block text-3xl font-semibold text-[#1a2b48] pb-3">
+            Explore Cultural Tours
+            <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-[3px] bg-[#5191fa] rounded-full" />
+          </h2>
+          <p className="text-sm text-[#5e6d77] mt-2 max-w-xl mx-auto">
+            Discover the ancient Silk Road heritage, Mughal monuments, and northern valley cultures.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {culturalTours.map((tour) => (
+            <TourCard key={tour.id} tour={tour} onSelect={onSelectTour} />
+          ))}
+        </div>
+      </section>
+    </div>
   );
 };

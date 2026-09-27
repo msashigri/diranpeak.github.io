@@ -284,7 +284,7 @@ export const TOURS_DATA: Tour[] = [
       },
       {
         question: 'What is the visa process for Pakistan?',
-        answer: 'Citizens of 190+ countries can apply for the Pakistan Online Tourism E-Visa. Upon booking, Chogori Adventure provides you with an official Visa Invitation Letter (LOI), DTS travel registration, and detailed hotel itinerary to guarantee quick approval.'
+        answer: 'Citizens of 190+ countries can apply for the Pakistan Online Tourism E-Visa. Upon booking, Diran Peak Adventure provides you with an official Visa Invitation Letter (LOI), DTS travel registration, and detailed hotel itinerary to guarantee quick approval.'
       },
       {
         question: 'What kind of food and drinking water is provided?',
@@ -302,7 +302,7 @@ export const TOURS_DATA: Tour[] = [
         country: 'Spain',
         rating: 5,
         date: 'August 2025',
-        comment: 'Trekking to K2 Base Camp with Chogori Adventure was the most incredible experience of my mountaineering life. The Balti staff were exceptionally attentive, the food at 4,600m in Concordia was delicious, and the safety measures gave complete peace of mind. Truly the best local team in Pakistan!'
+        comment: 'Trekking to K2 Base Camp with Diran Peak Adventure was the most incredible experience of my mountaineering life. The Balti staff were exceptionally attentive, the food at 4,600m in Concordia was delicious, and the safety measures gave complete peace of mind. Truly the best local team in Pakistan!'
       },
       {
         id: 'rev-2',
@@ -427,7 +427,7 @@ export const TOURS_DATA: Tour[] = [
       '/src/assets/images/hero_karakoram_k2_1790420138291.jpg',
       '/src/assets/images/trek_baltoro_glacier_1790420152808.jpg'
     ],
-    overview: 'The King of Mountains. K2 is widely revered as the purest, steepest, and most challenging 8,000-meter peak on Earth. Chogori Adventure provides premier base camp logistics, high-altitude Balti and Sherpa summit guides, extensive fixed rope infrastructure on the Abruzzi Spur and Cesen routes, high-flow supplemental oxygen systems, and unlimited weather window flexibility.',
+    overview: 'The King of Mountains. K2 is widely revered as the purest, steepest, and most challenging 8,000-meter peak on Earth. Diran Peak Adventure provides premier base camp logistics, high-altitude Balti and Sherpa summit guides, extensive fixed rope infrastructure on the Abruzzi Spur and Cesen routes, high-flow supplemental oxygen systems, and unlimited weather window flexibility.',
     highlights: [
       'Full expedition base camp with heated dining dome, Wi-Fi satellite, and power generation',
       'Experienced 8,000m Balti summit guides with multiple successful K2 summits',
@@ -469,7 +469,7 @@ export const TOURS_DATA: Tour[] = [
       { question: 'What prerequisites are required to join?', answer: 'Climbers must have summited at least one other 8,000-meter peak or extensive technical peaks over 7,000m (such as Spantik, Broad Peak, or Manaslu) with verified mountaineering resume.' }
     ],
     reviews: [
-      { id: 'k2-rev1', name: 'David Thorne', country: 'United States', rating: 5, date: 'August 2025', comment: 'Chogori Adventure delivered flawless base camp service on K2. Having hot meals, heated communal domes, and dependable high altitude guides made our expedition both safe and successful.' }
+      { id: 'k2-rev1', name: 'David Thorne', country: 'United States', rating: 5, date: 'August 2025', comment: 'Diran Peak Adventure delivered flawless base camp service on K2. Having hot meals, heated communal domes, and dependable high altitude guides made our expedition both safe and successful.' }
     ]
   },
   {
@@ -525,7 +525,7 @@ export const TOURS_DATA: Tour[] = [
       { question: 'Is oxygen mandatory for Broad Peak?', answer: 'Many experienced alpinists climb Broad Peak without supplemental oxygen, though we provide oxygen systems on request as a safety reserve.' }
     ],
     reviews: [
-      { id: 'bp-rev', name: 'Jonas Lindqvist', country: 'Sweden', rating: 5, date: 'July 2025', comment: 'Reaching the summit of Broad Peak with Chogori Adventure was the peak of my life. Great porters, incredible food, solid leadership.' }
+      { id: 'bp-rev', name: 'Jonas Lindqvist', country: 'Sweden', rating: 5, date: 'July 2025', comment: 'Reaching the summit of Broad Peak with Diran Peak Adventure was the peak of my life. Great porters, incredible food, solid leadership.' }
     ]
   },
   {
@@ -730,7 +730,7 @@ export const TOURS_DATA: Tour[] = [
       { question: 'What is the success rate on Spantik?', answer: 'Under our guided expedition leadership, Spantik enjoys an over 75% summit success rate in fair weather.' }
     ],
     reviews: [
-      { id: 'sp-r1', name: 'Henrik Vang', country: 'Denmark', rating: 5, date: 'July 2025', comment: 'Spantik was my dream 7,000m climb. The Chogori Adventure crew made it happen with flawless high-camp stocking and warm encouragement.' }
+      { id: 'sp-r1', name: 'Henrik Vang', country: 'Denmark', rating: 5, date: 'July 2025', comment: 'Spantik was my dream 7,000m climb. The Diran Peak Adventure crew made it happen with flawless high-camp stocking and warm encouragement.' }
     ]
   }
 ];

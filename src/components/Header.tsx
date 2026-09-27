@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Compass, Menu, X, ChevronDown, Mountain, PhoneCall, ShieldCheck } from 'lucide-react';
+import { Menu, X, ChevronDown } from 'lucide-react';
+import { DpaLogo } from './DpaLogo';
 
 interface HeaderProps {
   currentRoute: string;
@@ -8,39 +9,37 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [trekkingDropdown, setTrekkingDropdown] = useState(false);
-  const [expeditionsDropdown, setExpeditionsDropdown] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+
+  const handleOpenDropdown = (menuName: string) => {
+    setActiveDropdown(menuName);
+  };
+
+  const handleCloseDropdown = () => {
+    setActiveDropdown(null);
+  };
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-slate-100 transition-all">
+    <header className="sticky top-0 z-40 bg-white border-b border-[#eaeef3] transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
-          {/* Zone 1: Brand Wordmark / Logo */}
-          <div className="flex-shrink-0">
+        <div className="flex items-center justify-between h-[90px]">
+          {/* Modern Diran Peak Adventure (DPA) Logo */}
+          <div className="flex items-center shrink-0">
             <button
               onClick={() => onNavigate('home')}
-              className="flex items-center gap-3 text-left group cursor-pointer focus:outline-none"
+              className="flex items-center cursor-pointer focus:outline-none"
+              title="Diran Peak Adventure - Home"
             >
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1a2b48] to-[#2c436b] flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                <Mountain className="w-6 h-6 text-[#5191fa]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-heading font-extrabold text-xl tracking-tight text-[#1a2b48] leading-none">
-                  CHOGORI<span className="text-[#5191fa] font-black">.</span>
-                </span>
-                <span className="text-[10px] tracking-widest uppercase font-semibold text-slate-500 mt-0.5">
-                  Adventure Pakistan
-                </span>
-              </div>
+              <DpaLogo variant="light" />
             </button>
           </div>
 
-          {/* Zone 2: Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-7 text-sm font-medium text-slate-700">
+          {/* Main Navigation Menu matching exact BookingCore items */}
+          <nav className="hidden lg:flex items-center space-x-1 xl:space-x-2 text-[14px] font-medium text-[#1a2b48]">
             <button
               onClick={() => onNavigate('home')}
-              className={`hover:text-[#5191fa] transition-colors py-2 cursor-pointer ${
-                currentRoute === 'home' ? 'text-[#5191fa] font-semibold' : ''
+              className={`px-3 py-2 hover:text-[#5191fa] transition-colors cursor-pointer ${
+                currentRoute === 'home' ? 'text-[#5191fa]' : ''
               }`}
             >
               Home
@@ -48,8 +47,8 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
 
             <button
               onClick={() => onNavigate('tours', 'all')}
-              className={`hover:text-[#5191fa] transition-colors py-2 cursor-pointer ${
-                currentRoute === 'tours' ? 'text-[#5191fa] font-semibold' : ''
+              className={`px-3 py-2 hover:text-[#5191fa] transition-colors cursor-pointer ${
+                currentRoute === 'tours' ? 'text-[#5191fa]' : ''
               }`}
             >
               All Destinations
@@ -58,185 +57,196 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
             {/* Trekking Dropdown */}
             <div
               className="relative"
-              onMouseEnter={() => setTrekkingDropdown(true)}
-              onMouseLeave={() => setTrekkingDropdown(false)}
+              onMouseEnter={() => handleOpenDropdown('trekking')}
+              onMouseLeave={handleCloseDropdown}
             >
               <button
                 onClick={() => onNavigate('tours', 'trekking')}
-                className="flex items-center gap-1 hover:text-[#5191fa] transition-colors py-2 cursor-pointer"
+                className="flex items-center gap-1 px-3 py-2 hover:text-[#5191fa] transition-colors cursor-pointer"
               >
                 <span>Trekking</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
-              {trekkingDropdown && (
-                <div className="absolute top-full -left-4 w-72 bg-white rounded-xl shadow-2xl border border-slate-100 py-3 px-2 z-50">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
-                    Baltoro & Karakoram Treks
-                  </div>
+              {activeDropdown === 'trekking' && (
+                <div className="absolute top-full left-0 w-64 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
                   <button
-                    onClick={() => {
-                      setTrekkingDropdown(false);
-                      onNavigate('tour-detail', 'k2-base-camp-trek');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-50 hover:text-[#5191fa] font-medium text-slate-800 transition-colors flex items-center justify-between"
+                    onClick={() => { handleCloseDropdown(); onNavigate('tours', 'trekking'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    <span>K2 Base Camp Trek</span>
-                    <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">21 Days</span>
+                    All Trekking
                   </button>
                   <button
-                    onClick={() => {
-                      setTrekkingDropdown(false);
-                      onNavigate('tour-detail', 'k2-gondogoro-la-trek');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-50 hover:text-[#5191fa] font-medium text-slate-800 transition-colors flex items-center justify-between"
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-base-camp-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    <span>K2 Gondogoro La Trek</span>
-                    <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-semibold">Extreme</span>
+                    K2 Base Camp Trek
                   </button>
                   <button
-                    onClick={() => {
-                      setTrekkingDropdown(false);
-                      onNavigate('tour-detail', 'nanga-parbat-rakaposhi-base-camp-trek');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-50 hover:text-[#5191fa] font-medium text-slate-800 transition-colors flex items-center justify-between"
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-gondogoro-la-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    <span>Nanga Parbat & Fairy Meadows</span>
-                    <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">14 Days</span>
+                    K2 Gondogoro La Trek
                   </button>
-                  <div className="border-t border-slate-100 my-1 pt-1">
-                    <button
-                      onClick={() => {
-                        setTrekkingDropdown(false);
-                        onNavigate('tours', 'trekking');
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-[#5191fa] font-semibold hover:underline"
-                    >
-                      View All Trekking Packages &rarr;
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-base-camp-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Barah Broq Moses Peak Trek
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-base-camp-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Snow Lake Biafo Hispar La Trek
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Expeditions Dropdown */}
+            {/* Climbing Expedition Dropdown */}
             <div
               className="relative"
-              onMouseEnter={() => setExpeditionsDropdown(true)}
-              onMouseLeave={() => setExpeditionsDropdown(false)}
+              onMouseEnter={() => handleOpenDropdown('climbing')}
+              onMouseLeave={handleCloseDropdown}
             >
               <button
                 onClick={() => onNavigate('tours', 'expedition')}
-                className="flex items-center gap-1 hover:text-[#5191fa] transition-colors py-2 cursor-pointer"
+                className="flex items-center gap-1 px-3 py-2 hover:text-[#5191fa] transition-colors cursor-pointer"
               >
-                <span>Climbing Expeditions</span>
+                <span>Climbing Expedition</span>
                 <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
               </button>
 
-              {expeditionsDropdown && (
-                <div className="absolute top-full -left-4 w-72 bg-white rounded-xl shadow-2xl border border-slate-100 py-3 px-2 z-50">
-                  <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
-                    8000m & 7000m Peaks
-                  </div>
+              {activeDropdown === 'climbing' && (
+                <div className="absolute top-full left-0 w-72 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
                   <button
-                    onClick={() => {
-                      setExpeditionsDropdown(false);
-                      onNavigate('tour-detail', 'k2-climbing-expedition');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-50 hover:text-[#5191fa] font-medium text-slate-800 transition-colors flex items-center justify-between"
+                    onClick={() => { handleCloseDropdown(); onNavigate('tours', '6000m'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    <span>K2 Climbing (8,611m)</span>
-                    <span className="text-[10px] text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded font-bold">King</span>
+                    6000m peaks in pakistan
                   </button>
                   <button
-                    onClick={() => {
-                      setExpeditionsDropdown(false);
-                      onNavigate('tour-detail', 'broad-peak-expedition');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-50 hover:text-[#5191fa] font-medium text-slate-800 transition-colors flex items-center justify-between"
+                    onClick={() => { handleCloseDropdown(); onNavigate('tours', 'expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    <span>Broad Peak (8,047m)</span>
-                    <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-semibold">8000m</span>
+                    All Expeditions
                   </button>
                   <button
-                    onClick={() => {
-                      setExpeditionsDropdown(false);
-                      onNavigate('tour-detail', 'spantik-peak-expedition');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-50 hover:text-[#5191fa] font-medium text-slate-800 transition-colors flex items-center justify-between"
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'gasherbrum-1-2-climbing-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    <span>Spantik Peak (7,027m)</span>
-                    <span className="text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded font-semibold">Golden</span>
+                    Gasherbrum 1 / 2 Expedition
                   </button>
                   <button
-                    onClick={() => {
-                      setExpeditionsDropdown(false);
-                      onNavigate('tour-detail', 'khosar-gang-expedition');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs rounded-lg hover:bg-slate-50 hover:text-[#5191fa] font-medium text-slate-800 transition-colors flex items-center justify-between"
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'broad-peak-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    <span>Khosar Gang (6,040m)</span>
-                    <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold">Beginner</span>
+                    Broad Peak Expedition
                   </button>
-                  <div className="border-t border-slate-100 my-1 pt-1">
-                    <button
-                      onClick={() => {
-                        setExpeditionsDropdown(false);
-                        onNavigate('tours', 'expedition');
-                      }}
-                      className="w-full text-left px-3 py-1.5 text-xs text-[#5191fa] font-semibold hover:underline"
-                    >
-                      View All Expeditions &rarr;
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-climbing-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    K2 Climbing Expedition
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'pastore-peak-climbing-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Pastore Peak Climbing Expedition
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'laila-peak-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Laila Peak Expedition
+                  </button>
                 </div>
               )}
             </div>
 
-            <button
-              onClick={() => onNavigate('tours', 'cultural')}
-              className={`hover:text-[#5191fa] transition-colors py-2 cursor-pointer ${
-                currentRoute === 'cultural' ? 'text-[#5191fa] font-semibold' : ''
-              }`}
+            {/* Safari Tours Dropdown */}
+            <div
+              className="relative"
+              onMouseEnter={() => handleOpenDropdown('safari')}
+              onMouseLeave={handleCloseDropdown}
             >
-              Cultural Tours
-            </button>
+              <button
+                onClick={() => onNavigate('tours', 'cultural')}
+                className="flex items-center gap-1 px-3 py-2 hover:text-[#5191fa] transition-colors cursor-pointer"
+              >
+                <span>Safari Tours</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
 
-            <button
-              onClick={() => onNavigate('about')}
-              className={`hover:text-[#5191fa] transition-colors py-2 cursor-pointer ${
-                currentRoute === 'about' ? 'text-[#5191fa] font-semibold' : ''
-              }`}
-            >
-              About Us
-            </button>
+              {activeDropdown === 'safari' && (
+                <div className="absolute top-full left-0 w-56 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tours', 'cultural'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    All Safari Tours
+                  </button>
+                </div>
+              )}
+            </div>
 
-            <button
-              onClick={() => onNavigate('contact')}
-              className={`hover:text-[#5191fa] transition-colors py-2 cursor-pointer ${
-                currentRoute === 'contact' ? 'text-[#5191fa] font-semibold' : ''
-              }`}
+            {/* Informations Dropdown matching exact site */}
+            <div
+              className="relative"
+              onMouseEnter={() => handleOpenDropdown('info')}
+              onMouseLeave={handleCloseDropdown}
             >
-              Contact
-            </button>
+              <button
+                className="flex items-center gap-1 px-3 py-2 hover:text-[#5191fa] transition-colors cursor-pointer"
+              >
+                <span>Informations</span>
+                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+              </button>
+
+              {activeDropdown === 'info' && (
+                <div className="absolute top-full right-0 w-56 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('contact'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Contact Us
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('about'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    About Us
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('partner'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Become Our Partner
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('partner'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Partners Vehicles
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('partner'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Partners Hotels
+                  </button>
+                </div>
+              )}
+            </div>
           </nav>
 
-          {/* Zone 3: Primary Action */}
-          <div className="hidden sm:flex items-center gap-3">
-            <button
-              onClick={() => onNavigate('contact')}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#5191fa] hover:bg-[#3d7be3] rounded-lg shadow-sm transition-all hover:shadow cursor-pointer whitespace-nowrap"
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>Plan Custom Trek</span>
-            </button>
-          </div>
-
-          {/* Mobile menu button */}
+          {/* Mobile menu hamburger button */}
           <div className="flex items-center lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg text-slate-700 hover:text-slate-900 hover:bg-slate-100 cursor-pointer focus:outline-none"
+              className="p-2 text-slate-700 hover:text-slate-900 cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -247,59 +257,55 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-slate-100 px-4 pt-3 pb-6 space-y-3 shadow-xl">
-          <div className="flex flex-col space-y-2 text-sm font-medium text-slate-800">
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('home'); }}
-              className="text-left py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-[#5191fa]"
-            >
-              Home
-            </button>
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'all'); }}
-              className="text-left py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-[#5191fa]"
-            >
-              All Destinations & Treks
-            </button>
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'trekking'); }}
-              className="text-left py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-[#5191fa]"
-            >
-              Trekking in Pakistan
-            </button>
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'expedition'); }}
-              className="text-left py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-[#5191fa]"
-            >
-              Climbing Expeditions (8000m)
-            </button>
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'cultural'); }}
-              className="text-left py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-[#5191fa]"
-            >
-              Cultural & Heritage Tours
-            </button>
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('about'); }}
-              className="text-left py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-[#5191fa]"
-            >
-              About Chogori Adventure
-            </button>
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('contact'); }}
-              className="text-left py-2 px-3 rounded-lg hover:bg-slate-50 hover:text-[#5191fa]"
-            >
-              Contact Us & Office
-            </button>
-          </div>
-          <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
-            <button
-              onClick={() => { setMobileMenuOpen(false); onNavigate('contact'); }}
-              className="w-full text-center py-2.5 px-4 text-xs font-semibold text-white bg-[#5191fa] rounded-lg shadow-sm"
-            >
-              Plan Custom Expedition
-            </button>
-          </div>
+        <div className="lg:hidden bg-white border-t border-slate-100 px-4 pt-3 pb-6 space-y-2 shadow-xl">
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('home'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Home
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'all'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            All Destinations
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'trekking'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Trekking
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'expedition'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Climbing Expedition
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'cultural'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Safari Tours
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('contact'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Contact Us
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('about'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            About Us
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('partner'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Become Our Partner
+          </button>
         </div>
       )}
     </header>

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Send, MessageSquare, Clock, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Phone, Mail, MapPin, Send, CheckCircle2, ShieldAlert, ArrowRight } from 'lucide-react';
 
 export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
+  const { addContactInquiry, adminSettings } = useAuth();
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -10,14 +13,35 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const cleanAdminPhone = adminSettings.notificationPhone.replace(/[^0-9]/g, '');
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+
+    // Save to context/local storage and trigger notification
+    addContactInquiry({
+      name,
+      email,
+      phone,
+      subject,
+      message
+    });
+
     setTimeout(() => {
       setSubmitting(false);
       setSubmitted(true);
-    }, 700);
+    }, 500);
   };
+
+  const whatsappMessage = encodeURIComponent(
+    `*NEW INQUIRY VIA WEBSITE - DIRAN PEAK ADVENTURE (DPA)*\n\n` +
+    `*From:* ${name}\n` +
+    `*Email:* ${email}\n` +
+    `*Phone:* ${phone}\n` +
+    `*Interest:* ${subject}\n\n` +
+    `*Message:* ${message}`
+  );
 
   return (
     <div className="bg-[#f7f8fa] min-h-screen py-12">
@@ -34,7 +58,7 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
             We Are Here To Help
           </span>
           <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#1a2b48]">
-            Get In Touch With Chogori Adventure
+            Get In Touch With Diran Peak Adventure
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-2">
             Have questions about permits, fitness preparation, visa LOI, or custom private dates? Reach our expedition coordinators directly.
@@ -45,23 +69,47 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
           {/* Form Column */}
           <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200">
             {submitted ? (
-              <div className="py-12 text-center">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-4">
+              <div className="py-8 text-center space-y-4">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-bold font-heading text-slate-900 mb-2">Message Dispatched!</h3>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto mb-6">
-                  Thank you, <strong className="text-slate-900">{name}</strong>. Our senior guide team will respond to <strong className="text-slate-900">{email}</strong> within 4-6 business hours.
+                <h3 className="text-2xl font-bold font-heading text-slate-900">Message Received!</h3>
+                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                  Thank you, <strong className="text-slate-900">{name}</strong>. Your inquiry has been stored in the <strong>Admin Portal</strong> and emailed to <strong className="text-slate-900">{adminSettings.notificationEmail}</strong>.
                 </p>
-                <button
-                  onClick={() => {
-                    setSubmitted(false);
-                    setMessage('');
-                  }}
-                  className="px-6 py-2.5 bg-[#5191fa] text-white text-xs font-semibold rounded-xl cursor-pointer"
-                >
-                  Send Another Message
-                </button>
+
+                {/* Instant WhatsApp Dispatch */}
+                <div className="pt-2 max-w-md mx-auto space-y-3">
+                  <a
+                    href={`https://wa.me/${cleanAdminPhone}?text=${whatsappMessage}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    <Phone className="w-4 h-4" />
+                    <span>Send Directly to WhatsApp (+92 345 6412992)</span>
+                  </a>
+
+                  <button
+                    onClick={() => onNavigate('admin')}
+                    className="w-full py-2.5 px-4 bg-[#1a2b48] hover:bg-[#2c436b] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span>View this submission in Admin Portal</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100">
+                  <button
+                    onClick={() => {
+                      setSubmitted(false);
+                      setMessage('');
+                    }}
+                    className="text-xs text-[#5191fa] hover:underline font-semibold cursor-pointer"
+                  >
+                    Submit another inquiry
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -142,7 +190,7 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
                   ) : (
                     <Send className="w-4 h-4" />
                   )}
-                  <span>{submitting ? 'Sending...' : 'Send Message'}</span>
+                  <span>{submitting ? 'Routing Message...' : 'Send Message'}</span>
                 </button>
               </form>
             )}
@@ -160,8 +208,8 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
                   </div>
                   <div>
                     <div className="font-bold text-slate-900">Phone &amp; WhatsApp</div>
-                    <a href="tel:+923445925993" className="text-slate-600 hover:text-[#5191fa] font-medium block">
-                      +92 344 5925993
+                    <a href="tel:+923456412992" className="text-slate-600 hover:text-[#5191fa] font-medium block">
+                      +92 345 6412992
                     </a>
                     <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">● 24/7 Dispatch Live</div>
                   </div>
@@ -173,8 +221,8 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
                   </div>
                   <div>
                     <div className="font-bold text-slate-900">Official Inquiries</div>
-                    <a href="mailto:info@chogoriadventure.com" className="text-slate-600 hover:text-[#5191fa] block">
-                      info@chogoriadventure.com
+                    <a href="mailto:info@diranpeakadventure.com" className="text-slate-600 hover:text-[#5191fa] block">
+                      info@diranpeakadventure.com
                     </a>
                   </div>
                 </div>
@@ -186,7 +234,7 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
                   <div>
                     <div className="font-bold text-slate-900">Skardu Basecamp Office</div>
                     <p className="text-slate-500 leading-relaxed">
-                      Chogori House, Airport Road, Skardu, Gilgit-Baltistan, Pakistan
+                      Diran Peak House, Airport Road, Skardu, Gilgit-Baltistan, Pakistan
                     </p>
                   </div>
                 </div>
@@ -215,7 +263,7 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
                 Askari Aviation helicopter coordination line for all registered expedition groups in the Karakoram:
               </p>
               <div className="mt-3 font-mono font-bold text-sm text-[#5191fa]">
-                +92 344 5925993
+                +92 345 6412992
               </div>
             </div>
           </div>

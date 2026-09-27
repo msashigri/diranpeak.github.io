@@ -19,10 +19,10 @@ export const AboutPage: React.FC<{ onNavigate: (route: string, param?: string) =
               Indigenous Mountain Pioneers
             </span>
             <h1 className="font-heading text-3xl sm:text-5xl font-black text-white mb-4 leading-tight">
-              About Chogori Adventure
+              About Diran Peak Adventure
             </h1>
             <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-normal">
-              Born in Skardu in the heart of Gilgit-Baltistan, Chogori Adventure is an indigenous tour operator created by native mountaineers whose ancestral lineage traces back centuries through the high valleys of the Karakoram.
+              Born in the heart of Gilgit-Baltistan beneath the majestic pyramid of Diran Peak and Rakaposhi, Diran Peak Adventure (DPA) is an indigenous tour operator created by native mountaineers whose ancestral lineage traces back centuries through the high valleys of the Karakoram.
             </p>
           </div>
 
@@ -39,13 +39,13 @@ export const AboutPage: React.FC<{ onNavigate: (route: string, param?: string) =
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           <div className="space-y-4 text-xs sm:text-sm text-slate-600 leading-relaxed">
             <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#1a2b48]">
-              Our Heritage in the Throne Room
+              Our Heritage in the Karakoram &amp; Himalayas
             </h2>
             <p>
-              In our native Balti tongue, K2 has always been called <strong>Chogori</strong>, meaning &ldquo;The Great Mountain.&rdquo; To foreign climbers, K2 is a fierce challenge; to our people, Chogori is our sanctuary, our heritage, and our home.
+              Named after the magnificent 7,266m snow-pyramid <strong>Diran Peak</strong> dominating the Minapin Glacier, our team represents the finest high-altitude Balti and Hunza guides in Northern Pakistan.
             </p>
             <p>
-              For decades, international expeditions hired Western agencies that subcontracted local Pakistani guides at minimal rates. Chogori Adventure was founded to restore dignity to native mountaineering—providing direct native booking, fair compensation, high-end expedition gear, and complete transparency.
+              For decades, international expeditions hired Western agencies that subcontracted local Pakistani guides at minimal rates. Diran Peak Adventure (DPA) was founded to restore dignity to native mountaineering—providing direct native booking, fair compensation, high-end expedition gear, and complete transparency.
             </p>
             <p>
               Today, we are honored to have guided over 10,000 international trekkers and alpine climbers safely to K2 Base Camp, Concordia, Gondogoro La, and summits exceeding 8,000 meters.

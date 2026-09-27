@@ -1,100 +1,130 @@
-import React from 'react';
-import { MapPin, Clock, Star, Flame, ArrowRight, ShieldCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { MapPin, Star, Heart } from 'lucide-react';
 import { Tour } from '../data/toursData';
 import { useAuth } from '../context/AuthContext';
 
 interface TourCardProps {
   tour: Tour;
   onSelect: (tour: Tour) => void;
-  onBookDirect?: (tour: Tour) => void;
 }
 
-export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect, onBookDirect }) => {
+export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
   const { formatPrice } = useAuth();
+  const [liked, setLiked] = useState(false);
 
   return (
     <div
       onClick={() => onSelect(tour)}
-      className="group bg-white rounded-xl overflow-hidden shadow-[0_4px_18px_rgba(0,0,0,0.06)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.14)] transition-all duration-300 transform hover:-translate-y-1 flex flex-col border border-slate-100 cursor-pointer"
+      className="item-tour bg-white rounded-[3px] border border-[#dfdfdf] overflow-hidden pb-4 relative transition-all duration-300 hover:shadow-lg cursor-pointer flex flex-col justify-between"
     >
-      {/* Thumbnail Area */}
-      <div className="relative h-52 overflow-hidden bg-slate-100">
+      {/* Thumbnail Area - height 180px */}
+      <div className="relative h-[180px] bg-slate-200 overflow-hidden">
         <img
           src={tour.image}
           alt={tour.title}
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 ease-out"
+          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
         />
 
-        {/* Gradient scrim for contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 items-center z-10">
-          {tour.discountPercent ? (
-            <span className="bg-[#fa5636] text-white text-[10px] font-extrabold uppercase px-2 py-0.5 rounded shadow-sm">
-              {tour.discountPercent}% OFF
-            </span>
-          ) : null}
-          {tour.featured ? (
-            <span className="bg-[#1a2b48]/80 backdrop-blur-xs text-white text-[10px] font-semibold px-2 py-0.5 rounded">
-              Featured
-            </span>
-          ) : null}
-        </div>
-
-        {/* Location at bottom of photo */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-xs z-10">
-          <div className="flex items-center gap-1 drop-shadow-md truncate pr-2">
-            <MapPin className="w-3.5 h-3.5 text-[#5191fa] shrink-0" />
-            <span className="truncate font-medium">{tour.location}</span>
+        {/* Diagonal Sale Badge - exact BookingCore style */}
+        {tour.discountPercent ? (
+          <div
+            style={{
+              backgroundColor: '#c03',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: '700',
+              height: '42px',
+              lineHeight: '56px',
+              position: 'absolute',
+              right: '-30px',
+              textAlign: 'center',
+              top: '-13px',
+              transform: 'rotate(45deg)',
+              width: '80px',
+              zIndex: 8
+            }}
+          >
+            {tour.discountPercent}%
           </div>
-        </div>
+        ) : null}
+
+        {/* Featured Tag */}
+        {tour.featured && (
+          <div
+            style={{
+              background: '#5191fa',
+              borderRadius: '0 3px 3px 0',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: 500,
+              left: 0,
+              padding: '4px 8px',
+              position: 'absolute',
+              top: '15px',
+              zIndex: 8
+            }}
+          >
+            Featured
+          </div>
+        )}
+
+        {/* Wishlist Heart */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setLiked(!liked);
+          }}
+          aria-label="Wishlist"
+          className="absolute bottom-2 right-2 text-white hover:text-[#ff9290] p-1.5 transition-colors z-10 cursor-pointer"
+        >
+          <Heart className={`w-4 h-4 ${liked ? 'fill-rose-500 text-rose-500' : 'text-white'}`} />
+        </button>
       </div>
 
-      {/* Body Area */}
-      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+      {/* Details */}
+      <div className="flex-1 flex flex-col justify-between pt-3">
         <div>
-          {/* Metadata row: unboxed clean text */}
-          <div className="flex items-center gap-2 text-xs text-slate-500 mb-2 font-medium">
-            <span className="flex items-center gap-1">
-              <Clock className="w-3.5 h-3.5 text-slate-400" />
-              <span>{tour.duration}</span>
-            </span>
-            <span aria-hidden="true" className="text-slate-300">·</span>
-            <span className="truncate">{tour.maxAltitude}</span>
+          {/* Location */}
+          <div className="flex items-center gap-1 text-[13px] text-[#5e6d77] px-4 mb-1.5">
+            <MapPin className="w-3.5 h-3.5 text-[#5191fa] shrink-0" />
+            <span className="truncate">{tour.location}</span>
           </div>
 
-          {/* Title */}
-          <h3 className="font-heading font-bold text-base text-[#1a2b48] group-hover:text-[#5191fa] transition-colors line-clamp-2 mb-2 leading-snug">
+          {/* Tour Title */}
+          <h3 className="text-[15px] font-medium text-[#1a2b48] hover:text-[#5191fa] transition-colors px-4 mb-2 leading-snug line-clamp-2">
             {tour.title}
           </h3>
-
-          {/* Quick highlight excerpt */}
-          <p className="text-xs text-slate-500 line-clamp-2 mb-4 leading-relaxed font-normal">
-            {tour.overview}
-          </p>
         </div>
 
-        {/* Footer info: Rating & Price */}
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-          {/* Reviews */}
-          <div className="flex items-center gap-1 text-xs">
-            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span className="font-bold text-slate-800">{tour.rating}</span>
-            <span className="text-slate-400 text-[11px]">({tour.reviewsCount})</span>
+        {/* Bottom Info: Duration, Reviews & Price */}
+        <div className="px-4 pt-3 border-t border-[#f0f0f0] mt-2">
+          {/* Reviews & Duration */}
+          <div className="flex items-center justify-between text-xs text-[#5e6d77] mb-2">
+            <div className="flex items-center gap-1 text-[#ffdc00]">
+              {[...Array(5)].map((_, i) => (
+                <Star key={i} className="w-3 h-3 fill-current" />
+              ))}
+              <span className="text-[#5e6d77] text-[11px] ml-1">
+                ({tour.reviewsCount})
+              </span>
+            </div>
+
+            <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
+              {tour.daysCount}D
+            </span>
           </div>
 
           {/* Price */}
-          <div className="text-right">
-            <div className="text-[10px] text-slate-400 uppercase tracking-wide">From</div>
-            <div className="flex items-baseline gap-1.5 justify-end">
+          <div className="flex items-baseline justify-between pt-1">
+            <span className="text-[11px] text-[#5e6d77]">From</span>
+            <div className="flex items-baseline gap-1.5">
               {tour.originalPrice && (
                 <span className="text-xs text-slate-400 line-through">
                   {formatPrice(tour.originalPrice)}
                 </span>
               )}
-              <span className="text-base font-extrabold text-[#1a2b48]">
+              <span className="text-base font-bold text-[#1a2b48]">
                 {formatPrice(tour.price)}
               </span>
             </div>

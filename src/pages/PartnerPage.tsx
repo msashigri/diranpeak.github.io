@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { Car, Building2, Handshake, CheckCircle, ArrowRight } from 'lucide-react';
 
 export const PartnerPage: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
-  const [partnerType, setPartnerType] = useState('hotel');
+  const { addPartnerRequest } = useAuth();
+  const [partnerType, setPartnerType] = useState('Hotels & Resorts');
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
@@ -10,6 +12,12 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void }> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    addPartnerRequest({
+      category: partnerType,
+      companyName,
+      contactName,
+      email
+    });
     setSubmitted(true);
   };
 

@@ -18,6 +18,7 @@ import { ContactPage } from './pages/ContactPage';
 import { PartnerPage } from './pages/PartnerPage';
 import { LegalPage } from './pages/LegalPage';
 import { UserDashboardPage } from './pages/UserDashboardPage';
+import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { TOURS_DATA, Tour } from './data/toursData';
 
 export default function App() {
@@ -119,6 +120,10 @@ export default function App() {
           {currentRoute === 'dashboard' && (
             <UserDashboardPage onNavigate={handleNavigate} />
           )}
+
+          {currentRoute === 'admin' && (
+            <AdminDashboardPage onNavigate={handleNavigate} />
+          )}
         </main>
 
         {/* Footer */}
@@ -129,6 +134,31 @@ export default function App() {
 
         {/* Instant Booking Voucher Modal */}
         <BookingConfirmationModal onNavigate={handleNavigate} />
+
+        {/* Floating 24/7 WhatsApp Assistance Button */}
+        <aside
+          aria-label="Direct WhatsApp Contact"
+          className="fixed bottom-6 right-6 z-40 flex items-center group"
+        >
+          <a
+            href="https://wa.me/923456412992?text=Hello%20Diran%20Peak%20Adventure%2C%20I%20am%20interested%20in%20planning%20a%20trekking%20or%20climbing%20expedition%20in%20Pakistan."
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20bd5a] text-white px-4 py-3 rounded-full shadow-2xl hover:shadow-emerald-500/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+            title="Chat directly on WhatsApp with Diran Peak Adventure (+92 345 6412992)"
+          >
+            <svg
+              className="w-6 h-6 fill-current"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path d="M12.031 0C5.394 0 0 5.395 0 12.031c0 2.119.553 4.186 1.605 6.009L0 24l6.155-1.572c1.764.996 3.771 1.527 5.876 1.527 6.637 0 12.031-5.395 12.031-12.031C24.062 5.395 18.668 0 12.031 0zm0 21.848c-1.859 0-3.666-.5-5.242-1.442l-.375-.224-3.896.995 1.036-3.799-.246-.391C2.316 15.347 1.8 13.722 1.8 12.031c0-5.641 4.59-10.231 10.231-10.231 5.641 0 10.231 4.59 10.231 10.231 0 5.641-4.59 10.217-10.231 10.217zm5.59-7.652c-.307-.154-1.815-.895-2.096-.997-.282-.102-.487-.154-.692.154-.205.307-.795.997-.974 1.202-.179.205-.359.231-.666.077-.307-.154-1.297-.478-2.47-1.524-.913-.815-1.529-1.822-1.708-2.129-.179-.307-.019-.473.135-.626.138-.138.307-.359.461-.538.154-.179.205-.307.307-.512.102-.205.051-.384-.026-.538-.077-.154-.692-1.666-.948-2.28-.25-.598-.504-.517-.692-.527l-.589-.01c-.205 0-.538.077-.82.384-.282.307-1.076 1.051-1.076 2.563 0 1.512 1.102 2.973 1.256 3.178.154.205 2.167 3.309 5.251 4.641.734.317 1.307.506 1.753.648.738.234 1.409.201 1.94.122.592-.089 1.815-.742 2.072-1.46.256-.718.256-1.333.179-1.46-.077-.127-.282-.204-.589-.358z"/>
+            </svg>
+            <span className="font-semibold text-xs tracking-wide hidden sm:inline">
+              WhatsApp (+92 345 6412992)
+            </span>
+          </a>
+        </aside>
       </div>
     </AuthProvider>
   );
