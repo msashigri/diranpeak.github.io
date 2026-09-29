@@ -130,7 +130,7 @@ export default function App() {
         <Footer onNavigate={handleNavigate} />
 
         {/* Laravel Login, Sign Up & Forgot Password Modals */}
-        <AuthModals />
+        <AuthModals onNavigate={handleNavigate} />
 
         {/* Instant Booking Voucher Modal */}
         <BookingConfirmationModal onNavigate={handleNavigate} />

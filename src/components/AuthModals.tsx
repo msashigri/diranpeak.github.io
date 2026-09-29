@@ -3,7 +3,7 @@ import { X, Mail, Lock, User, Phone, CheckCircle, AlertCircle, Eye, EyeOff, Shie
 import { useAuth } from '../context/AuthContext';
 import { DpaLogo } from './DpaLogo';
 
-export const AuthModals: React.FC = () => {
+export const AuthModals: React.FC<{ onNavigate?: (route: string) => void }> = ({ onNavigate }) => {
   const {
     loginModalOpen,
     registerModalOpen,
@@ -251,6 +251,22 @@ export const AuthModals: React.FC = () => {
                   Sign Up
                 </button>
               </div>
+
+              {onNavigate && (
+                <div className="mt-3 pt-2 text-center text-xs border-t border-dashed border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      closeModals();
+                      onNavigate('admin');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-slate-500 hover:text-[#5191fa] font-medium transition-colors cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#5191fa]" />
+                    <span>Admin or Owner Login ID? Click here</span>
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         )}

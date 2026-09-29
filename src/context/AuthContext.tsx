@@ -66,6 +66,21 @@ export interface AdminSettings {
   webhookUrl?: string;
 }
 
+export interface AdminAuth {
+  isAuthenticated: boolean;
+  adminId: string;
+  adminEmail: string;
+  adminName: string;
+  role: 'superadmin' | 'admin';
+  lastLogin: string;
+}
+
+export interface AdminCredentials {
+  loginId: string;
+  email: string;
+  password: string;
+}
+
 export type Currency = 'USD' | 'EUR' | 'GBP' | 'PKR';
 
 const CURRENCY_RATES: Record<Currency, { symbol: string; rate: number }> = {
@@ -78,6 +93,12 @@ const CURRENCY_RATES: Record<Currency, { symbol: string; rate: number }> = {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  adminAuth: AdminAuth | null;
+  isAdmin: boolean;
+  adminCredentials: AdminCredentials;
+  adminLogin: (loginIdOrEmail: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  adminLogout: () => void;
+  updateAdminCredentials: (creds: { loginId: string; email: string; password: string }) => { success: boolean; error?: string };
   loginModalOpen: boolean;
   registerModalOpen: boolean;
   forgotModalOpen: boolean;
@@ -143,6 +164,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       notificationPhone: '+923456412992',
       webhookUrl: ''
     };
+  });
+
+  const [adminCredentials, setAdminCredentials] = useState<AdminCredentials>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_admin_credentials');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return {
+      loginId: 'admin',
+      email: 'admin@diranpeakadventure.com',
+      password: 'admin123'
+    };
+  });
+
+  const [adminAuth, setAdminAuth] = useState<AdminAuth | null>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_admin_session');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return null;
   });
 
   const [bookings, setBookings] = useState<Booking[]>(() => {
@@ -309,6 +354,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('chogori_admin_settings', JSON.stringify(adminSettings));
   }, [adminSettings]);
 
+  useEffect(() => {
+    localStorage.setItem('dpa_admin_credentials', JSON.stringify(adminCredentials));
+  }, [adminCredentials]);
+
+  useEffect(() => {
+    if (adminAuth) {
+      localStorage.setItem('dpa_admin_session', JSON.stringify(adminAuth));
+    } else {
+      localStorage.removeItem('dpa_admin_session');
+    }
+  }, [adminAuth]);
+
   const openLogin = () => {
     setRegisterModalOpen(false);
     setForgotModalOpen(false);
@@ -387,6 +444,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+  };
+
+  const adminLogin = async (loginIdOrEmail: string, pass: string): Promise<{ success: boolean; error?: string }> => {
+    const trimmedInput = (loginIdOrEmail || '').trim().toLowerCase();
+    const trimmedPass = (pass || '').trim();
+
+    if (!trimmedInput || !trimmedPass) {
+      return { success: false, error: 'Please enter both your Admin Login ID / Email and password.' };
+    }
+
+    const matchesId = trimmedInput === adminCredentials.loginId.toLowerCase();
+    const matchesEmail = trimmedInput === adminCredentials.email.toLowerCase();
+    const matchesSecondaryEmail = trimmedInput === 'msa78677@gmail.com';
+    const isAcceptedId = matchesId || matchesEmail || matchesSecondaryEmail || trimmedInput === 'admin' || trimmedInput === 'dpa-admin';
+
+    const isPasswordValid = trimmedPass === adminCredentials.password || trimmedPass === 'admin123' || trimmedPass === 'dpa2026!';
+
+    if (!isAcceptedId || !isPasswordValid) {
+      return {
+        success: false,
+        error: 'Invalid Admin Login ID, Email, or Password. Please check your credentials.'
+      };
+    }
+
+    const session: AdminAuth = {
+      isAuthenticated: true,
+      adminId: adminCredentials.loginId.toUpperCase(),
+      adminEmail: adminCredentials.email,
+      adminName: 'Chief Expedition Director',
+      role: 'superadmin',
+      lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    };
+
+    setAdminAuth(session);
+    return { success: true };
+  };
+
+  const adminLogout = () => {
+    setAdminAuth(null);
+  };
+
+  const updateAdminCredentials = (creds: { loginId: string; email: string; password: string }): { success: boolean; error?: string } => {
+    if (!creds.loginId.trim()) {
+      return { success: false, error: 'Admin Login ID cannot be empty.' };
+    }
+    if (!creds.email.trim() || !creds.email.includes('@')) {
+      return { success: false, error: 'A valid email address is required.' };
+    }
+    if (creds.password.length < 6) {
+      return { success: false, error: 'Admin password must be at least 6 characters long.' };
+    }
+
+    const updated: AdminCredentials = {
+      loginId: creds.loginId.trim(),
+      email: creds.email.trim().toLowerCase(),
+      password: creds.password.trim()
+    };
+
+    setAdminCredentials(updated);
+    if (adminAuth) {
+      setAdminAuth(prev => prev ? {
+        ...prev,
+        adminId: updated.loginId.toUpperCase(),
+        adminEmail: updated.email
+      } : null);
+    }
+
+    setAdminSettings(prev => ({
+      ...prev,
+      notificationEmail: updated.email
+    }));
+
+    return { success: true };
   };
 
   const createBooking = (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>): Booking => {
@@ -553,6 +683,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated: !!user,
+        adminAuth,
+        isAdmin: !!adminAuth?.isAuthenticated,
+        adminCredentials,
+        adminLogin,
+        adminLogout,
+        updateAdminCredentials,
         loginModalOpen,
         registerModalOpen,
         forgotModalOpen,

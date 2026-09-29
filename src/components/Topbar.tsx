@@ -7,7 +7,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
-  const { user, isAuthenticated, currency, language, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries } = useAuth();
+  const { user, isAuthenticated, adminAuth, currency, language, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries } = useAuth();
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -187,17 +187,29 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
           <span className="text-[#3b4b66]">|</span>
 
           {/* Admin Portal quick link */}
-          <button
-            onClick={() => onNavigate('admin')}
-            className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/20 hover:bg-[#5191fa] text-sky-200 hover:text-white border border-blue-400/30 transition-all cursor-pointer font-medium text-[11px]"
-            title="Open Admin Portal to see bookings and contact leads"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-[#5191fa]" />
-            <span>Admin</span>
-            {pendingCount > 0 && (
+          {adminAuth?.isAuthenticated ? (
+            <button
+              onClick={() => onNavigate('admin')}
+              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-600 text-emerald-200 hover:text-white border border-emerald-400/40 transition-all cursor-pointer font-medium text-[11px]"
+              title="Admin Session Active - Click to open Dashboard"
+            >
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            )}
-          </button>
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Admin ({adminAuth.adminId})</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => onNavigate('admin')}
+              className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/20 hover:bg-[#5191fa] text-sky-200 hover:text-white border border-blue-400/30 transition-all cursor-pointer font-medium text-[11px]"
+              title="Open Admin Portal Login"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-[#5191fa]" />
+              <span>Admin Login</span>
+              {pendingCount > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
