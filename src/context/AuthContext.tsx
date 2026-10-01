@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { initLanguageTranslator, translateWholeWebsite, getLanguageByCodeOrName } from '../utils/translator';
 
 export interface User {
   id: string;
@@ -104,6 +105,7 @@ interface AuthContextType {
   forgotModalOpen: boolean;
   currency: Currency;
   language: string;
+  languageCode: string;
   bookings: Booking[];
   contactInquiries: ContactInquiry[];
   partnerRequests: PartnerRequest[];
@@ -323,7 +325,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
   const [currency, setCurrencyState] = useState<Currency>('USD');
-  const [language, setLanguageState] = useState('English');
+  const [language, setLanguageState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('dpa_language_name') || 'English';
+    } catch {
+      return 'English';
+    }
+  });
+  const [languageCode, setLanguageCodeState] = useState<string>(() => {
+    try {
+      return localStorage.getItem('dpa_language_code') || 'en';
+    } catch {
+      return 'en';
+    }
+  });
+
+  useEffect(() => {
+    initLanguageTranslator();
+    const savedCode = localStorage.getItem('dpa_language_code');
+    if (savedCode && savedCode !== 'en') {
+      const lang = getLanguageByCodeOrName(savedCode);
+      setLanguageState(lang.name);
+      setLanguageCodeState(lang.code);
+      translateWholeWebsite(savedCode);
+    }
+  }, []);
+
+  const handleSetLanguage = (targetLang: string) => {
+    const langObj = translateWholeWebsite(targetLang);
+    setLanguageState(langObj.name);
+    setLanguageCodeState(langObj.code);
+  };
 
   // Persistence
   useEffect(() => {
@@ -694,6 +726,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         forgotModalOpen,
         currency,
         language,
+        languageCode,
         bookings,
         contactInquiries,
         partnerRequests,
@@ -701,7 +734,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminSettings,
         latestBooking,
         setCurrency: setCurrencyState,
-        setLanguage: setLanguageState,
+        setLanguage: handleSetLanguage,
         openLogin,
         openRegister,
         openForgot,

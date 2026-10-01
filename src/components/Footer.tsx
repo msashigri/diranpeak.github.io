@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Lock } from 'lucide-react';
+import { CheckCircle2, Lock, Globe } from 'lucide-react';
 import { DpaLogo } from './DpaLogo';
+import { SUPPORTED_LANGUAGES } from '../utils/translator';
 
 interface FooterProps {
   onNavigate: (route: string, param?: string) => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
-  const { addNewsletterSubscriber } = useAuth();
+  const { addNewsletterSubscriber, language, languageCode, setLanguage } = useAuth();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -185,6 +186,32 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Language Translator Bar */}
+      <div className="bg-[#f7f9fc] border-t border-[#eaeef3] py-3.5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2 text-slate-600 font-semibold">
+            <Globe className="w-4 h-4 text-[#5191fa]" />
+            <span>Select Language / زبان کا انتخاب کریں:</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {SUPPORTED_LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => setLanguage(l.code)}
+                className={`px-2.5 py-1 rounded-lg text-xs flex items-center gap-1 border transition-all cursor-pointer ${
+                  (languageCode === l.code || language === l.name)
+                    ? 'bg-[#5191fa] text-white border-[#5191fa] font-bold shadow-xs'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+                }`}
+              >
+                <span>{l.flag}</span>
+                <span className={l.dir === 'rtl' ? 'font-semibold' : ''}>{l.nativeName}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>

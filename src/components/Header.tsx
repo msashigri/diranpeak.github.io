@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { Menu, X, ChevronDown, Globe } from 'lucide-react';
 import { DpaLogo } from './DpaLogo';
+import { useAuth } from '../context/AuthContext';
+import { SUPPORTED_LANGUAGES } from '../utils/translator';
 
 interface HeaderProps {
   currentRoute: string;
@@ -8,6 +10,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
+  const { language, languageCode, setLanguage } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
@@ -306,6 +309,33 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
           >
             Become Our Partner
           </button>
+
+          {/* Mobile Language Switcher */}
+          <div className="pt-3 border-t border-slate-100">
+            <div className="text-xs font-bold text-slate-500 mb-2 px-3 flex items-center gap-1.5">
+              <Globe className="w-3.5 h-3.5 text-[#5191fa]" />
+              <span>Language / زبان منتخب کریں</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 px-2">
+              {SUPPORTED_LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => {
+                    setLanguage(l.code);
+                    setMobileMenuOpen(false);
+                  }}
+                  className={`py-1.5 px-2.5 rounded-lg text-xs flex items-center gap-1.5 border transition-all text-left ${
+                    (languageCode === l.code || language === l.name)
+                      ? 'bg-blue-50 border-[#5191fa] text-[#5191fa] font-bold'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  <span className="text-sm">{l.flag}</span>
+                  <span className={l.dir === 'rtl' ? 'font-semibold' : ''}>{l.nativeName}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </header>

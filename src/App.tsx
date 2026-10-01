@@ -20,6 +20,7 @@ import { LegalPage } from './pages/LegalPage';
 import { UserDashboardPage } from './pages/UserDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { TOURS_DATA, Tour } from './data/toursData';
+import { triggerTranslationUpdate } from './utils/translator';
 
 export default function App() {
   const [currentRoute, setCurrentRoute] = useState<string>('home');
@@ -29,9 +30,12 @@ export default function App() {
   const [searchDuration, setSearchDuration] = useState<string>('all');
   const [legalTab, setLegalTab] = useState<string>('terms');
 
-  // Scroll to top on route change
+  // Scroll to top on route change & trigger translation
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+      triggerTranslationUpdate();
+    }, 50);
   }, [currentRoute, selectedTour]);
 
   const handleNavigate = (route: string, param?: string) => {

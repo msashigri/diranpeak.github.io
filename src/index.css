@@ -1,18 +1,45 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
-@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
 @layer base {
   body {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', 'Noto Sans Arabic', 'Noto Nastaliq Urdu', system-ui, sans-serif;
     color: #1a2b48;
     background-color: #fff;
     -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', 'Noto Sans Arabic', 'Noto Nastaliq Urdu', system-ui, sans-serif;
   }
+}
+
+/* Hide Google Translate top banner while preserving translation */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+iframe.goog-te-banner-frame {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+}
+
+.skiptranslate iframe {
+  display: none !important;
+}
+
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 /* BookingCore Specific Theme Styles */
