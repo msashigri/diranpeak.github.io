@@ -206,7 +206,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
 
           <span className="text-[#3b4b66]">|</span>
 
-          {/* Admin Portal quick link */}
+          {/* Admin Portal quick link 
           {adminAuth?.isAuthenticated ? (
             <button
               onClick={() => onNavigate('admin')}
@@ -229,7 +229,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
               )}
             </button>
-          )}
+          )} */}
         </div>
       </div>
     </div>
