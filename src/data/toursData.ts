@@ -270,12 +270,12 @@ export const TOURS_DATA: Tour[] = [
       }
     ],
     departures: [
-      { id: 'dep-1', startDate: '10 June 2026', endDate: '30 June 2026', price: 2300, status: 'Guaranteed', seatsLeft: 4 },
-      { id: 'dep-2', startDate: '20 June 2026', endDate: '10 July 2026', price: 2300, status: 'Guaranteed', seatsLeft: 2 },
-      { id: 'dep-3', startDate: '01 July 2026', endDate: '21 July 2026', price: 2300, status: 'Filling Fast', seatsLeft: 3 },
-      { id: 'dep-4', startDate: '15 July 2026', endDate: '04 August 2026', price: 2300, status: 'Guaranteed', seatsLeft: 5 },
-      { id: 'dep-5', startDate: '01 August 2026', endDate: '21 August 2026', price: 2300, status: 'Available', seatsLeft: 8 },
-      { id: 'dep-6', startDate: '15 August 2026', endDate: '04 September 2026', price: 2300, status: 'Available', seatsLeft: 7 },
+      { id: 'dep-1', startDate: '10 June 2027', endDate: '30 June 2027', price: 2300, status: 'Guaranteed', seatsLeft: 4 },
+      { id: 'dep-2', startDate: '20 June 2027', endDate: '10 July 2027', price: 2300, status: 'Guaranteed', seatsLeft: 2 },
+      { id: 'dep-3', startDate: '01 July 2027', endDate: '21 July 2027', price: 2300, status: 'Filling Fast', seatsLeft: 3 },
+      { id: 'dep-4', startDate: '15 July 2027', endDate: '04 August 2027', price: 2300, status: 'Guaranteed', seatsLeft: 5 },
+      { id: 'dep-5', startDate: '01 August 2027', endDate: '21 August 2027', price: 2300, status: 'Available', seatsLeft: 8 },
+      { id: 'dep-6', startDate: '15 August 2027', endDate: '04 September 2027', price: 2300, status: 'Available', seatsLeft: 7 },
     ],
     faqs: [
       {
@@ -391,10 +391,10 @@ export const TOURS_DATA: Tour[] = [
       { day: 21, title: 'Depart for Home', description: 'Transfer to international airport.' }
     ],
     departures: [
-      { id: 'g-1', startDate: '25 June 2026', endDate: '15 July 2026', price: 2300, status: 'Guaranteed', seatsLeft: 3 },
-      { id: 'g-2', startDate: '10 July 2026', endDate: '30 July 2026', price: 2300, status: 'Filling Fast', seatsLeft: 2 },
-      { id: 'g-3', startDate: '25 July 2026', endDate: '14 August 2026', price: 2300, status: 'Guaranteed', seatsLeft: 4 },
-      { id: 'g-4', startDate: '10 August 2026', endDate: '30 August 2026', price: 2300, status: 'Available', seatsLeft: 6 },
+      { id: 'g-1', startDate: '25 June 2027', endDate: '15 July 2027', price: 2300, status: 'Guaranteed', seatsLeft: 3 },
+      { id: 'g-2', startDate: '10 July 2027', endDate: '30 July 2027', price: 2300, status: 'Filling Fast', seatsLeft: 2 },
+      { id: 'g-3', startDate: '25 July 2027', endDate: '14 August 2027', price: 2300, status: 'Guaranteed', seatsLeft: 4 },
+      { id: 'g-4', startDate: '10 August 2027', endDate: '30 August 2027', price: 2300, status: 'Available', seatsLeft: 6 },
     ],
     faqs: [
       { question: 'Do I need technical mountaineering skills for Gondogoro La?', answer: 'You do not need to be an expert climber, but you should be confident walking with crampons on steep snow slopes (up to 45 degrees) and using a safety carabiner on fixed lines. Our team fixes the ropes and guides you every step.' }
@@ -463,7 +463,7 @@ export const TOURS_DATA: Tour[] = [
       { day: 50, title: 'Final Official Debrief & Departure', description: 'Presentation of official summit certificates and international departures.' }
     ],
     departures: [
-      { id: 'k2-exp-26', startDate: '15 June 2026', endDate: '05 August 2026', price: 9500, status: 'Filling Fast', seatsLeft: 2 }
+      { id: 'k2-exp-27', startDate: '15 June 2027', endDate: '05 August 2027', price: 9500, status: 'Filling Fast', seatsLeft: 2 }
     ],
     faqs: [
       { question: 'What prerequisites are required to join?', answer: 'Climbers must have summited at least one other 8,000-meter peak or extensive technical peaks over 7,000m (such as Spantik, Broad Peak, or Manaslu) with verified mountaineering resume.' }
@@ -519,7 +519,7 @@ export const TOURS_DATA: Tour[] = [
       { day: 45, title: 'Departure', description: 'Fly to Islamabad and international departure.' }
     ],
     departures: [
-      { id: 'bp-1', startDate: '20 June 2026', endDate: '03 August 2026', price: 5500, status: 'Guaranteed', seatsLeft: 4 }
+      { id: 'bp-1', startDate: '20 June 2027', endDate: '03 August 2027', price: 5500, status: 'Guaranteed', seatsLeft: 4 }
     ],
     faqs: [
       { question: 'Is oxygen mandatory for Broad Peak?', answer: 'Many experienced alpinists climb Broad Peak without supplemental oxygen, though we provide oxygen systems on request as a safety reserve.' }
@@ -570,8 +570,8 @@ export const TOURS_DATA: Tour[] = [
       { day: 18, title: 'Departure', description: 'Return flight to Islamabad.' }
     ],
     departures: [
-      { id: 'kg-1', startDate: '05 July 2026', endDate: '22 July 2026', price: 2600, status: 'Guaranteed', seatsLeft: 5 },
-      { id: 'kg-2', startDate: '01 August 2026', endDate: '18 August 2026', price: 2600, status: 'Available', seatsLeft: 6 }
+      { id: 'kg-1', startDate: '05 July 2027', endDate: '22 July 2027', price: 2600, status: 'Guaranteed', seatsLeft: 5 },
+      { id: 'kg-2', startDate: '01 August 2027', endDate: '18 August 2027', price: 2600, status: 'Available', seatsLeft: 6 }
     ],
     faqs: [
       { question: 'Do I need prior summit experience?', answer: 'Prior trekking experience is necessary, but this peak is technically accessible to motivated beginners under our expert guide coaching.' }
@@ -623,9 +623,9 @@ export const TOURS_DATA: Tour[] = [
       { day: 14, title: 'Departure from Islamabad', description: 'Airport transfer.' }
     ],
     departures: [
-      { id: 'np-1', startDate: '15 May 2026', endDate: '28 May 2026', price: 1650, status: 'Guaranteed', seatsLeft: 4 },
-      { id: 'np-2', startDate: '10 June 2026', endDate: '23 June 2026', price: 1650, status: 'Available', seatsLeft: 7 },
-      { id: 'np-3', startDate: '15 September 2026', endDate: '28 September 2026', price: 1650, status: 'Guaranteed', seatsLeft: 5 }
+      { id: 'np-1', startDate: '15 May 2027', endDate: '28 May 2027', price: 1650, status: 'Guaranteed', seatsLeft: 4 },
+      { id: 'np-2', startDate: '10 June 2027', endDate: '23 June 2027', price: 1650, status: 'Available', seatsLeft: 7 },
+      { id: 'np-3', startDate: '15 September 2027', endDate: '28 September 2027', price: 1650, status: 'Guaranteed', seatsLeft: 5 }
     ],
     faqs: [
       { question: 'Is this trek suitable for intermediate hikers?', answer: 'Yes! The trails are well established, altitudes are under 4,200m, and accommodations in Fairy Meadows include comfortable wooden log cabins with heaters.' }
@@ -675,8 +675,8 @@ export const TOURS_DATA: Tour[] = [
       { day: 12, title: 'Islamabad Farewell', description: 'Return to Islamabad for return flight.' }
     ],
     departures: [
-      { id: 'cul-1', startDate: '10 October 2026', endDate: '21 October 2026', price: 1400, status: 'Guaranteed', seatsLeft: 6 },
-      { id: 'cul-2', startDate: '05 November 2026', endDate: '16 November 2026', price: 1400, status: 'Available', seatsLeft: 8 }
+      { id: 'cul-1', startDate: '10 October 2027', endDate: '21 October 2027', price: 1400, status: 'Guaranteed', seatsLeft: 6 },
+      { id: 'cul-2', startDate: '05 November 2027', endDate: '16 November 2027', price: 1400, status: 'Available', seatsLeft: 8 }
     ],
     faqs: [
       { question: 'What is the dress code for cultural tours?', answer: 'Pakistan is warm and welcoming, but modesty is respected. Long trousers, shirts covering shoulders, and a light scarf for women visiting sacred mosques and shrines are recommended.' }
@@ -724,7 +724,7 @@ export const TOURS_DATA: Tour[] = [
       { day: 30, title: 'Islamabad Departure', description: 'Return flight.' }
     ],
     departures: [
-      { id: 'sp-1', startDate: '01 July 2026', endDate: '30 July 2026', price: 3800, status: 'Guaranteed', seatsLeft: 4 }
+      { id: 'sp-1', startDate: '01 July 2027', endDate: '30 July 2027', price: 3800, status: 'Guaranteed', seatsLeft: 4 }
     ],
     faqs: [
       { question: 'What is the success rate on Spantik?', answer: 'Under our guided expedition leadership, Spantik enjoys an over 75% summit success rate in fair weather.' }

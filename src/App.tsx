@@ -10,6 +10,7 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { AuthModals } from './components/AuthModals';
 import { BookingConfirmationModal } from './components/BookingConfirmationModal';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import { HomePage } from './pages/HomePage';
 import { ToursListPage } from './pages/ToursListPage';
 import { TourDetailPage } from './pages/TourDetailPage';
@@ -138,6 +139,9 @@ export default function App() {
 
         {/* Instant Booking Voucher Modal */}
         <BookingConfirmationModal onNavigate={handleNavigate} />
+
+        {/* Floating PWA Install Banner for Mobile & Laptop */}
+        <PWAInstallButton variant="floating" />
 
         {/* Floating 24/7 WhatsApp Assistance Button */}
         <aside

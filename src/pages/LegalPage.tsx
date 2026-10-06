@@ -44,7 +44,7 @@ export const LegalPage: React.FC<{ initialTab?: string; onNavigate: (route: stri
               <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[#1a2b48] mb-2">
                 Diran Peak Adventure Terms &amp; Conditions
               </h1>
-              <p className="text-slate-400 text-xs">Last updated: March 2026</p>
+              <p className="text-slate-400 text-xs">Last updated: March 2027</p>
 
               <div>
                 <h3 className="font-bold text-sm text-[#1a2b48] mb-1">1. Booking Contract &amp; Reservation</h3>
@@ -88,7 +88,7 @@ export const LegalPage: React.FC<{ initialTab?: string; onNavigate: (route: stri
               <h1 className="font-heading text-2xl sm:text-3xl font-bold text-[#1a2b48] mb-2">
                 Privacy &amp; Data Protection Policy
               </h1>
-              <p className="text-slate-400 text-xs">Last updated: March 2026</p>
+              <p className="text-slate-400 text-xs">Last updated: March 2027</p>
 
               <div>
                 <h3 className="font-bold text-sm text-[#1a2b48] mb-1">1. Information We Collect</h3>

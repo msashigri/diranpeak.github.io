@@ -128,7 +128,7 @@ export const AuthModals: React.FC<{ onNavigate?: (route: string) => void }> = ({
 
             {/* Laravel style form */}
             <form className="bravo-form-login space-y-4" onSubmit={handleLoginSubmit}>
-              <input type="hidden" name="_token" value="csrf-token-dpa-auth-2026" />
+              <input type="hidden" name="_token" value="csrf-token-dpa-auth-2027" />
               <input type="hidden" name="redirect" value="" />
 
               <div>
@@ -232,7 +232,7 @@ export const AuthModals: React.FC<{ onNavigate?: (route: string) => void }> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    login('climber@diranpeakadventure.com', 'expedition2026');
+                    login('climber@diranpeakadventure.com', 'expedition2027');
                   }}
                   className="py-2 px-3 border border-slate-200 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                 >
@@ -296,7 +296,7 @@ export const AuthModals: React.FC<{ onNavigate?: (route: string) => void }> = ({
 
             {/* Laravel style register form */}
             <form className="form bravo-form-register space-y-3.5" onSubmit={handleRegisterSubmit}>
-              <input type="hidden" name="_token" value="csrf-token-dpa-reg-2026" />
+              <input type="hidden" name="_token" value="csrf-token-dpa-reg-2027" />
 
               <div className="grid grid-cols-2 gap-3">
                 <div>

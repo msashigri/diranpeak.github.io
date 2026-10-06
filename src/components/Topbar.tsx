@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Phone, Mail, Globe, ChevronDown, CalendarCheck, LogOut, ShieldCheck, Check } from 'lucide-react';
 import { useAuth, Currency } from '../context/AuthContext';
 import { SUPPORTED_LANGUAGES, getLanguageByCodeOrName } from '../utils/translator';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface TopbarProps {
   onNavigate: (route: string) => void;
@@ -62,8 +63,11 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
           </a>
         </div>
 
-        {/* Right: Languages, Currency & Member Auth */}
+        {/* Right: PWA Install, Languages, Currency & Member Auth */}
         <div className="flex items-center space-x-3 text-[#d1d4da] text-xs">
+          {/* PWA App Install Button */}
+          <PWAInstallButton variant="header" />
+
           {/* Full Language Selector Dropdown */}
           <div className="relative">
             <button

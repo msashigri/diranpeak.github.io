@@ -202,12 +202,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return [
       {
         id: 'bk-demo-1',
-        bookingCode: 'DPA-2026-9182',
+        bookingCode: 'DPA-2027-9182',
         tourId: 'k2-base-camp-trek',
         tourTitle: 'K2 Base Camp Trek',
         tourImage: '/src/assets/images/hero_karakoram_k2_1790420138291.jpg',
-        startDate: '10 June 2026',
-        endDate: '30 June 2026',
+        startDate: '10 June 2027',
+        endDate: '30 June 2027',
         duration: '21 Days',
         adults: 2,
         children: 0,
@@ -215,7 +215,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         airportTransfer: true,
         totalPrice: 4850,
         currency: 'USD',
-        bookingDate: '2026-03-24',
+        bookingDate: '2027-03-24',
         status: 'Confirmed',
         customerName: 'Marcus Sterling',
         customerEmail: 'marcus@alpine-expeditions.com',
@@ -224,12 +224,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       },
       {
         id: 'bk-demo-2',
-        bookingCode: 'DPA-2026-8341',
+        bookingCode: 'DPA-2027-8341',
         tourId: 'k2-gondogoro-la-trek',
         tourTitle: 'K2 Gondogoro La Trek',
         tourImage: '/src/assets/images/trek_baltoro_glacier_1790420152808.jpg',
-        startDate: '10 July 2026',
-        endDate: '30 July 2026',
+        startDate: '10 July 2027',
+        endDate: '30 July 2027',
         duration: '21 Days',
         adults: 1,
         children: 0,
@@ -237,7 +237,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         airportTransfer: true,
         totalPrice: 2380,
         currency: 'USD',
-        bookingDate: '2026-03-25',
+        bookingDate: '2027-03-25',
         status: 'Pending Verification',
         customerName: 'Elena Rostova',
         customerEmail: 'elena.rostova@gmail.com',
@@ -261,8 +261,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: 'david.thorne@alpinist.org',
         phone: '+1 415 555 9821',
         subject: 'K2 Climbing Expedition (8611m)',
-        message: 'Hello, I have summited Manaslu (2024) and Denali (2022). Looking for logistics and guide assignments for the Summer 2026 K2 climbing season. Could you send the full gear list and permit schedule?',
-        date: '2026-03-26',
+        message: 'Hello, I have summited Manaslu (2024) and Denali (2022). Looking for logistics and guide assignments for the Summer 2027 K2 climbing season. Could you send the full gear list and permit schedule?',
+        date: '2027-03-26',
         status: 'New'
       },
       {
@@ -271,8 +271,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: 'sophie.laurent@voyage.fr',
         phone: '+33 6 12 34 56 78',
         subject: 'Custom Private Expedition',
-        message: 'We are a group of 6 French hikers wanting to trek to Fairy Meadows and Nanga Parbat Base Camp in September 2026. Can you customize a 10-day private itinerary?',
-        date: '2026-03-25',
+        message: 'We are a group of 6 French hikers wanting to trek to Fairy Meadows and Nanga Parbat Base Camp in September 2027. Can you customize a 10-day private itinerary?',
+        date: '2027-03-25',
         status: 'Contacted'
       }
     ];
@@ -292,7 +292,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         companyName: 'Shigar River Eco Resort',
         contactName: 'Fida Hussain',
         email: 'manager@shigarresort.pk',
-        date: '2026-03-22',
+        date: '2027-03-22',
         status: 'Pending'
       },
       {
@@ -301,7 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         companyName: 'Baltistan Land Cruiser Association',
         contactName: 'Ghulam Abbas',
         email: 'abbas.transport@skardu.pk',
-        date: '2026-03-20',
+        date: '2027-03-20',
         status: 'Approved'
       }
     ];
@@ -315,8 +315,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // fallback
     }
     return [
-      { id: 'sub-1', email: 'climber.journal@gmail.com', date: '2026-03-24' },
-      { id: 'sub-2', email: 'hiker.alex@yahoo.com', date: '2026-03-25' }
+      { id: 'sub-1', email: 'climber.journal@gmail.com', date: '2027-03-24' },
+      { id: 'sub-2', email: 'hiker.alex@yahoo.com', date: '2027-03-25' }
     ];
   });
 
@@ -441,7 +441,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lastName: 'Trekker',
       email: email.toLowerCase(),
       phone: '+92 345 6412992',
-      joinedDate: 'March 2026'
+      joinedDate: 'March 2027'
     };
 
     setUser(loggedUser);
@@ -466,7 +466,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       lastName: data.lastName?.trim() || 'Explorer',
       email: data.email.toLowerCase().trim(),
       phone: data.phone?.trim() || '+92 345 6412992',
-      joinedDate: 'March 2026'
+      joinedDate: 'March 2027'
     };
 
     setUser(newUser);
@@ -491,7 +491,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const matchesSecondaryEmail = trimmedInput === 'msa78677@gmail.com';
     const isAcceptedId = matchesId || matchesEmail || matchesSecondaryEmail || trimmedInput === 'admin' || trimmedInput === 'dpa-admin';
 
-    const isPasswordValid = trimmedPass === adminCredentials.password || trimmedPass === 'admin123' || trimmedPass === 'dpa2026!';
+    const isPasswordValid = trimmedPass === adminCredentials.password || trimmedPass === 'admin123' || trimmedPass === 'dpa2027!';
 
     if (!isAcceptedId || !isPasswordValid) {
       return {
@@ -552,7 +552,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const createBooking = (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>): Booking => {
-    const randomCode = 'DPA-2026-' + Math.floor(1000 + Math.random() * 9000);
+    const randomCode = 'DPA-2027-' + Math.floor(1000 + Math.random() * 9000);
     const newBooking: Booking = {
       ...bookingData,
       id: 'bk_' + Date.now(),

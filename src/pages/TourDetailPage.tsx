@@ -20,8 +20,8 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
   const [selectedDeparture, setSelectedDeparture] = useState<DepartureDate>(
     tour.departures[0] || {
       id: 'dep-custom',
-      startDate: '10 June 2026',
-      endDate: '30 June 2026',
+      startDate: '10 June 2027',
+      endDate: '30 June 2027',
       price: tour.price,
       status: 'Guaranteed',
       seatsLeft: 5
@@ -180,7 +180,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                 />
                 {tour.discountPercent && (
                   <div className="absolute top-4 left-4 bg-[#fa5636] text-white text-xs font-black uppercase px-2.5 py-1 rounded shadow-md">
-                    {tour.discountPercent}% OFF 2026 Fixed Departures
+                    {tour.discountPercent}% OFF 2027 Fixed Departures
                   </div>
                 )}
               </div>
@@ -269,7 +269,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
                   <div>
                     <h2 className="font-heading text-xl font-bold text-[#1a2b48]">
-                      Fixed Departures &amp; Costs 2026
+                      Fixed Departures &amp; Costs 2027
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
                       Guaranteed group departures starting and ending in Islamabad
