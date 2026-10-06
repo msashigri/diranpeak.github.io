@@ -103,7 +103,7 @@ export const WhyChooseUs: React.FC<{ onContactClick: () => void }> = ({ onContac
               </div>
               <div className="text-left">
                 <div className="text-xs font-bold text-slate-900">Indigenous Company</div>
-                <div className="text-[11px] text-slate-500">Registered with Pakistan Tourism DTS</div>
+                <div className="text-[11px] text-slate-500">Registered with SECP</div>
               </div>
             </div>
           </div>
