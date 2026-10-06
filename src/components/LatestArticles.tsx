@@ -10,28 +10,28 @@ export const LatestArticles: React.FC<LatestArticlesProps> = () => {
     {
       title: 'Top Destinations to Explore in Skardu - Must-See Tourist Attractions',
       category: 'Destination Guide',
-      date: 'January 2027',
+      date: 'January 2026',
       readTime: '6 min read',
       excerpt: 'Explore Kharpocho Fort, Cold Desert Sarfaranga, Kachura Lakes, and ancient Shigar Valley palace.'
     },
     {
       title: 'Top five trekking peaks in Pakistan',
       category: 'Mountaineering',
-      date: 'February 2027',
+      date: 'February 2026',
       readTime: '8 min read',
       excerpt: 'From Khosar Gang (6040m) to Spantik Golden Peak (7027m), discover the ideal introductory peaks.'
     },
     {
       title: 'Gondogoro La Trek Daily Distance and Altitude',
       category: 'Trek Logistics',
-      date: 'March 2027',
+      date: 'March 2026',
       readTime: '5 min read',
       excerpt: 'Detailed day-by-day distance, elevation gain, and campsite altitudes from Paiju to Hushe.'
     },
     {
       title: 'K2 Base Camp Trek Map Daily Distance and Elevation',
       category: 'Route Maps',
-      date: 'March 2027',
+      date: 'March 2026',
       readTime: '7 min read',
       excerpt: 'Full topographic elevation profile and GPS waypoints across the Baltoro Glacier.'
     }
