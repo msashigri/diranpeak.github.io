@@ -122,13 +122,6 @@ export default function App() {
             <LegalPage initialTab={legalTab} onNavigate={handleNavigate} />
           )}
 
-          {currentRoute === 'dashboard' && (
-            <UserDashboardPage onNavigate={handleNavigate} />
-          )}
-
-          {currentRoute === 'admin' && (
-            <AdminDashboardPage onNavigate={handleNavigate} />
-          )}
         </main>
 
         {/* Footer */}
