@@ -19,7 +19,7 @@ import { ContactPage } from './pages/ContactPage';
 import { PartnerPage } from './pages/PartnerPage';
 import { LegalPage } from './pages/LegalPage';
 import { UserDashboardPage } from './pages/UserDashboardPage';
-import { AdminDashboardPage } from './pages/AdminDashboardPage';
+//import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { TOURS_DATA, Tour } from './data/toursData';
 import { triggerTranslationUpdate } from './utils/translator';
 
@@ -122,6 +122,13 @@ export default function App() {
             <LegalPage initialTab={legalTab} onNavigate={handleNavigate} />
           )}
 
+          {currentRoute === 'dashboard' && (
+            <UserDashboardPage onNavigate={handleNavigate} />
+          )}
+
+//          {currentRoute === 'admin' && (
+//            <AdminDashboardPage onNavigate={handleNavigate} />
+//          )}
         </main>
 
         {/* Footer */}
