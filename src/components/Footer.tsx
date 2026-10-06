@@ -218,7 +218,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       {/* Exact Copyright Bar from diranpeakadventure.com */}
       <div className="copy-right border-t border-[#eaeef3] py-6 text-xs text-[#5e6d77]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <p>Copyright © 2026 by Diran Peak Adventure</p>
+          <p>Copyright © 2027 by Diran Peak Adventure</p>
           <div className="f-visa">
             <p>
               Your reports and suggestions are important to us{' '}

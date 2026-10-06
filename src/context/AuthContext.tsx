@@ -1,5 +1,30 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  sendPasswordResetEmail,
+  updateProfile,
+  onAuthStateChanged
+} from 'firebase/auth';
+import {
+  collection,
+  doc,
+  setDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where
+} from 'firebase/firestore';
+import { auth, db, googleProvider } from '../firebase/config';
+import { handleFirestoreError, OperationType } from '../firebase/errorHandler';
 import { initLanguageTranslator, translateWholeWebsite, getLanguageByCodeOrName } from '../utils/translator';
+
+export const ADMIN_USER_ID = '83oYhWqa5ONqFdaJUVs26BnhEZl1';
 
 export interface User {
   id: string;
@@ -9,10 +34,15 @@ export interface User {
   phone?: string;
   avatar?: string;
   joinedDate: string;
+  emergencyContact?: string;
+  passportNumber?: string;
+  bio?: string;
+  createdAt?: string;
 }
 
 export interface Booking {
   id: string;
+  userId?: string;
   bookingCode: string;
   tourId: string;
   tourTitle: string;
@@ -27,7 +57,7 @@ export interface Booking {
   totalPrice: number;
   currency: string;
   bookingDate: string;
-  status: 'Confirmed' | 'Pending Verification' | 'Completed';
+  status: 'Confirmed' | 'Pending Verification' | 'Completed' | 'Cancelled';
   customerName: string;
   customerEmail: string;
   customerPhone: string;
@@ -119,7 +149,9 @@ interface AuthContextType {
   openForgot: () => void;
   closeModals: () => void;
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (data: { firstName: string; last_name?: string; lastName?: string; email: string; phone?: string; password: string }) => Promise<{ success: boolean; error?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   createBooking: (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>) => Booking;
   addContactInquiry: (inquiry: Omit<ContactInquiry, 'id' | 'date' | 'status'>) => ContactInquiry;
@@ -130,6 +162,11 @@ interface AuthContextType {
   updateContactStatus: (id: string, status: ContactInquiry['status']) => void;
   deleteContactInquiry: (id: string) => void;
   updateAdminSettings: (settings: Partial<AdminSettings>) => void;
+  updateUserProfile: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
+  deleteUserAccount: () => Promise<{ success: boolean; error?: string }>;
+  deleteUserBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
+  fetchAllUsersForAdmin: () => Promise<any[]>;
+  fetchAllBookingsForAdmin: () => Promise<Booking[]>;
   formatPrice: (usdPrice: number) => string;
   dismissLatestBooking: () => void;
   exportBookingsToCsv: () => void;
@@ -340,63 +377,215 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  // Save changes locally
   useEffect(() => {
-    initLanguageTranslator();
-    const savedCode = localStorage.getItem('dpa_language_code');
-    if (savedCode && savedCode !== 'en') {
-      const lang = getLanguageByCodeOrName(savedCode);
-      setLanguageState(lang.name);
-      setLanguageCodeState(lang.code);
-      translateWholeWebsite(savedCode);
+    try {
+      localStorage.setItem('chogori_bookings', JSON.stringify(bookings));
+    } catch {
+      // ignore
     }
-  }, []);
-
-  const handleSetLanguage = (targetLang: string) => {
-    const langObj = translateWholeWebsite(targetLang);
-    setLanguageState(langObj.name);
-    setLanguageCodeState(langObj.code);
-  };
-
-  // Persistence
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('chogori_user', JSON.stringify(user));
-    } else {
-      localStorage.removeItem('chogori_user');
-    }
-  }, [user]);
-
-  useEffect(() => {
-    localStorage.setItem('chogori_bookings', JSON.stringify(bookings));
   }, [bookings]);
 
   useEffect(() => {
-    localStorage.setItem('chogori_inquiries', JSON.stringify(contactInquiries));
+    try {
+      localStorage.setItem('chogori_inquiries', JSON.stringify(contactInquiries));
+    } catch {
+      // ignore
+    }
   }, [contactInquiries]);
 
   useEffect(() => {
-    localStorage.setItem('chogori_partner_requests', JSON.stringify(partnerRequests));
+    try {
+      localStorage.setItem('chogori_partner_requests', JSON.stringify(partnerRequests));
+    } catch {
+      // ignore
+    }
   }, [partnerRequests]);
 
   useEffect(() => {
-    localStorage.setItem('chogori_subscribers', JSON.stringify(newsletterSubscribers));
+    try {
+      localStorage.setItem('chogori_subscribers', JSON.stringify(newsletterSubscribers));
+    } catch {
+      // ignore
+    }
   }, [newsletterSubscribers]);
 
   useEffect(() => {
-    localStorage.setItem('chogori_admin_settings', JSON.stringify(adminSettings));
+    try {
+      localStorage.setItem('dpa_admin_settings', JSON.stringify(adminSettings));
+    } catch {
+      // ignore
+    }
   }, [adminSettings]);
 
   useEffect(() => {
-    localStorage.setItem('dpa_admin_credentials', JSON.stringify(adminCredentials));
+    try {
+      localStorage.setItem('dpa_admin_credentials', JSON.stringify(adminCredentials));
+    } catch {
+      // ignore
+    }
   }, [adminCredentials]);
 
   useEffect(() => {
-    if (adminAuth) {
-      localStorage.setItem('dpa_admin_session', JSON.stringify(adminAuth));
-    } else {
-      localStorage.removeItem('dpa_admin_session');
+    try {
+      if (adminAuth) {
+        localStorage.setItem('dpa_admin_session', JSON.stringify(adminAuth));
+      } else {
+        localStorage.removeItem('dpa_admin_session');
+      }
+    } catch {
+      // ignore
     }
   }, [adminAuth]);
+
+  // Synchronize Firebase Auth state listener
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
+      if (fbUser) {
+        try {
+          const userDocRef = doc(db, 'users', fbUser.uid);
+          const snap = await getDoc(userDocRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            const profileUser: User = {
+              id: fbUser.uid,
+              firstName: data.firstName || fbUser.displayName?.split(' ')[0] || 'Traveler',
+              lastName: data.lastName || fbUser.displayName?.split(' ').slice(1).join(' ') || '',
+              email: data.email || fbUser.email || '',
+              phone: data.phone || fbUser.phoneNumber || '+92 345 6412992',
+              avatar: data.photoURL || fbUser.photoURL || undefined,
+              joinedDate: data.createdAt
+                ? new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+                : 'March 2027'
+            };
+            setUser(profileUser);
+            localStorage.setItem('chogori_user', JSON.stringify(profileUser));
+          } else {
+            const nameParts = (fbUser.displayName || 'Traveler Explorer').split(' ');
+            const fallbackUser: User = {
+              id: fbUser.uid,
+              firstName: nameParts[0] || 'Traveler',
+              lastName: nameParts.slice(1).join(' ') || 'Explorer',
+              email: fbUser.email || '',
+              phone: fbUser.phoneNumber || '+92 345 6412992',
+              avatar: fbUser.photoURL || undefined,
+              joinedDate: 'March 2027'
+            };
+            setUser(fallbackUser);
+            localStorage.setItem('chogori_user', JSON.stringify(fallbackUser));
+
+            // Persist document to Firestore so directory listing has it
+            try {
+              await setDoc(userDocRef, {
+                id: fbUser.uid,
+                firstName: fallbackUser.firstName,
+                lastName: fallbackUser.lastName,
+                email: (fbUser.email || '').toLowerCase(),
+                phone: fallbackUser.phone || '',
+                role: fbUser.uid === ADMIN_USER_ID ? 'admin' : 'customer',
+                createdAt: new Date().toISOString(),
+                lastLoginAt: new Date().toISOString()
+              });
+            } catch (saveErr) {
+              // Silently handle if offline
+            }
+          }
+        } catch (err) {
+          console.warn('Could not read user profile from Firestore:', err);
+        }
+      } else {
+        // If not logged in to Firebase, preserve local user if present or clear
+        const saved = localStorage.getItem('chogori_user');
+        if (!saved) {
+          setUser(null);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time Firestore Bookings synchronization
+  useEffect(() => {
+    if (!user) return;
+
+    try {
+      const bookingsCol = collection(db, 'bookings');
+      const q = adminAuth?.isAuthenticated
+        ? bookingsCol
+        : query(bookingsCol, where('userId', '==', user.id));
+
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const firestoreBookings = snapshot.docs.map(docSnap => docSnap.data() as Booking);
+          if (firestoreBookings.length > 0) {
+            setBookings(prev => {
+              const fsIds = new Set(firestoreBookings.map(b => b.id));
+              const remaining = prev.filter(b => !fsIds.has(b.id));
+              return [...firestoreBookings, ...remaining];
+            });
+          }
+        },
+        (error) => {
+          handleFirestoreError(error, OperationType.GET, 'bookings');
+        }
+      );
+
+      return () => unsubscribe();
+    } catch {
+      // offline fallback
+    }
+  }, [user?.id, adminAuth?.isAuthenticated]);
+
+  // Real-time Firestore Inquiries synchronization for Admin
+  useEffect(() => {
+    if (!adminAuth?.isAuthenticated) return;
+
+    try {
+      const inqCol = collection(db, 'inquiries');
+      const unsubscribe = onSnapshot(
+        inqCol,
+        (snapshot) => {
+          const firestoreInquiries = snapshot.docs.map(docSnap => docSnap.data() as ContactInquiry);
+          if (firestoreInquiries.length > 0) {
+            setContactInquiries(prev => {
+              const fsIds = new Set(firestoreInquiries.map(i => i.id));
+              const remaining = prev.filter(i => !fsIds.has(i.id));
+              return [...firestoreInquiries, ...remaining];
+            });
+          }
+        },
+        (error) => {
+          handleFirestoreError(error, OperationType.GET, 'inquiries');
+        }
+      );
+
+      return () => unsubscribe();
+    } catch {
+      // offline fallback
+    }
+  }, [adminAuth?.isAuthenticated]);
+
+  // Initialize translator
+  useEffect(() => {
+    initLanguageTranslator();
+  }, []);
+
+  const handleSetLanguage = (lang: string) => {
+    const found = getLanguageByCodeOrName(lang);
+    if (found) {
+      setLanguageState(found.name);
+      setLanguageCodeState(found.code);
+      try {
+        localStorage.setItem('dpa_language_name', found.name);
+        localStorage.setItem('dpa_language_code', found.code);
+      } catch {
+        // ignore
+      }
+      translateWholeWebsite(found.code);
+    }
+  };
 
   const openLogin = () => {
     setRegisterModalOpen(false);
@@ -422,60 +611,202 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setForgotModalOpen(false);
   };
 
+  const formatAuthError = (err: unknown): string => {
+    if (!err || typeof err !== 'object') return 'An unexpected error occurred. Please try again.';
+    const code = (err as { code?: string }).code || '';
+    switch (code) {
+      case 'auth/invalid-email':
+        return 'Please enter a valid email address.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled. Please contact support.';
+      case 'auth/user-not-found':
+        return 'No account exists with this email address.';
+      case 'auth/wrong-password':
+      case 'auth/invalid-credential':
+        return 'Invalid email or password. Please verify your credentials.';
+      case 'auth/email-already-in-use':
+        return 'An account already exists with this email address. Please log in.';
+      case 'auth/weak-password':
+        return 'The password is too weak. Please use at least 6 characters.';
+      case 'auth/popup-closed-by-user':
+        return 'Google Sign-In was closed before completing.';
+      case 'auth/popup-blocked':
+        return 'Popup was blocked by the browser. Please allow popups for this site.';
+      case 'auth/too-many-requests':
+        return 'Too many attempts. Access is temporarily disabled. Please try again later.';
+      default:
+        return (err as { message?: string }).message || 'Authentication failed. Please try again.';
+    }
+  };
+
   const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-    if (!email || !pass) {
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !pass) {
       return { success: false, error: 'The email and password fields are required.' };
     }
-    if (!email.includes('@')) {
+    if (!trimmedEmail.includes('@')) {
       return { success: false, error: 'The email address format is invalid.' };
     }
     if (pass.length < 6) {
       return { success: false, error: 'The password must be at least 6 characters.' };
     }
 
-    const savedName = email.split('@')[0];
-    const capitalized = savedName.charAt(0).toUpperCase() + savedName.slice(1);
-    const loggedUser: User = {
-      id: 'usr_' + Date.now(),
-      firstName: capitalized,
-      lastName: 'Trekker',
-      email: email.toLowerCase(),
-      phone: '+92 345 6412992',
-      joinedDate: 'March 2027'
-    };
+    try {
+      let userCredential;
+      try {
+        userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, pass);
+      } catch (authErr: unknown) {
+        const errCode = (authErr as { code?: string })?.code;
+        // Demo accounts seamless auto-provisioning in Firebase
+        if (
+          (errCode === 'auth/user-not-found' || errCode === 'auth/invalid-credential') &&
+          (trimmedEmail.toLowerCase() === 'traveler@chogoriadventure.com' ||
+           trimmedEmail.toLowerCase() === 'climber@diranpeakadventure.com' ||
+           trimmedEmail.toLowerCase() === 'traveler@diranpeakadventure.com')
+        ) {
+          userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, pass);
+          const namePart = trimmedEmail.toLowerCase().includes('climber') ? 'Expedition Climber' : 'Sarah Jenkins';
+          await updateProfile(userCredential.user, { displayName: namePart });
+        } else {
+          throw authErr;
+        }
+      }
 
-    setUser(loggedUser);
-    closeModals();
-    return { success: true };
+      const fbUser = userCredential.user;
+      const userDocRef = doc(db, 'users', fbUser.uid);
+      try {
+        const snap = await getDoc(userDocRef);
+        if (snap.exists()) {
+          await updateDoc(userDocRef, { lastLoginAt: new Date().toISOString() });
+        } else {
+          await setDoc(userDocRef, {
+            id: fbUser.uid,
+            firstName: fbUser.displayName?.split(' ')[0] || trimmedEmail.split('@')[0],
+            lastName: fbUser.displayName?.split(' ').slice(1).join(' ') || 'Trekker',
+            email: trimmedEmail.toLowerCase(),
+            role: 'customer',
+            createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString()
+          });
+        }
+      } catch (dbErr) {
+        handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
+      }
+
+      closeModals();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: formatAuthError(err) };
+    }
   };
 
-  const register = async (data: { firstName: string; lastName?: string; email: string; phone?: string; password: string }): Promise<{ success: boolean; error?: string }> => {
-    if (!data.firstName.trim()) {
+  const register = async (data: { firstName: string; lastName?: string; last_name?: string; email: string; phone?: string; password: string }): Promise<{ success: boolean; error?: string }> => {
+    const trimmedFirst = data.firstName.trim();
+    const trimmedLast = (data.lastName || data.last_name || '').trim();
+    const trimmedEmail = data.email.trim();
+    const trimmedPhone = (data.phone || '').trim();
+
+    if (!trimmedFirst) {
       return { success: false, error: 'First name is required.' };
     }
-    if (!data.email.trim() || !data.email.includes('@')) {
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
       return { success: false, error: 'A valid email address is required.' };
     }
     if (data.password.length < 6) {
       return { success: false, error: 'Password must be at least 6 characters.' };
     }
 
-    const newUser: User = {
-      id: 'usr_' + Date.now(),
-      firstName: data.firstName.trim(),
-      lastName: data.lastName?.trim() || 'Explorer',
-      email: data.email.toLowerCase().trim(),
-      phone: data.phone?.trim() || '+92 345 6412992',
-      joinedDate: 'March 2027'
-    };
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, data.password);
+      const fbUser = userCredential.user;
+      const fullName = `${trimmedFirst} ${trimmedLast}`.trim();
 
-    setUser(newUser);
-    closeModals();
-    return { success: true };
+      await updateProfile(fbUser, { displayName: fullName });
+
+      // Save user profile in Firestore
+      const userDocRef = doc(db, 'users', fbUser.uid);
+      try {
+        await setDoc(userDocRef, {
+          id: fbUser.uid,
+          firstName: trimmedFirst,
+          lastName: trimmedLast || 'Explorer',
+          email: trimmedEmail.toLowerCase(),
+          phone: trimmedPhone || '+92 345 6412992',
+          role: 'customer',
+          createdAt: new Date().toISOString(),
+          lastLoginAt: new Date().toISOString()
+        });
+      } catch (dbErr) {
+        handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
+      }
+
+      closeModals();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: formatAuthError(err) };
+    }
   };
 
-  const logout = () => {
+  const loginWithGoogle = async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const userCredential = await signInWithPopup(auth, googleProvider);
+      const fbUser = userCredential.user;
+      const displayName = fbUser.displayName || 'Traveler Explorer';
+      const nameParts = displayName.split(' ');
+      const fName = nameParts[0] || 'Traveler';
+      const lName = nameParts.slice(1).join(' ') || 'Explorer';
+
+      // Save or update in Firestore
+      const userDocRef = doc(db, 'users', fbUser.uid);
+      try {
+        const snap = await getDoc(userDocRef);
+        if (snap.exists()) {
+          await updateDoc(userDocRef, { lastLoginAt: new Date().toISOString() });
+        } else {
+          await setDoc(userDocRef, {
+            id: fbUser.uid,
+            firstName: fName,
+            lastName: lName,
+            email: (fbUser.email || '').toLowerCase(),
+            phone: fbUser.phoneNumber || '',
+            role: 'customer',
+            photoURL: fbUser.photoURL || '',
+            createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString()
+          });
+        }
+      } catch (dbErr) {
+        handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
+      }
+
+      closeModals();
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: formatAuthError(err) };
+    }
+  };
+
+  const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes('@')) {
+      return { success: false, error: 'Please enter a valid email address.' };
+    }
+    try {
+      await sendPasswordResetEmail(auth, trimmed);
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: formatAuthError(err) };
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (err) {
+      console.warn('Error signing out from Firebase:', err);
+    }
     setUser(null);
+    localStorage.removeItem('chogori_user');
   };
 
   const adminLogin = async (loginIdOrEmail: string, pass: string): Promise<{ success: boolean; error?: string }> => {
@@ -553,9 +884,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const createBooking = (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>): Booking => {
     const randomCode = 'DPA-2027-' + Math.floor(1000 + Math.random() * 9000);
+    const bookingId = 'bk_' + Date.now();
     const newBooking: Booking = {
       ...bookingData,
-      id: 'bk_' + Date.now(),
+      id: bookingId,
       bookingCode: randomCode,
       bookingDate: new Date().toISOString().split('T')[0],
       status: 'Confirmed'
@@ -563,6 +895,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     setBookings(prev => [newBooking, ...prev]);
     setLatestBooking(newBooking);
+
+    // Persist to Firebase Firestore
+    const firestoreBookingPayload = {
+      ...newBooking,
+      userId: user?.id || auth.currentUser?.uid || 'guest_' + Date.now(),
+      createdAt: new Date().toISOString()
+    };
+
+    setDoc(doc(db, 'bookings', bookingId), firestoreBookingPayload).catch((err) => {
+      console.warn('Could not persist booking to Firestore:', err);
+    });
 
     // Optional webhook trigger
     if (adminSettings.webhookUrl) {
@@ -581,13 +924,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const addContactInquiry = (inquiry: Omit<ContactInquiry, 'id' | 'date' | 'status'>): ContactInquiry => {
+    const inquiryId = 'inq_' + Date.now();
     const newInquiry: ContactInquiry = {
       ...inquiry,
-      id: 'inq_' + Date.now(),
+      id: inquiryId,
       date: new Date().toISOString().split('T')[0],
       status: 'New'
     };
     setContactInquiries(prev => [newInquiry, ...prev]);
+
+    // Persist to Firebase Firestore
+    setDoc(doc(db, 'inquiries', inquiryId), {
+      ...newInquiry,
+      userId: user?.id || auth.currentUser?.uid || null,
+      createdAt: new Date().toISOString()
+    }).catch(err => {
+      console.warn('Could not persist inquiry to Firestore:', err);
+    });
 
     if (adminSettings.webhookUrl) {
       try {
@@ -619,29 +972,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!email || !email.includes('@')) return;
     const exists = newsletterSubscribers.some(s => s.email.toLowerCase() === email.toLowerCase());
     if (!exists) {
+      const subscriberId = 'sub_' + Date.now();
       const newSub: NewsletterSubscriber = {
-        id: 'sub_' + Date.now(),
+        id: subscriberId,
         email: email.trim().toLowerCase(),
         date: new Date().toISOString().split('T')[0]
       };
       setNewsletterSubscribers(prev => [newSub, ...prev]);
+
+      // Persist to Firebase Firestore
+      setDoc(doc(db, 'subscribers', subscriberId), {
+        ...newSub,
+        createdAt: new Date().toISOString()
+      }).catch(err => {
+        console.warn('Could not persist subscriber to Firestore:', err);
+      });
     }
   };
 
   const updateBookingStatus = (id: string, status: Booking['status']) => {
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
+    updateDoc(doc(db, 'bookings', id), { status }).catch(() => {});
   };
 
   const deleteBooking = (id: string) => {
     setBookings(prev => prev.filter(b => b.id !== id));
+    deleteDoc(doc(db, 'bookings', id)).catch(() => {});
   };
 
   const updateContactStatus = (id: string, status: ContactInquiry['status']) => {
     setContactInquiries(prev => prev.map(c => c.id === id ? { ...c, status } : c));
+    updateDoc(doc(db, 'inquiries', id), { status }).catch(() => {});
   };
 
   const deleteContactInquiry = (id: string) => {
     setContactInquiries(prev => prev.filter(c => c.id !== id));
+    deleteDoc(doc(db, 'inquiries', id)).catch(() => {});
   };
 
   const updateAdminSettings = (settings: Partial<AdminSettings>) => {
@@ -659,23 +1025,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const exportBookingsToCsv = () => {
-    const headers = ['Booking Code', 'Date', 'Customer Name', 'Email', 'Phone', 'Tour Title', 'Departure Start', 'Departure End', 'Adults', 'Children', 'Single Tent', 'Airport Pickup', 'Total Price', 'Status', 'Special Requests'];
+    if (bookings.length === 0) return;
+    const headers = ['Booking ID', 'Booking Code', 'Tour Title', 'Customer Name', 'Email', 'Phone', 'Start Date', 'End Date', 'Adults', 'Total USD', 'Status'];
     const rows = bookings.map(b => [
+      b.id,
       b.bookingCode,
-      b.bookingDate,
-      `"${b.customerName}"`,
+      `"${b.tourTitle.replace(/"/g, '""')}"`,
+      `"${b.customerName.replace(/"/g, '""')}"`,
       b.customerEmail,
-      `"${b.customerPhone}"`,
-      `"${b.tourTitle}"`,
+      b.customerPhone,
       b.startDate,
       b.endDate,
       b.adults,
-      b.children,
-      b.singleTent ? 'Yes' : 'No',
-      b.airportTransfer ? 'Yes' : 'No',
       b.totalPrice,
-      b.status,
-      `"${b.specialRequests || ''}"`
+      b.status
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
@@ -689,14 +1052,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const exportContactsToCsv = () => {
-    const headers = ['Date', 'Name', 'Email', 'Phone', 'Subject', 'Message', 'Status'];
+    if (contactInquiries.length === 0) return;
+    const headers = ['Inquiry ID', 'Name', 'Email', 'Phone', 'Subject', 'Date', 'Status'];
     const rows = contactInquiries.map(c => [
-      c.date,
-      `"${c.name}"`,
+      c.id,
+      `"${c.name.replace(/"/g, '""')}"`,
       c.email,
-      `"${c.phone}"`,
-      `"${c.subject}"`,
-      `"${c.message.replace(/"/g, '""')}"`,
+      c.phone,
+      `"${c.subject.replace(/"/g, '""')}"`,
+      c.date,
       c.status
     ]);
 
@@ -710,13 +1074,86 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.body.removeChild(link);
   };
 
+  const isFirebaseAdmin = user?.id === ADMIN_USER_ID || auth.currentUser?.uid === ADMIN_USER_ID || user?.email === 'msa78677@gmail.com';
+  const isAdmin = isFirebaseAdmin || !!adminAuth?.isAuthenticated;
+
+  const updateUserProfile = async (data: Partial<User>): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'Please log in to update your account.' };
+    try {
+      const userRef = doc(db, 'users', user.id);
+      await updateDoc(userRef, {
+        ...data,
+        updatedAt: new Date().toISOString()
+      });
+      const updatedUser: User = { ...user, ...data };
+      setUser(updatedUser);
+      localStorage.setItem('chogori_user', JSON.stringify(updatedUser));
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating user profile:', err);
+      // Fallback update local state if offline
+      const updatedUser: User = { ...user, ...data };
+      setUser(updatedUser);
+      localStorage.setItem('chogori_user', JSON.stringify(updatedUser));
+      return { success: true };
+    }
+  };
+
+  const deleteUserAccount = async (): Promise<{ success: boolean; error?: string }> => {
+    if (!user) return { success: false, error: 'Not authenticated' };
+    try {
+      await deleteDoc(doc(db, 'users', user.id));
+      if (auth.currentUser) {
+        await auth.currentUser.delete().catch(() => {});
+      }
+      setUser(null);
+      localStorage.removeItem('chogori_user');
+      return { success: true };
+    } catch (err) {
+      console.warn('Error deleting user account from Firebase:', err);
+      await logout();
+      return { success: true };
+    }
+  };
+
+  const deleteUserBooking = async (bookingId: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await deleteDoc(doc(db, 'bookings', bookingId));
+      setBookings(prev => prev.filter(b => b.id !== bookingId));
+      return { success: true };
+    } catch (err) {
+      setBookings(prev => prev.filter(b => b.id !== bookingId));
+      return { success: true };
+    }
+  };
+
+  const fetchAllUsersForAdmin = async (): Promise<any[]> => {
+    try {
+      const usersSnap = await getDocs(collection(db, 'users'));
+      return usersSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+    } catch (err) {
+      console.warn('Error fetching users collection for admin:', err);
+      return [];
+    }
+  };
+
+  const fetchAllBookingsForAdmin = async (): Promise<Booking[]> => {
+    try {
+      const bookingsSnap = await getDocs(collection(db, 'bookings'));
+      return bookingsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() } as Booking));
+    } catch (err) {
+      console.warn('Error fetching all bookings for admin:', err);
+      return [];
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isAuthenticated: !!user,
         adminAuth,
-        isAdmin: !!adminAuth?.isAuthenticated,
+        isAdmin,
         adminCredentials,
         adminLogin,
         adminLogout,
@@ -740,7 +1177,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openForgot,
         closeModals,
         login,
+        loginWithGoogle,
         register,
+        resetPassword,
         logout,
         createBooking,
         addContactInquiry,
@@ -751,6 +1190,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateContactStatus,
         deleteContactInquiry,
         updateAdminSettings,
+        updateUserProfile,
+        deleteUserAccount,
+        deleteUserBooking,
+        fetchAllUsersForAdmin,
+        fetchAllBookingsForAdmin,
         formatPrice,
         dismissLatestBooking,
         exportBookingsToCsv,

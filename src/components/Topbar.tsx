@@ -9,7 +9,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
-  const { user, isAuthenticated, adminAuth, currency, language, languageCode, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries } = useAuth();
+  const { user, isAuthenticated, isAdmin, adminAuth, currency, language, languageCode, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries } = useAuth();
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -150,38 +150,44 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
 
           {/* User Account / Login & Register */}
           {isAuthenticated && user ? (
-            <div className="relative">
+            <div className="relative flex items-center gap-2">
+              {isAdmin && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 flex items-center gap-1 shadow-xs">
+                  <ShieldCheck className="w-3 h-3" />
+                  <span>Admin</span>
+                </span>
+              )}
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
                 className="flex items-center gap-1.5 font-medium hover:text-white transition-colors cursor-pointer"
               >
                 <div className="w-5 h-5 rounded-full bg-[#5191fa] text-white flex items-center justify-center font-bold text-[10px]">
-                  {user.firstName[0]}
+                  {(user.firstName || user.email)[0].toUpperCase()}
                 </div>
-                <span>Hi, {user.firstName}</span>
+                <span>Hi, {user.firstName || 'Traveler'}</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
               {showUserDropdown && (
-                <div className="absolute right-0 mt-1 w-44 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-100 py-1.5 z-50">
+                <div className="absolute right-0 top-full mt-1 w-44 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-100 py-1.5 z-50">
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
                       onNavigate('dashboard');
                     }}
-                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-slate-700 cursor-pointer"
                   >
                     <CalendarCheck className="w-3.5 h-3.5 text-[#5191fa]" />
-                    My Bookings
+                    <span>{isAdmin ? 'Admin Dashboard' : 'My Bookings'}</span>
                   </button>
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
                       logout();
                     }}
-                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-rose-50 text-rose-600"
+                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-rose-50 text-rose-600 cursor-pointer"
                   >
                     <LogOut className="w-3.5 h-3.5 text-rose-500" />
-                    Log Out
+                    <span>Log Out</span>
                   </button>
                 </div>
               )}
@@ -203,33 +209,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
               </button>
             </div>
           )}
-
-          <span className="text-[#3b4b66]">|</span>
-
-          {/* Admin Portal quick link 
-          {adminAuth?.isAuthenticated ? (
-            <button
-              onClick={() => onNavigate('admin')}
-              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-emerald-500/20 hover:bg-emerald-600 text-emerald-200 hover:text-white border border-emerald-400/40 transition-all cursor-pointer font-medium text-[11px]"
-              title="Admin Session Active - Click to open Dashboard"
-            >
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Admin ({adminAuth.adminId})</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => onNavigate('admin')}
-              className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-500/20 hover:bg-[#5191fa] text-sky-200 hover:text-white border border-blue-400/30 transition-all cursor-pointer font-medium text-[11px]"
-              title="Open Admin Portal Login"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-[#5191fa]" />
-              <span>Admin Login</span>
-              {pendingCount > 0 && (
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              )}
-            </button>
-          )} */}
         </div>
       </div>
     </div>

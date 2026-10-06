@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.uid == '83oYhWqa5ONqFdaJUVs26BnhEZl1' ||
+        request.auth.token.email in ['msa78677@gmail.com', 'admin@diranpeakadventure.com'] ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'email', 'firstName', 'role']) &&
+        data.keys().hasOnly(['id', 'email', 'firstName', 'lastName', 'phone', 'role', 'photoURL', 'createdAt', 'lastLoginAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.email is string && data.email.size() <= 150 &&
+        data.firstName is string && data.firstName.size() <= 100 &&
+        data.role in ['customer', 'admin', 'guide'] &&
+        (!('lastName' in data) || (data.lastName is string && data.lastName.size() <= 100)) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 50));
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasAll(['id', 'userId', 'bookingCode', 'tourId', 'totalPrice', 'customerEmail', 'customerName', 'status']) &&
+        data.keys().hasOnly([
+          'id', 'userId', 'bookingCode', 'tourId', 'tourTitle', 'tourImage',
+          'startDate', 'endDate', 'duration', 'adults', 'children',
+          'singleTent', 'airportTransfer', 'totalPrice', 'currency',
+          'bookingDate', 'status', 'customerName', 'customerEmail',
+          'customerPhone', 'specialRequests', 'createdAt'
+        ]) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.userId is string && data.userId.size() <= 128 &&
+        data.bookingCode is string && data.bookingCode.size() <= 50 &&
+        data.tourId is string && data.tourId.size() <= 100 &&
+        data.totalPrice is number && data.totalPrice >= 0 &&
+        data.customerName is string && data.customerName.size() <= 150 &&
+        data.customerEmail is string && data.customerEmail.size() <= 150 &&
+        data.status in ['Confirmed', 'Pending Verification', 'Cancelled', 'Completed'] &&
+        (!('specialRequests' in data) || (data.specialRequests is string && data.specialRequests.size() <= 1000));
+    }
+
+    function isValidInquiry(data) {
+      return data.keys().hasAll(['id', 'name', 'email', 'message']) &&
+        data.keys().hasOnly(['id', 'userId', 'name', 'email', 'phone', 'subject', 'message', 'date', 'status', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.name is string && data.name.size() <= 150 &&
+        data.email is string && data.email.size() <= 150 &&
+        data.message is string && data.message.size() <= 2500 &&
+        (!('status' in data) || (data.status in ['New', 'Contacted', 'Closed'])) &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
+        (!('subject' in data) || (data.subject is string && data.subject.size() <= 250));
+    }
+
+    function isValidSubscriber(data) {
+      return data.keys().hasAll(['id', 'email']) &&
+        data.keys().hasOnly(['id', 'email', 'date', 'createdAt']) &&
+        data.id is string && data.id.size() <= 128 &&
+        data.email is string && data.email.size() <= 150;
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (incoming().role == 'customer' || isAdmin());
+      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidUser(incoming()) && (incoming().role == existing().role || isAdmin()) && incoming().id == existing().id;
+      allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // 2. Bookings Collection
+    match /bookings/{bookingId} {
+      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidBooking(incoming()) && (incoming().userId == request.auth.uid || isAdmin());
+      allow update: if isSignedIn() && isValidBooking(incoming()) && (
+        isAdmin() ||
+        (resource.data.userId == request.auth.uid && incoming().userId == existing().userId && incoming().bookingCode == existing().bookingCode)
+      );
+      allow delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    // 3. Inquiries Collection
+    match /inquiries/{inquiryId} {
+      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if isValidInquiry(incoming()) && (!isSignedIn() || !('userId' in incoming()) || incoming().userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // 4. Newsletter Subscribers Collection
+    match /subscribers/{subscriberId} {
+      allow get, list: if isAdmin();
+      allow create: if isValidSubscriber(incoming());
+      allow update, delete: if isAdmin();
+    }
+
+    // 5. Admins list
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+  }
+}

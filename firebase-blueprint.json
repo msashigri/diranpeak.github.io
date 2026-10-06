@@ -1,0 +1,99 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data for registered travelers and administrators",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "firstName": { "type": "string", "maxLength": 100 },
+        "lastName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "role": { "type": "string", "enum": ["customer", "admin", "guide"] },
+        "photoURL": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "lastLoginAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email", "firstName", "role"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "Tour, trek, or mountaineering expedition booking reservation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "bookingCode": { "type": "string", "maxLength": 50 },
+        "tourId": { "type": "string", "maxLength": 100 },
+        "tourTitle": { "type": "string", "maxLength": 200 },
+        "tourImage": { "type": "string", "maxLength": 500 },
+        "startDate": { "type": "string", "maxLength": 100 },
+        "endDate": { "type": "string", "maxLength": 100 },
+        "duration": { "type": "string", "maxLength": 50 },
+        "adults": { "type": "number" },
+        "children": { "type": "number" },
+        "singleTent": { "type": "boolean" },
+        "airportTransfer": { "type": "boolean" },
+        "totalPrice": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 10 },
+        "bookingDate": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["Confirmed", "Pending Verification", "Cancelled", "Completed"] },
+        "customerName": { "type": "string", "maxLength": 150 },
+        "customerEmail": { "type": "string", "format": "email", "maxLength": 150 },
+        "customerPhone": { "type": "string", "maxLength": 50 },
+        "specialRequests": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "bookingCode", "tourId", "totalPrice", "customerEmail", "customerName", "status"]
+    },
+    "ContactInquiry": {
+      "title": "ContactInquiry",
+      "description": "Customer question, customized trip inquiry, or expedition proposal",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "subject": { "type": "string", "maxLength": 250 },
+        "message": { "type": "string", "maxLength": 2500 },
+        "date": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["New", "Contacted", "Closed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "email", "message"]
+    },
+    "NewsletterSubscriber": {
+      "title": "NewsletterSubscriber",
+      "description": "Traveler email subscribed for Karakoram expedition updates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "date": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "email"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User accounts and traveler profile settings"
+    },
+    "/bookings/{bookingId}": {
+      "schema": { "$ref": "#/entities/Booking" },
+      "description": "Tour and expedition reservations created by users or admins"
+    },
+    "/inquiries/{inquiryId}": {
+      "schema": { "$ref": "#/entities/ContactInquiry" },
+      "description": "Inquiries and customized itinerary requests submitted by travelers"
+    },
+    "/subscribers/{subscriberId}": {
+      "schema": { "$ref": "#/entities/NewsletterSubscriber" },
+      "description": "Newsletter email subscriptions"
+    }
+  }
+}
