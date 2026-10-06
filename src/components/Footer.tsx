@@ -150,9 +150,8 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   <button
                     onClick={() => onNavigate('admin')}
                     className="text-left hover:text-[#5191fa] transition-colors cursor-pointer"
-                  >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Portal</span>
+                  >  
+                    <span><Lock className="w-3.5 h-3.5" /> Portal </span>
                   </button>
                 </div>
               </div>
