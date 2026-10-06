@@ -73,7 +73,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           <div className="mb-10 pb-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <DpaLogo variant="light" />
             <p className="text-xs text-slate-500 max-w-md">
-              Licensed Karakoram &amp; Himalayan mountaineering operator (DTS Lic. #1842). Specializing in K2, Gondogoro La, Diran Peak, and Spantik climbing expeditions.
+              Licensed Karakoram &amp; Himalayan mountaineering operator (SECP Registered). Specializing in K2, Gondogoro La, Diran Peak, and Spantik climbing expeditions.
             </p>
           </div>
 
