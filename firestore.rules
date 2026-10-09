@@ -25,22 +25,26 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && (
-        request.auth.uid == '83oYhWqa5ONqFdaJUVs26BnhEZl1' ||
-        request.auth.token.email in ['msa78677@gmail.com', 'admin@diranpeakadventure.com'] ||
-        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+      return isSignedIn() && request.auth.uid == '83oYhWqa5ONqFdaJUVs26BnhEZl1';
     }
 
     function isValidUser(data) {
       return data.keys().hasAll(['id', 'email', 'firstName', 'role']) &&
-        data.keys().hasOnly(['id', 'email', 'firstName', 'lastName', 'phone', 'role', 'photoURL', 'createdAt', 'lastLoginAt']) &&
+        data.keys().hasOnly([
+          'id', 'email', 'firstName', 'lastName', 'phone', 'role', 'photoURL',
+          'emergencyContact', 'passportNumber', 'bio', 'favorites',
+          'createdAt', 'lastLoginAt', 'updatedAt', 'passwordResetRequested', 'passwordResetAt', 'tempPassword'
+        ]) &&
         data.id is string && data.id.size() <= 128 &&
         data.email is string && data.email.size() <= 150 &&
         data.firstName is string && data.firstName.size() <= 100 &&
         data.role in ['customer', 'admin', 'guide'] &&
         (!('lastName' in data) || (data.lastName is string && data.lastName.size() <= 100)) &&
-        (!('phone' in data) || (data.phone is string && data.phone.size() <= 50));
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
+        (!('emergencyContact' in data) || (data.emergencyContact is string && data.emergencyContact.size() <= 200)) &&
+        (!('passportNumber' in data) || (data.passportNumber is string && data.passportNumber.size() <= 100)) &&
+        (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
+        (!('tempPassword' in data) || (data.tempPassword is string && data.tempPassword.size() <= 100));
     }
 
     function isValidBooking(data) {
@@ -50,7 +54,7 @@ service cloud.firestore {
           'startDate', 'endDate', 'duration', 'adults', 'children',
           'singleTent', 'airportTransfer', 'totalPrice', 'currency',
           'bookingDate', 'status', 'customerName', 'customerEmail',
-          'customerPhone', 'specialRequests', 'createdAt'
+          'customerPhone', 'specialRequests', 'createdAt', 'updatedAt'
         ]) &&
         data.id is string && data.id.size() <= 128 &&
         data.userId is string && data.userId.size() <= 128 &&
@@ -59,7 +63,7 @@ service cloud.firestore {
         data.totalPrice is number && data.totalPrice >= 0 &&
         data.customerName is string && data.customerName.size() <= 150 &&
         data.customerEmail is string && data.customerEmail.size() <= 150 &&
-        data.status in ['Confirmed', 'Pending Verification', 'Cancelled', 'Completed'] &&
+        data.status in ['Confirmed', 'Pending Verification', 'Cancelled', 'Completed', 'Accepted', 'Declined'] &&
         (!('specialRequests' in data) || (data.specialRequests is string && data.specialRequests.size() <= 1000));
     }
 
@@ -86,8 +90,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
       allow list: if isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) && (incoming().role == 'customer' || isAdmin());
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin()) && isValidUser(incoming()) && (incoming().role == existing().role || isAdmin()) && incoming().id == existing().id;
+      allow create: if isSignedIn() && (isAdmin() || (request.auth.uid == userId && isValidUser(incoming()) && incoming().role == 'customer'));
+      allow update: if isSignedIn() && (isAdmin() || (request.auth.uid == userId && isValidUser(incoming()) && incoming().role == existing().role && incoming().id == existing().id));
       allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
@@ -95,10 +99,10 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
       allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow create: if isSignedIn() && isValidBooking(incoming()) && (incoming().userId == request.auth.uid || isAdmin());
-      allow update: if isSignedIn() && isValidBooking(incoming()) && (
+      allow create: if isSignedIn() && (isAdmin() || (isValidBooking(incoming()) && incoming().userId == request.auth.uid));
+      allow update: if isSignedIn() && (
         isAdmin() ||
-        (resource.data.userId == request.auth.uid && incoming().userId == existing().userId && incoming().bookingCode == existing().bookingCode)
+        (isValidBooking(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == existing().userId && incoming().bookingCode == existing().bookingCode)
       );
       allow delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
     }
@@ -122,6 +126,21 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+
+    // 6. Activities Collection (User & Traveler Activity Log for Admin)
+    match /activities/{activityId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow list: if isAdmin();
+      allow create: if isSignedIn() || ('userId' in incoming()) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    // 7. Favorites Collection
+    match /favorites/{favoriteId} {
+      allow read, list: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() && (incoming().userId == request.auth.uid || isAdmin());
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }

@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth, ADMIN_USER_ID, Booking, User as UserType } from '../context/AuthContext';
+import { useAuth, ADMIN_USER_ID, Booking, TravelerActivity } from '../context/AuthContext';
+import { TOURS_DATA } from '../data/toursData';
 import {
   User, CalendarCheck, CheckCircle, ShieldCheck, LogOut, ArrowRight,
   Search, RefreshCw, X, Edit3, Trash2, Mail, Phone, Calendar,
-  AlertTriangle, FileText, ChevronRight, Eye, Shield
+  AlertTriangle, Eye, Shield, KeyRound, Check, XCircle, Clock,
+  Heart, Activity, Filter, Copy, FileText, Sparkles
 } from 'lucide-react';
 
 interface FirestoreUserRecord {
@@ -16,6 +18,10 @@ interface FirestoreUserRecord {
   createdAt?: string;
   lastLoginAt?: string;
   bookingCount?: number;
+  tempPassword?: string;
+  emergencyContact?: string;
+  passportNumber?: string;
+  bio?: string;
 }
 
 export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: string) => void }> = ({ onNavigate }) => {
@@ -26,23 +32,72 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
     formatPrice,
     logout,
     openLogin,
-    isAdmin,
     updateUserProfile,
     deleteUserAccount,
     deleteUserBooking,
+    updateBookingStatus,
+    updateBookingDetails,
+    adminResetUserPassword,
+    adminUpdateUserProfile,
     fetchAllUsersForAdmin,
-    fetchAllBookingsForAdmin
+    fetchAllBookingsForAdmin,
+    favorites,
+    toggleFavorite,
+    isFavorite,
+    activities,
+    fetchAllActivitiesForAdmin
   } = useAuth();
 
-  // Admin view state
-  const isUserAdmin = isAdmin || user?.id === ADMIN_USER_ID;
+  // STRICT REQUIREMENT: Only user ID 83oYhWqa5ONqFdaJUVs26BnhEZl1 is admin
+  const isUserAdmin = user?.id === ADMIN_USER_ID;
+
+  // Admin tabs & state - strictly from Firebase Firestore
+  const [adminTab, setAdminTab] = useState<'users' | 'bookings' | 'activities'>('users');
   const [adminUsers, setAdminUsers] = useState<FirestoreUserRecord[]>([]);
   const [adminAllBookings, setAdminAllBookings] = useState<Booking[]>([]);
+  const [adminActivities, setAdminActivities] = useState<TravelerActivity[]>([]);
   const [adminSearch, setAdminSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<FirestoreUserRecord | null>(null);
   const [loadingAdminData, setLoadingAdminData] = useState(false);
+  const [passwordResetNotice, setPasswordResetNotice] = useState<string | null>(null);
 
-  // Normal user profile edit state
+  // Admin Password Management Modal
+  const [passwordModalUser, setPasswordModalUser] = useState<FirestoreUserRecord | null>(null);
+  const [customPasswordInput, setCustomPasswordInput] = useState('');
+  const [resettingPassword, setResettingPassword] = useState(false);
+  const [passwordSuccessResult, setPasswordSuccessResult] = useState<{ message: string; tempPass?: string } | null>(null);
+  const [passwordErrorResult, setPasswordErrorResult] = useState<string | null>(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
+
+  // Admin Edit Traveler Details Modal
+  const [editingTraveler, setEditingTraveler] = useState<FirestoreUserRecord | null>(null);
+  const [editTravelerFirst, setEditTravelerFirst] = useState('');
+  const [editTravelerLast, setEditTravelerLast] = useState('');
+  const [editTravelerPhone, setEditTravelerPhone] = useState('');
+  const [editTravelerEmergency, setEditTravelerEmergency] = useState('');
+  const [editTravelerPassport, setEditTravelerPassport] = useState('');
+  const [editTravelerBio, setEditTravelerBio] = useState('');
+  const [savingTraveler, setSavingTraveler] = useState(false);
+
+  // Admin booking edit modal state
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [editTourTitle, setEditTourTitle] = useState('');
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editEndDate, setEditEndDate] = useState('');
+  const [editAdults, setEditAdults] = useState<number>(1);
+  const [editChildren, setEditChildren] = useState<number>(0);
+  const [editTotalPrice, setEditTotalPrice] = useState<number>(0);
+  const [editStatus, setEditStatus] = useState<Booking['status']>('Confirmed');
+  const [editSpecialRequests, setEditSpecialRequests] = useState('');
+  const [savingBooking, setSavingBooking] = useState(false);
+  const [bookingSaveNotice, setBookingSaveNotice] = useState<string | null>(null);
+
+  // Activity filter state
+  const [activityFilter, setActivityFilter] = useState<string>('ALL');
+  const [activitySearch, setActivitySearch] = useState('');
+
+  // Normal user view state
+  const [userTab, setUserTab] = useState<'bookings' | 'favorites'>('bookings');
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [editFirstName, setEditFirstName] = useState('');
@@ -54,19 +109,20 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
   const [savingProfile, setSavingProfile] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Load admin data when admin user logs in
+  // Load admin data directly from Firebase Firestore (NO local mock data)
   const loadAdminData = async () => {
     if (!isUserAdmin) return;
     setLoadingAdminData(true);
     try {
-      const [fetchedUsers, fetchedBookings] = await Promise.all([
+      const [fetchedUsers, fetchedBookings, fetchedActivities] = await Promise.all([
         fetchAllUsersForAdmin(),
-        fetchAllBookingsForAdmin()
+        fetchAllBookingsForAdmin(),
+        fetchAllActivitiesForAdmin()
       ]);
 
-      const userList = [...fetchedUsers];
+      const userList: FirestoreUserRecord[] = [...fetchedUsers];
 
-      // Ensure current logged in admin user is included
+      // Ensure current logged-in admin is present in the list
       if (user && !userList.some(u => u.id === user.id || (u.email && u.email.toLowerCase() === user.email.toLowerCase()))) {
         userList.unshift({
           id: user.id,
@@ -79,48 +135,9 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
         });
       }
 
-      // Add expedition travelers if not yet present in Firestore collection
-      const seedTravelers = [
-        {
-          id: 'usr_marcus_sterling',
-          email: 'marcus@alpine-expeditions.com',
-          firstName: 'Marcus',
-          lastName: 'Sterling',
-          phone: '+44 7911 123456',
-          role: 'customer',
-          createdAt: '2027-02-15T10:30:00.000Z'
-        },
-        {
-          id: 'usr_elena_rostova',
-          email: 'elena.rostova@gmail.com',
-          firstName: 'Elena',
-          lastName: 'Rostova',
-          phone: '+48 601 234567',
-          role: 'customer',
-          createdAt: '2027-02-28T14:15:00.000Z'
-        },
-        {
-          id: 'usr_karim_khan',
-          email: 'karim@example.com',
-          firstName: 'Karim',
-          lastName: 'Khan',
-          phone: '+92 300 1234567',
-          role: 'customer',
-          createdAt: '2027-03-01T09:00:00.000Z'
-        }
-      ];
-
-      for (const st of seedTravelers) {
-        if (!userList.some(u => u.email?.toLowerCase() === st.email.toLowerCase())) {
-          userList.push(st);
-        }
-      }
-
-      const allBookings = fetchedBookings.length > 0 ? fetchedBookings : bookings;
-
-      // Calculate number of bookings for each user
-      const usersWithBookings = userList.map((u: any) => {
-        const userBookingCount = allBookings.filter(
+      // Calculate number of bookings for each user strictly from Firestore
+      const usersWithBookings = userList.map((u) => {
+        const userBookingCount = fetchedBookings.filter(
           (b) => b.userId === u.id || (b.customerEmail && b.customerEmail.toLowerCase() === u.email?.toLowerCase())
         ).length;
         return {
@@ -130,9 +147,10 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
       });
 
       setAdminUsers(usersWithBookings);
-      setAdminAllBookings(allBookings);
+      setAdminAllBookings(fetchedBookings);
+      setAdminActivities(fetchedActivities.length > 0 ? fetchedActivities : activities);
     } catch (err) {
-      console.error('Error loading admin directory data:', err);
+      console.error('Error loading admin directory data from Firestore:', err);
     } finally {
       setLoadingAdminData(false);
     }
@@ -144,7 +162,133 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
     }
   }, [isUserAdmin]);
 
-  // Open profile edit modal with existing user values
+  // Admin: Update booking status directly in Firestore
+  const handleAdminUpdateStatus = async (bookingId: string, newStatus: Booking['status']) => {
+    await updateBookingStatus(bookingId, newStatus);
+    setAdminAllBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: newStatus } : b));
+    setPasswordResetNotice(`Booking status updated to "${newStatus}" and saved in Firestore.`);
+    setTimeout(() => setPasswordResetNotice(null), 4000);
+  };
+
+  // Admin: Open booking edit modal
+  const handleOpenEditBooking = (b: Booking) => {
+    setEditingBooking(b);
+    setEditTourTitle(b.tourTitle || '');
+    setEditStartDate(b.startDate || '');
+    setEditEndDate(b.endDate || '');
+    setEditAdults(b.adults || 1);
+    setEditChildren(b.children || 0);
+    setEditTotalPrice(b.totalPrice || 0);
+    setEditStatus(b.status || 'Confirmed');
+    setEditSpecialRequests(b.specialRequests || '');
+    setBookingSaveNotice(null);
+  };
+
+  // Admin: Save updated booking details to Firestore
+  const handleSaveBookingEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBooking) return;
+    setSavingBooking(true);
+    setBookingSaveNotice(null);
+
+    const updates: Partial<Booking> = {
+      tourTitle: editTourTitle,
+      startDate: editStartDate,
+      endDate: editEndDate,
+      adults: Number(editAdults),
+      children: Number(editChildren),
+      totalPrice: Number(editTotalPrice),
+      status: editStatus,
+      specialRequests: editSpecialRequests
+    };
+
+    const res = await updateBookingDetails(editingBooking.id, updates);
+    setSavingBooking(false);
+    if (res.success) {
+      setAdminAllBookings(prev => prev.map(b => b.id === editingBooking.id ? { ...b, ...updates } : b));
+      setPasswordResetNotice(`Booking ${editingBooking.bookingCode} was successfully updated and saved in Firestore.`);
+      setEditingBooking(null);
+      setTimeout(() => setPasswordResetNotice(null), 5000);
+    } else {
+      setBookingSaveNotice(res.error || 'Failed to update booking. Please try again.');
+    }
+  };
+
+  // Admin: Open Password Modal
+  const handleOpenPasswordModal = (u: FirestoreUserRecord) => {
+    setPasswordModalUser(u);
+    setCustomPasswordInput('Pass@' + Math.floor(100000 + Math.random() * 900000));
+    setPasswordSuccessResult(null);
+    setPasswordErrorResult(null);
+    setCopiedPassword(false);
+  };
+
+  // Admin: Execute Password Reset or Direct Change
+  const handleExecutePasswordReset = async (directPassword?: string) => {
+    if (!passwordModalUser) return;
+    setResettingPassword(true);
+    setPasswordSuccessResult(null);
+    setPasswordErrorResult(null);
+
+    const res = await adminResetUserPassword(passwordModalUser.email, directPassword);
+    setResettingPassword(false);
+
+    if (res.success) {
+      setPasswordSuccessResult({
+        message: res.message || 'Password successfully updated in Firestore.',
+        tempPass: res.tempPassword
+      });
+      // Update local state if user document had temp password
+      setAdminUsers(prev => prev.map(u => u.id === passwordModalUser.id ? { ...u, tempPassword: res.tempPassword } : u));
+      if (selectedUser && selectedUser.id === passwordModalUser.id) {
+        setSelectedUser(prev => prev ? { ...prev, tempPassword: res.tempPassword } : null);
+      }
+    } else {
+      setPasswordErrorResult(res.error || 'Failed to reset password.');
+    }
+  };
+
+  // Admin: Open Traveler Profile Edit Modal
+  const handleOpenEditTraveler = (u: FirestoreUserRecord) => {
+    setEditingTraveler(u);
+    setEditTravelerFirst(u.firstName || '');
+    setEditTravelerLast(u.lastName || '');
+    setEditTravelerPhone(u.phone || '');
+    setEditTravelerEmergency(u.emergencyContact || '');
+    setEditTravelerPassport(u.passportNumber || '');
+    setEditTravelerBio(u.bio || '');
+  };
+
+  // Admin: Save Traveler Profile edits to Firestore
+  const handleSaveTravelerEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTraveler) return;
+    setSavingTraveler(true);
+
+    const updates: Partial<FirestoreUserRecord> = {
+      firstName: editTravelerFirst,
+      lastName: editTravelerLast,
+      phone: editTravelerPhone,
+      emergencyContact: editTravelerEmergency,
+      passportNumber: editTravelerPassport,
+      bio: editTravelerBio
+    };
+
+    const res = await adminUpdateUserProfile(editingTraveler.id, updates as any);
+    setSavingTraveler(false);
+
+    if (res.success) {
+      setAdminUsers(prev => prev.map(u => u.id === editingTraveler.id ? { ...u, ...updates } : u));
+      if (selectedUser && selectedUser.id === editingTraveler.id) {
+        setSelectedUser(prev => prev ? { ...prev, ...updates } : null);
+      }
+      setPasswordResetNotice(`Traveler profile for ${editingTraveler.email} was successfully saved in Firestore.`);
+      setEditingTraveler(null);
+      setTimeout(() => setPasswordResetNotice(null), 5000);
+    }
+  };
+
+  // Normal User: Open profile edit modal
   const handleOpenEditProfile = () => {
     if (!user) return;
     setEditFirstName(user.firstName || '');
@@ -157,6 +301,7 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
     setEditProfileOpen(true);
   };
 
+  // Normal User: Save profile edits to Firestore
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingProfile(true);
@@ -183,6 +328,7 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
     setDeleteConfirmOpen(false);
   };
 
+  // Unauthenticated screen
   if (!isAuthenticated || !user) {
     return (
       <div className="bg-[#f7f8fa] min-h-[70vh] flex items-center justify-center py-16 px-4">
@@ -192,13 +338,13 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
           </div>
           <h2 className="font-heading text-xl font-bold text-[#1a2b48] mb-2">Member Portal Access</h2>
           <p className="text-xs text-slate-500 mb-6">
-            Please log in or register with your email to view your confirmed bookings, vouchers, and expedition paperwork.
+            Please log in with your account or sign up to view your bookings, saved favorites, and personal travel paperwork.
           </p>
           <button
             onClick={openLogin}
-            className="w-full py-2.5 px-4 bg-[#5191fa] text-white font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer"
+            className="w-full py-2.5 px-4 bg-[#5191fa] text-white font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer hover:bg-[#3d7be3] transition-colors"
           >
-            Log In to Account
+            Log In / Sign Up
           </button>
         </div>
       </div>
@@ -206,7 +352,7 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
   }
 
   // =========================================================================
-  // ADMIN DASHBOARD VIEW (when admin user ID 83oYhWqa5ONqFdaJUVs26BnhEZl1 logs in)
+  // ADMIN DASHBOARD VIEW (Shown ONLY when user ID 83oYhWqa5ONqFdaJUVs26BnhEZl1 logs in)
   // =========================================================================
   if (isUserAdmin) {
     const filteredUsers = adminUsers.filter(u => {
@@ -220,9 +366,27 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
 
     const selectedUserBookings = selectedUser
       ? adminAllBookings.filter(
-          b => b.userId === selectedUser.id || b.customerEmail?.toLowerCase() === selectedUser.email?.toLowerCase()
+          b => b.userId === selectedUser.id || (b.customerEmail && b.customerEmail.toLowerCase() === selectedUser.email?.toLowerCase())
         )
       : [];
+
+    const liveActivitiesList = adminActivities.length > 0 ? adminActivities : activities;
+
+    const filteredActivities = liveActivitiesList.filter(a => {
+      if (activityFilter !== 'ALL') {
+        if (activityFilter === 'BOOKINGS' && !a.action.includes('BOOKING')) return false;
+        if (activityFilter === 'FAVORITES' && !a.action.includes('FAVORITE')) return false;
+        if (activityFilter === 'LOGINS' && !a.action.includes('LOGIN') && !a.action.includes('LOGOUT')) return false;
+        if (activityFilter === 'PASSWORDS' && !a.action.includes('PASSWORD')) return false;
+        if (activityFilter === 'PROFILES' && !a.action.includes('PROFILE')) return false;
+      }
+      if (activitySearch.trim()) {
+        const q = activitySearch.toLowerCase().trim();
+        const str = `${a.userName} ${a.userEmail} ${a.details} ${a.action}`.toLowerCase();
+        return str.includes(q);
+      }
+      return true;
+    });
 
     return (
       <div className="bg-[#f7f8fa] min-h-screen py-10">
@@ -233,6 +397,19 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
             <span>/</span>
             <span className="text-slate-800 font-semibold">Admin Dashboard</span>
           </div>
+
+          {/* Admin Notification Banner */}
+          {passwordResetNotice && (
+            <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{passwordResetNotice}</span>
+              </div>
+              <button onClick={() => setPasswordResetNotice(null)} className="text-emerald-700 hover:text-emerald-900 cursor-pointer">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
 
           {/* Admin Header with Prominent Indicator Badge */}
           <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
@@ -250,14 +427,14 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
                       ADMINISTRATOR VIEW
                     </span>
                     <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-                      UID: {user.id}
+                      Admin UID: {ADMIN_USER_ID}
                     </span>
                   </div>
                   <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-white">
-                    Expedition Command Center
+                    Master Command Center
                   </h1>
                   <p className="text-xs text-slate-300 mt-1">
-                    Master read access to all Firestore user accounts &amp; expedition booking reservations.
+                    Direct Firebase Firestore access to all user accounts, password reset controls, booking approvals, and live activity tracking.
                   </p>
                 </div>
               </div>
@@ -267,10 +444,10 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
                   onClick={loadAdminData}
                   disabled={loadingAdminData}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-                  title="Refresh Firestore Database"
+                  title="Reload from Firestore"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loadingAdminData ? 'animate-spin' : ''}`} />
-                  <span>{loadingAdminData ? 'Syncing...' : 'Sync Data'}</span>
+                  <span>{loadingAdminData ? 'Syncing...' : 'Sync Firestore'}</span>
                 </button>
                 <button
                   onClick={logout}
@@ -286,7 +463,7 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-slate-800">
               <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Users</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Users (Firestore)</div>
                 <div className="text-2xl font-black text-white mt-1">{adminUsers.length}</div>
               </div>
               <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60">
@@ -294,154 +471,474 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
                 <div className="text-2xl font-black text-[#5191fa] mt-1">{adminAllBookings.length}</div>
               </div>
               <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Active Expeditions</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Confirmed &amp; Accepted</div>
                 <div className="text-2xl font-black text-emerald-400 mt-1">
-                  {adminAllBookings.filter(b => b.status === 'Confirmed').length}
+                  {adminAllBookings.filter(b => b.status === 'Confirmed' || (b.status as any) === 'Accepted').length}
                 </div>
               </div>
               <div className="bg-slate-800/60 p-4 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Database Engine</div>
-                <div className="text-2xl font-black text-amber-400 mt-1">Cloud Firestore</div>
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Traveler Activities</div>
+                <div className="text-2xl font-black text-amber-400 mt-1">
+                  {liveActivitiesList.length}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* User Directory Table / List */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div>
-                <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
-                  <User className="w-5 h-5 text-[#5191fa]" />
-                  <span>Registered Users Directory ({adminUsers.length})</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Click on any user row to view their full booking history and contact details
-                </p>
+          {/* Admin Navigation Tabs */}
+          <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-3">
+            <button
+              onClick={() => setAdminTab('users')}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'users'
+                  ? 'bg-[#1a2b48] text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              <span>Registered Travelers ({adminUsers.length})</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('bookings')}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'bookings'
+                  ? 'bg-[#1a2b48] text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <CalendarCheck className="w-4 h-4" />
+              <span>All Bookings ({adminAllBookings.length})</span>
+            </button>
+
+            <button
+              onClick={() => setAdminTab('activities')}
+              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'activities'
+                  ? 'bg-[#5191fa] text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Activity className="w-4 h-4 text-amber-300" />
+              <span>Traveler Activity Feed ({liveActivitiesList.length})</span>
+            </button>
+          </div>
+
+          {/* TAB 1: USERS DIRECTORY */}
+          {adminTab === 'users' && (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
+                    <User className="w-5 h-5 text-[#5191fa]" />
+                    <span>Firestore Users Directory ({adminUsers.length})</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Click on any user to view booking details, accept/decline trips, edit profiles, or reset passwords.
+                  </p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-72">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={adminSearch}
+                    onChange={(e) => setAdminSearch(e.target.value)}
+                    placeholder="Search by email, name or UID..."
+                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa] focus:bg-white"
+                  />
+                </div>
               </div>
 
-              {/* Search Bar */}
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={adminSearch}
-                  onChange={(e) => setAdminSearch(e.target.value)}
-                  placeholder="Search by email or name..."
-                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa] focus:bg-white"
-                />
-              </div>
+              {loadingAdminData ? (
+                <div className="py-16 text-center">
+                  <div className="w-8 h-8 border-3 border-[#5191fa]/20 border-t-[#5191fa] rounded-full animate-spin mx-auto mb-3" />
+                  <p className="text-xs text-slate-500">Loading users from Cloud Firestore...</p>
+                </div>
+              ) : filteredUsers.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border border-slate-200 rounded-2xl overflow-hidden">
+                    <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                      <tr>
+                        <th className="py-3.5 px-4">User / Traveler</th>
+                        <th className="py-3.5 px-4">Firebase Email</th>
+                        <th className="py-3.5 px-4">Account Created</th>
+                        <th className="py-3.5 px-4 text-center">Trip Bookings</th>
+                        <th className="py-3.5 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredUsers.map((u) => {
+                        const isSelected = selectedUser?.id === u.id;
+                        const formattedDate = u.createdAt
+                          ? new Date(u.createdAt).toLocaleDateString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })
+                          : 'March 2027';
+
+                        return (
+                          <tr
+                            key={u.id}
+                            onClick={() => setSelectedUser(u)}
+                            className={`transition-colors cursor-pointer ${
+                              isSelected ? 'bg-blue-50/80' : 'hover:bg-slate-50/80'
+                            }`}
+                          >
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#1a2b48] to-[#5191fa] text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
+                                  {(u.firstName || u.email)[0].toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                                    <span>
+                                      {u.firstName || 'Traveler'} {u.lastName || ''}
+                                    </span>
+                                    {u.id === ADMIN_USER_ID && (
+                                      <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800">
+                                        Admin
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 font-mono">
+                                    UID: {u.id.substring(0, 14)}...
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-1 text-slate-700">
+                                <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span className="font-medium">{u.email}</span>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-slate-500">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                <span>{formattedDate}</span>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-center">
+                              <span
+                                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                                  (u.bookingCount || 0) > 0
+                                    ? 'bg-blue-100 text-[#5191fa]'
+                                    : 'bg-slate-100 text-slate-500'
+                                }`}
+                              >
+                                {u.bookingCount || 0} trip{(u.bookingCount || 0) === 1 ? '' : 's'}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenPasswordModal(u)}
+                                  className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer border border-amber-200"
+                                  title={`Reset / change password for ${u.email}`}
+                                >
+                                  <KeyRound className="w-3.5 h-3.5 text-amber-700" />
+                                  <span>Reset Password</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedUser(u)}
+                                  className="px-2.5 py-1.5 bg-[#5191fa] hover:bg-[#3875dc] text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="View User Bookings & Details"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Details</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-500 text-xs">
+                  No users found in Firestore matching &quot;{adminSearch}&quot;.
+                </div>
+              )}
             </div>
+          )}
 
-            {loadingAdminData ? (
-              <div className="py-16 text-center">
-                <div className="w-8 h-8 border-3 border-[#5191fa]/20 border-t-[#5191fa] rounded-full animate-spin mx-auto mb-3" />
-                <p className="text-xs text-slate-500">Querying Firestore users collection...</p>
+          {/* TAB 2: ALL BOOKINGS DIRECTORY */}
+          {adminTab === 'bookings' && (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
+                    <CalendarCheck className="w-5 h-5 text-[#5191fa]" />
+                    <span>All Expedition Bookings ({adminAllBookings.length})</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Directly Accept, Decline, Confirm, Complete, or Edit every trip booking in Firestore.
+                  </p>
+                </div>
               </div>
-            ) : filteredUsers.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border border-slate-200 rounded-2xl overflow-hidden">
-                  <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
-                    <tr>
-                      <th className="py-3.5 px-4">Traveler / User</th>
-                      <th className="py-3.5 px-4">Email Address</th>
-                      <th className="py-3.5 px-4">Account Created</th>
-                      <th className="py-3.5 px-4 text-center">Trip/Tour Bookings</th>
-                      <th className="py-3.5 px-4 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredUsers.map((u) => {
-                      const isSelected = selectedUser?.id === u.id;
-                      const formattedDate = u.createdAt
-                        ? new Date(u.createdAt).toLocaleDateString('en-US', {
+
+              {adminAllBookings.length > 0 ? (
+                <div className="space-y-4">
+                  {adminAllBookings.map((b) => (
+                    <div
+                      key={b.id}
+                      className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-[#5191fa] transition-colors"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <span className="font-mono text-xs font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
+                              {b.bookingCode}
+                            </span>
+                            <span
+                              className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                b.status === 'Confirmed' || (b.status as any) === 'Accepted'
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : b.status === 'Cancelled' || (b.status as any) === 'Declined'
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-amber-100 text-amber-800'
+                              }`}
+                            >
+                              {b.status}
+                            </span>
+                            <span className="text-xs text-slate-400">· {b.bookingDate}</span>
+                          </div>
+
+                          <h4 className="font-heading font-bold text-slate-900 text-base">
+                            {b.tourTitle}
+                          </h4>
+
+                          <div className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-3">
+                            <span><strong>Traveler:</strong> {b.customerName} ({b.customerEmail})</span>
+                            <span>·</span>
+                            <span><strong>Dates:</strong> {b.startDate} to {b.endDate}</span>
+                            <span>·</span>
+                            <span><strong>Party:</strong> {b.adults} Adults {b.children ? `· ${b.children} Children` : ''}</span>
+                          </div>
+
+                          {b.specialRequests && (
+                            <div className="text-xs text-slate-600 mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                              <strong>Special Requests:</strong> {b.specialRequests}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="text-left md:text-right shrink-0">
+                          <div className="text-[10px] text-slate-400 uppercase font-bold">Total Price</div>
+                          <div className="text-lg font-black text-[#1a2b48]">
+                            {formatPrice(b.totalPrice)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Admin Booking Action Buttons */}
+                      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleAdminUpdateStatus(b.id, 'Confirmed')}
+                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Accept / Confirm</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAdminUpdateStatus(b.id, 'Cancelled')}
+                            className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Decline</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAdminUpdateStatus(b.id, 'Completed')}
+                            className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>Complete</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAdminUpdateStatus(b.id, 'Pending Verification')}
+                            className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                            <span>Pending</span>
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditBooking(b)}
+                          className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Edit3 className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Edit Details</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-500 text-xs">
+                  No bookings found in Cloud Firestore.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: TRAVELER ACTIVITY FEED ("admin panel show show every activity of all user/travelers") */}
+          {adminTab === 'activities' && (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-[#5191fa]" />
+                    <span>Real-Time Traveler Activity Feed ({filteredActivities.length})</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Live stream of every action by all users/travelers: accounts, sign-ins, favorites saved, bookings placed, and updates.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  {/* Activity Search */}
+                  <div className="relative w-full sm:w-60">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={activitySearch}
+                      onChange={(e) => setActivitySearch(e.target.value)}
+                      placeholder="Filter traveler activity..."
+                      className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter Pills */}
+              <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-slate-100">
+                <span className="text-[11px] font-bold text-slate-400 uppercase mr-1 flex items-center gap-1">
+                  <Filter className="w-3 h-3" /> Filter:
+                </span>
+                {[
+                  { id: 'ALL', label: 'All Activities' },
+                  { id: 'BOOKINGS', label: 'Bookings' },
+                  { id: 'FAVORITES', label: 'Favorites' },
+                  { id: 'LOGINS', label: 'Logins / Sessions' },
+                  { id: 'PASSWORDS', label: 'Password Resets' },
+                  { id: 'PROFILES', label: 'Profile Updates' }
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setActivityFilter(f.id)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                      activityFilter === f.id
+                        ? 'bg-[#1a2b48] text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Activity Timeline List */}
+              {filteredActivities.length > 0 ? (
+                <div className="space-y-3">
+                  {filteredActivities.map((act) => {
+                    const isBooking = act.action.includes('BOOKING');
+                    const isFavoriteAction = act.action.includes('FAVORITE');
+                    const isPassword = act.action.includes('PASSWORD');
+                    const isLogin = act.action.includes('LOGIN') || act.action.includes('LOGOUT') || act.action.includes('REGISTER');
+
+                    const badgeColor = isBooking
+                      ? 'bg-blue-100 text-blue-800 border-blue-200'
+                      : isFavoriteAction
+                      ? 'bg-rose-100 text-rose-800 border-rose-200'
+                      : isPassword
+                      ? 'bg-amber-100 text-amber-800 border-amber-200'
+                      : isLogin
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : 'bg-slate-100 text-slate-800 border-slate-200';
+
+                    const icon = isBooking ? (
+                      <CalendarCheck className="w-4 h-4 text-[#5191fa]" />
+                    ) : isFavoriteAction ? (
+                      <Heart className="w-4 h-4 text-rose-500 fill-rose-500" />
+                    ) : isPassword ? (
+                      <KeyRound className="w-4 h-4 text-amber-600" />
+                    ) : (
+                      <User className="w-4 h-4 text-emerald-600" />
+                    );
+
+                    return (
+                      <div
+                        key={act.id}
+                        className="p-4 bg-slate-50/70 hover:bg-white rounded-2xl border border-slate-200/80 transition-all shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                            {icon}
+                          </div>
+                          <div>
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
+                              <span className="font-bold text-xs text-slate-900">
+                                {act.userName || 'Traveler'}
+                              </span>
+                              <span className="text-[11px] text-slate-500">
+                                ({act.userEmail})
+                              </span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                                {act.action.replace('_', ' ')}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-700 leading-relaxed font-medium">
+                              {act.details}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-slate-400 font-mono shrink-0 sm:text-right pl-12 sm:pl-0">
+                          {new Date(act.timestamp).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric'
-                          })
-                        : 'March 2027';
+                          })}{' '}
+                          · {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-slate-500 text-xs">
+                  No traveler activities recorded matching this filter.
+                </div>
+              )}
+            </div>
+          )}
 
-                      return (
-                        <tr
-                          key={u.id}
-                          onClick={() => setSelectedUser(u)}
-                          className={`transition-colors cursor-pointer ${
-                            isSelected ? 'bg-blue-50/80' : 'hover:bg-slate-50/80'
-                          }`}
-                        >
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#1a2b48] to-[#5191fa] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                                {(u.firstName || u.email || 'U')[0].toUpperCase()}
-                              </div>
-                              <div>
-                                <div className="font-semibold text-slate-900">
-                                  {u.firstName || 'Traveler'} {u.lastName || ''}
-                                </div>
-                                <div className="text-[10px] text-slate-400 font-mono">
-                                  {u.id === ADMIN_USER_ID ? (
-                                    <span className="text-amber-600 font-bold bg-amber-50 px-1.5 py-0.5 rounded">
-                                      Admin Account
-                                    </span>
-                                  ) : (
-                                    <span>ID: {u.id.slice(0, 12)}...</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 font-medium text-slate-700">
-                            <div className="flex items-center gap-1.5">
-                              <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{u.email}</span>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-500">
-                            <div className="flex items-center gap-1.5">
-                              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                              <span>{formattedDate}</span>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 text-center">
-                            <span
-                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
-                                (u.bookingCount || 0) > 0
-                                  ? 'bg-blue-100 text-[#5191fa]'
-                                  : 'bg-slate-100 text-slate-400'
-                              }`}
-                            >
-                              {u.bookingCount || 0} {u.bookingCount === 1 ? 'Trip' : 'Trips'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedUser(u);
-                              }}
-                              className="px-3 py-1.5 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-xs font-semibold rounded-lg inline-flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>View Details</span>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-12 text-center text-slate-500 text-xs">
-                No users found matching &quot;{adminSearch}&quot;.
-              </div>
-            )}
-          </div>
-
-          {/* Selected User Details & Booking Modal/Drawer */}
+          {/* Selected User Details Drawer / Modal */}
           {selectedUser && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
               <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col border border-slate-100">
-                {/* Header */}
+                {/* Drawer Header */}
                 <div className="p-6 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#5191fa] to-blue-400 text-white flex items-center justify-center font-black text-lg">
@@ -466,25 +963,82 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
                   </button>
                 </div>
 
-                {/* Body */}
+                {/* Drawer Body */}
                 <div className="p-6 overflow-y-auto space-y-6">
-                  {/* User Profile Card Summary */}
-                  <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-                    <div>
-                      <div className="text-slate-400 text-[10px] uppercase font-bold">Email</div>
-                      <div className="font-semibold text-slate-900 mt-0.5">{selectedUser.email}</div>
-                    </div>
-                    <div>
-                      <div className="text-slate-400 text-[10px] uppercase font-bold">Phone</div>
-                      <div className="font-semibold text-slate-900 mt-0.5">{selectedUser.phone || 'Not provided'}</div>
-                    </div>
-                    <div>
-                      <div className="text-slate-400 text-[10px] uppercase font-bold">Account Created</div>
-                      <div className="font-semibold text-slate-900 mt-0.5">
-                        {selectedUser.createdAt
-                          ? new Date(selectedUser.createdAt).toLocaleDateString()
-                          : 'March 2027'}
+                  {/* User Profile Card Summary & Admin Actions */}
+                  <div className="bg-slate-50 rounded-2xl p-5 border border-slate-200/80">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Traveler Account Details
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditTraveler(selectedUser)}
+                        className="px-2.5 py-1 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#5191fa]" />
+                        <span>Edit Traveler Details</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs mb-4">
+                      <div>
+                        <div className="text-slate-400 text-[10px] uppercase font-bold">Email</div>
+                        <div className="font-semibold text-slate-900 mt-0.5">{selectedUser.email}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-400 text-[10px] uppercase font-bold">Phone</div>
+                        <div className="font-semibold text-slate-900 mt-0.5">{selectedUser.phone || 'Not provided'}</div>
+                      </div>
+                      <div>
+                        <div className="text-slate-400 text-[10px] uppercase font-bold">Account Created</div>
+                        <div className="font-semibold text-slate-900 mt-0.5">
+                          {selectedUser.createdAt
+                            ? new Date(selectedUser.createdAt).toLocaleDateString()
+                            : 'March 2027'}
+                        </div>
+                      </div>
+                      {selectedUser.emergencyContact && (
+                        <div>
+                          <div className="text-slate-400 text-[10px] uppercase font-bold">Emergency Contact</div>
+                          <div className="font-semibold text-slate-900 mt-0.5">{selectedUser.emergencyContact}</div>
+                        </div>
+                      )}
+                      {selectedUser.passportNumber && (
+                        <div>
+                          <div className="text-slate-400 text-[10px] uppercase font-bold">Passport / ID</div>
+                          <div className="font-semibold text-slate-900 mt-0.5">{selectedUser.passportNumber}</div>
+                        </div>
+                      )}
+                      {selectedUser.tempPassword && (
+                        <div>
+                          <div className="text-slate-400 text-[10px] uppercase font-bold">Active Temp Password</div>
+                          <div className="font-mono font-bold text-amber-700 mt-0.5 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 inline-block">
+                            {selectedUser.tempPassword}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {selectedUser.bio && (
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 text-xs text-slate-600 mb-4">
+                        <strong className="block text-slate-900 mb-1">Climbing Bio:</strong>
+                        {selectedUser.bio}
+                      </div>
+                    )}
+
+                    <div className="pt-3 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">
+                      <div className="text-xs text-slate-600">
+                        Admin Security Controls:
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPasswordModal(selectedUser)}
+                        className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                      >
+                        <KeyRound className="w-3.5 h-3.5" />
+                        <span>Change / Reset User Password</span>
+                      </button>
                     </div>
                   </div>
 
@@ -498,44 +1052,84 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
                     </h4>
 
                     {selectedUserBookings.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {selectedUserBookings.map((b) => (
                           <div
                             key={b.id}
-                            className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs hover:border-[#5191fa] transition-colors"
+                            className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:border-[#5191fa] transition-colors"
                           >
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-2 mb-1.5">
                                   <span className="font-mono text-xs font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
                                     {b.bookingCode}
                                   </span>
-                                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
+                                  <span
+                                    className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                                      b.status === 'Confirmed' || (b.status as any) === 'Accepted'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : b.status === 'Cancelled' || (b.status as any) === 'Declined'
+                                        ? 'bg-rose-100 text-rose-800'
+                                        : 'bg-amber-100 text-amber-800'
+                                    }`}
+                                  >
                                     {b.status}
                                   </span>
                                 </div>
-                                <div className="font-heading font-bold text-slate-900 text-sm">
-                                  {b.tourTitle}
-                                </div>
+                                <h5 className="font-heading font-bold text-slate-900 text-sm">{b.tourTitle}</h5>
                                 <div className="text-xs text-slate-500 mt-1">
-                                  <strong>Dates:</strong> {b.startDate} - {b.endDate} · <strong>Party:</strong> {b.adults} Adults
+                                  <strong>Dates:</strong> {b.startDate} to {b.endDate} · <strong>Party:</strong> {b.adults} Adults
                                 </div>
                                 {b.specialRequests && (
                                   <div className="text-xs text-slate-600 mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                                    <strong>Special Requests:</strong> {b.specialRequests}
+                                    <strong>Notes:</strong> {b.specialRequests}
                                   </div>
                                 )}
                               </div>
-
-                              <div className="text-right sm:border-l sm:pl-4 border-slate-100 shrink-0">
-                                <div className="text-[10px] text-slate-400 uppercase font-bold">Total Paid</div>
+                              <div className="text-left sm:text-right">
+                                <div className="text-[10px] text-slate-400 uppercase font-bold">Total Price</div>
                                 <div className="text-base font-extrabold text-[#1a2b48]">
                                   {formatPrice(b.totalPrice)}
                                 </div>
-                                <div className="text-[10px] text-slate-400 mt-0.5">
-                                  Booked: {b.bookingDate}
-                                </div>
                               </div>
+                            </div>
+
+                            {/* Booking Action Buttons for Admin */}
+                            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleAdminUpdateStatus(b.id, 'Confirmed')}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  <span>Accept</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAdminUpdateStatus(b.id, 'Cancelled')}
+                                  className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                >
+                                  <XCircle className="w-3.5 h-3.5" />
+                                  <span>Decline</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleAdminUpdateStatus(b.id, 'Completed')}
+                                  className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                >
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                  <span>Complete</span>
+                                </button>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditBooking(b)}
+                                className="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <Edit3 className="w-3.5 h-3.5 text-slate-600" />
+                                <span>Edit Details</span>
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -548,15 +1142,398 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
                   </div>
                 </div>
 
-                {/* Footer */}
+                {/* Drawer Footer */}
                 <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
                   <button
                     onClick={() => setSelectedUser(null)}
                     className="px-5 py-2 bg-slate-800 text-white text-xs font-semibold rounded-xl hover:bg-slate-700 transition-colors cursor-pointer"
                   >
-                    Close Details
+                    Close
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Password Reset & Change Modal */}
+          {passwordModalUser && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                  <div className="flex items-center gap-2">
+                    <KeyRound className="w-5 h-5 text-amber-600" />
+                    <h3 className="font-heading font-bold text-base text-slate-900">
+                      Reset Traveler Password
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setPasswordModalUser(null)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="mb-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-600">
+                  <div><strong>Traveler:</strong> {passwordModalUser.firstName} {passwordModalUser.lastName}</div>
+                  <div><strong>Email:</strong> <span className="font-semibold text-slate-800">{passwordModalUser.email}</span></div>
+                </div>
+
+                {passwordSuccessResult && (
+                  <div className="mb-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900">
+                    <div className="flex items-center gap-2 font-bold mb-1">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{passwordSuccessResult.message}</span>
+                    </div>
+                    {passwordSuccessResult.tempPass && (
+                      <div className="mt-3 p-2 bg-white rounded-lg border border-emerald-300 flex items-center justify-between">
+                        <span className="font-mono font-bold text-slate-900">{passwordSuccessResult.tempPass}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard?.writeText(passwordSuccessResult.tempPass || '');
+                            setCopiedPassword(true);
+                            setTimeout(() => setCopiedPassword(false), 2000);
+                          }}
+                          className="px-2 py-1 bg-emerald-600 text-white rounded text-[11px] font-semibold cursor-pointer hover:bg-emerald-700 flex items-center gap-1"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>{copiedPassword ? 'Copied!' : 'Copy'}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {passwordErrorResult && (
+                  <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{passwordErrorResult}</span>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {/* Option A: Direct Password Assignment */}
+                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                    <label className="block text-xs font-bold text-slate-800 mb-1">
+                      Assign New Password Directly:
+                    </label>
+                    <p className="text-[11px] text-slate-500 mb-2">
+                      Saves to user account in Firestore so the traveler can log in immediately.
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={customPasswordInput}
+                        onChange={(e) => setCustomPasswordInput(e.target.value)}
+                        placeholder="e.g. Explorer@2027"
+                        className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setCustomPasswordInput('Pass@' + Math.floor(100000 + Math.random() * 900000))}
+                        className="px-2.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
+                        title="Generate random secure password"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      disabled={resettingPassword}
+                      onClick={() => handleExecutePasswordReset(customPasswordInput)}
+                      className="w-full mt-3 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    >
+                      {resettingPassword ? 'Saving in Firestore...' : 'Apply & Save New Password'}
+                    </button>
+                  </div>
+
+                  {/* Option B: Dispatch Email Link */}
+                  <div className="pt-2 text-center">
+                    <button
+                      type="button"
+                      disabled={resettingPassword}
+                      onClick={() => handleExecutePasswordReset(undefined)}
+                      className="text-xs text-[#5191fa] hover:text-[#3875dc] font-semibold hover:underline cursor-pointer"
+                    >
+                      Or send password reset email via Firebase Auth
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-3 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setPasswordModalUser(null)}
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl cursor-pointer"
+                  >
+                    Done / Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Edit Traveler Details Modal */}
+          {editingTraveler && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                  <h3 className="font-heading font-bold text-base text-slate-900">
+                    Edit Traveler Account Details
+                  </h3>
+                  <button
+                    onClick={() => setEditingTraveler(null)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveTravelerEdit} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">First Name</label>
+                      <input
+                        type="text"
+                        value={editTravelerFirst}
+                        onChange={(e) => setEditTravelerFirst(e.target.value)}
+                        required
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Last Name</label>
+                      <input
+                        type="text"
+                        value={editTravelerLast}
+                        onChange={(e) => setEditTravelerLast(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
+                    <input
+                      type="text"
+                      value={editTravelerPhone}
+                      onChange={(e) => setEditTravelerPhone(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Emergency Contact</label>
+                    <input
+                      type="text"
+                      value={editTravelerEmergency}
+                      onChange={(e) => setEditTravelerEmergency(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Passport / ID Document</label>
+                    <input
+                      type="text"
+                      value={editTravelerPassport}
+                      onChange={(e) => setEditTravelerPassport(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Travel Bio &amp; Notes</label>
+                    <textarea
+                      rows={3}
+                      value={editTravelerBio}
+                      onChange={(e) => setEditTravelerBio(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditingTraveler(null)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingTraveler}
+                      className="px-5 py-2 bg-[#5191fa] hover:bg-[#3875dc] text-white text-xs font-bold rounded-xl cursor-pointer shadow-xs"
+                    >
+                      {savingTraveler ? 'Saving...' : 'Save Traveler Profile'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Admin Edit Booking Modal */}
+          {editingBooking && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+              <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                  <div>
+                    <h3 className="font-heading font-bold text-lg text-slate-900">
+                      Edit Booking Details
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Booking Code: <strong className="font-mono text-[#5191fa]">{editingBooking.bookingCode}</strong>
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setEditingBooking(null)}
+                    className="p-1.5 text-slate-400 hover:text-slate-600 rounded-full cursor-pointer"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {bookingSaveNotice && (
+                  <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{bookingSaveNotice}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleSaveBookingEdit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Tour / Expedition Title
+                    </label>
+                    <input
+                      type="text"
+                      value={editTourTitle}
+                      onChange={(e) => setEditTourTitle(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Start Date
+                      </label>
+                      <input
+                        type="text"
+                        value={editStartDate}
+                        onChange={(e) => setEditStartDate(e.target.value)}
+                        placeholder="e.g. 10 June 2027"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        End Date
+                      </label>
+                      <input
+                        type="text"
+                        value={editEndDate}
+                        onChange={(e) => setEditEndDate(e.target.value)}
+                        placeholder="e.g. 28 June 2027"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Adults
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={editAdults}
+                        onChange={(e) => setEditAdults(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Children
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editChildren}
+                        onChange={(e) => setEditChildren(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Total Price ($)
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={editTotalPrice}
+                        onChange={(e) => setEditTotalPrice(Number(e.target.value))}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Booking Status
+                    </label>
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value as Booking['status'])}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                    >
+                      <option value="Confirmed">Confirmed</option>
+                      <option value="Pending Verification">Pending Verification</option>
+                      <option value="Completed">Completed</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Special Requests / Notes
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editSpecialRequests}
+                      onChange={(e) => setEditSpecialRequests(e.target.value)}
+                      placeholder="Custom notes or requests..."
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => setEditingBooking(null)}
+                      className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingBooking}
+                      className="px-5 py-2 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    >
+                      {savingBooking ? (
+                        <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5" />
+                      )}
+                      <span>{savingBooking ? 'Saving...' : 'Update Booking in Firestore'}</span>
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
@@ -566,14 +1543,20 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
   }
 
   // =========================================================================
-  // NORMAL TRAVELER DASHBOARD VIEW
+  // NORMAL TRAVELER DASHBOARD VIEW (Every other user sees their own dashboard)
   // =========================================================================
+  const myBookings = bookings.filter(
+    b => b.userId === user.id || (b.customerEmail && b.customerEmail.toLowerCase() === user.email.toLowerCase())
+  );
+
+  const favoritedTours = TOURS_DATA.filter(t => isFavorite(t.id));
+
   return (
     <div className="bg-[#f7f8fa] min-h-screen py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="text-xs text-slate-500 mb-4 flex items-center gap-1.5 font-medium">
-          <button onClick={() => onNavigate('home')} className="hover:text-[#5191fa]">Home</button>
+          <button onClick={() => onNavigate('home')} className="hover:text-[#5191fa] cursor-pointer">Home</button>
           <span>/</span>
           <span className="text-slate-800 font-semibold">User Dashboard</span>
         </div>
@@ -594,6 +1577,9 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
                   <span>·</span>
                   <span className="text-emerald-600 font-semibold">Verified Member</span>
                 </div>
+                <div className="text-[11px] text-slate-400 font-mono mt-1">
+                  Firebase UID: {user.id}
+                </div>
                 {user.phone && (
                   <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
                     <Phone className="w-3 h-3 text-slate-400" />
@@ -613,7 +1599,7 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
               </button>
               <button
                 onClick={() => onNavigate('tours', 'all')}
-                className="px-4 py-2 bg-[#5191fa] text-white text-xs font-bold rounded-xl hover:bg-[#3d7be3] transition-all cursor-pointer"
+                className="px-4 py-2 bg-[#5191fa] text-white text-xs font-bold rounded-xl hover:bg-[#3d7be3] transition-all cursor-pointer shadow-xs"
               >
                 Book New Adventure
               </button>
@@ -652,241 +1638,322 @@ export const UserDashboardPage: React.FC<{ onNavigate: (route: string, param?: s
           )}
         </div>
 
-        {/* My Bookings */}
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-heading text-xl font-bold text-[#1a2b48] flex items-center gap-2">
-              <CalendarCheck className="w-5 h-5 text-[#5191fa]" />
-              <span>My Expedition Bookings ({bookings.length})</span>
-            </h2>
-          </div>
+        {/* User Dashboard Navigation Tabs: Bookings & Favorites */}
+        <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-3">
+          <button
+            onClick={() => setUserTab('bookings')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+              userTab === 'bookings'
+                ? 'bg-[#1a2b48] text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <CalendarCheck className="w-4 h-4" />
+            <span>My Expedition Bookings ({myBookings.length})</span>
+          </button>
 
-          {bookings.length > 0 ? (
-            <div className="space-y-4">
-              {bookings.map((b) => (
-                <div
-                  key={b.id}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start sm:items-center gap-4">
-                    <img
-                      src={b.tourImage}
-                      alt={b.tourTitle}
-                      className="w-20 h-20 rounded-xl object-cover shrink-0"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-xs font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
-                          {b.bookingCode}
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                          <CheckCircle className="w-3 h-3" />
-                          <span>{b.status}</span>
-                        </span>
-                      </div>
-                      <h3 className="font-heading font-bold text-base text-[#1a2b48]">
-                        {b.tourTitle}
-                      </h3>
-                      <div className="text-xs text-slate-500 mt-1 space-x-3">
-                        <span><strong>Dates:</strong> {b.startDate} - {b.endDate}</span>
-                        <span>·</span>
-                        <span><strong>Party:</strong> {b.adults} Adults {b.children > 0 ? `+ ${b.children} Youths` : ''}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex sm:flex-col items-end justify-between sm:justify-center border-t sm:border-t-0 pt-4 sm:pt-0 border-slate-100">
-                    <div className="text-right">
-                      <div className="text-[10px] text-slate-400 uppercase font-semibold">Total Cost</div>
-                      <div className="text-lg font-black text-[#1a2b48]">
-                        {formatPrice(b.totalPrice)}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        onClick={() => onNavigate('tour-detail', b.tourId)}
-                        className="text-xs font-bold text-[#5191fa] hover:underline flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>View Details</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => deleteUserBooking(b.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1 transition-colors cursor-pointer"
-                        title="Delete booking from dashboard"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
-              <p className="text-xs text-slate-500 mb-4">You have no active bookings yet.</p>
-              <button
-                onClick={() => onNavigate('tours', 'all')}
-                className="px-5 py-2 bg-[#5191fa] text-white text-xs font-bold rounded-xl cursor-pointer"
-              >
-                Explore Karakoram Tours
-              </button>
-            </div>
-          )}
-
-          {/* Account Privacy & Delete Self Details Option */}
-          <div className="pt-8 border-t border-slate-200 flex justify-between items-center text-xs text-slate-500">
-            <span>Manage your personal data in compliance with Pakistan DTS regulations.</span>
-            <button
-              onClick={() => setDeleteConfirmOpen(true)}
-              className="text-rose-600 hover:text-rose-700 font-semibold hover:underline cursor-pointer"
-            >
-              Delete My Account &amp; Details
-            </button>
-          </div>
+          <button
+            onClick={() => setUserTab('favorites')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+              userTab === 'favorites'
+                ? 'bg-rose-500 text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Heart className={`w-4 h-4 ${userTab === 'favorites' ? 'fill-white' : 'text-rose-500'}`} />
+            <span>Saved Favorites / Wishlist ({favorites.length})</span>
+          </button>
         </div>
-      </div>
 
-      {/* Edit Details Modal */}
-      {editProfileOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-100">
+        {/* TAB 1: MY BOOKINGS SECTION */}
+        {userTab === 'bookings' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-xl font-heading font-bold text-[#1a2b48]">Update Your Details</h3>
-                <p className="text-xs text-slate-500">Saved securely in your private Firestore database record.</p>
+                <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
+                  <CalendarCheck className="w-5 h-5 text-[#5191fa]" />
+                  <span>My Expedition Bookings ({myBookings.length})</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Real-time booking confirmations and itinerary vouchers synced with Firebase.
+                </p>
               </div>
-              <button
-                onClick={() => setEditProfileOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100"
-              >
-                <X className="w-5 h-5" />
-              </button>
             </div>
 
-            {saveSuccess && (
-              <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-600" />
-                <span>Your profile details have been saved to Firestore!</span>
+            {myBookings.length > 0 ? (
+              <div className="space-y-4">
+                {myBookings.map((b) => (
+                  <div
+                    key={b.id}
+                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:border-[#5191fa] transition-colors"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="font-mono text-xs font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
+                            {b.bookingCode}
+                          </span>
+                          <span
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded ${
+                              b.status === 'Confirmed' || (b.status as any) === 'Accepted'
+                                ? 'bg-emerald-50 text-emerald-700'
+                                : b.status === 'Cancelled' || (b.status as any) === 'Declined'
+                                ? 'bg-rose-50 text-rose-700'
+                                : 'bg-amber-50 text-amber-700'
+                            }`}
+                          >
+                            {b.status}
+                          </span>
+                        </div>
+                        <h3 className="font-heading font-bold text-slate-900 text-base">
+                          {b.tourTitle}
+                        </h3>
+                        <div className="text-xs text-slate-500 mt-1">
+                          <strong>Dates:</strong> {b.startDate} - {b.endDate} · <strong>Party:</strong> {b.adults} Adults
+                        </div>
+                        {b.specialRequests && (
+                          <div className="text-xs text-slate-600 mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                            <strong>Note:</strong> {b.specialRequests}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 sm:border-l sm:pl-4 border-slate-100">
+                        <div className="text-right">
+                          <div className="text-[10px] text-slate-400 uppercase font-bold">Total Price</div>
+                          <div className="text-base font-extrabold text-[#1a2b48]">
+                            {formatPrice(b.totalPrice)}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => deleteUserBooking(b.id)}
+                          className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Cancel Booking</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 text-xs">
+                <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p>You have not placed any expedition bookings yet.</p>
+                <button
+                  onClick={() => onNavigate('tours', 'all')}
+                  className="mt-4 px-4 py-2 bg-[#5191fa] text-white font-semibold rounded-xl text-xs cursor-pointer hover:bg-[#3d7be3]"
+                >
+                  Explore Expeditions &amp; Treks
+                </button>
               </div>
             )}
+          </div>
+        )}
 
-            <form onSubmit={handleSaveProfile} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+        {/* TAB 2: MY FAVORITES SECTION ("For login user there must be option to save as favorite") */}
+        {userTab === 'favorites' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
+                  <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
+                  <span>My Saved Favorites &amp; Wishlist ({favoritedTours.length})</span>
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Expeditions you have marked to keep track of. Synced across all your devices.
+                </p>
+              </div>
+            </div>
+
+            {favoritedTours.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {favoritedTours.map((t) => (
+                  <div
+                    key={t.id}
+                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div className="relative h-44 bg-slate-100 overflow-hidden">
+                      <img
+                        src={t.image}
+                        alt={t.title}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => toggleFavorite(t.id)}
+                        className="absolute top-3 right-3 p-2 bg-rose-500 text-white rounded-full shadow-md hover:bg-rose-600 cursor-pointer"
+                        title="Remove from favorites"
+                      >
+                        <Heart className="w-4 h-4 fill-white text-white" />
+                      </button>
+                    </div>
+
+                    <div className="p-4 flex-1 flex flex-col justify-between">
+                      <div>
+                        <div className="text-[11px] font-bold text-[#5191fa] uppercase tracking-wider mb-1">
+                          {t.location} · {t.category || 'Expedition'}
+                        </div>
+                        <h4 className="font-heading font-bold text-slate-900 text-sm mb-2 line-clamp-2">
+                          {t.title}
+                        </h4>
+                      </div>
+
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                        <div>
+                          <div className="text-[10px] text-slate-400 uppercase font-bold">Duration</div>
+                          <div className="text-xs font-semibold text-slate-700">{t.daysCount} Days</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[10px] text-slate-400 uppercase font-bold">From</div>
+                          <div className="text-sm font-extrabold text-[#1a2b48]">{formatPrice(t.price)}</div>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pt-3 border-t border-slate-100 flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onNavigate('detail', t.id)}
+                          className="flex-1 py-2 bg-[#5191fa] hover:bg-[#3875dc] text-white text-xs font-bold rounded-xl text-center cursor-pointer transition-colors shadow-xs"
+                        >
+                          Book / View Tour
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleFavorite(t.id)}
+                          className="p-2 border border-slate-200 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl cursor-pointer"
+                          title="Remove from wishlist"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 text-xs">
+                <Heart className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                <p className="text-slate-600 font-medium">You haven&apos;t saved any expeditions to your favorites yet.</p>
+                <p className="text-slate-400 mt-1">Browse our mountaineering and trekking packages and tap the heart icon on any trip.</p>
+                <button
+                  onClick={() => onNavigate('tours', 'all')}
+                  className="mt-4 px-4 py-2 bg-[#5191fa] text-white font-semibold rounded-xl text-xs cursor-pointer hover:bg-[#3d7be3]"
+                >
+                  Explore Expeditions &amp; Treks
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Edit Profile Modal */}
+        {editProfileOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <h3 className="font-heading font-bold text-lg text-slate-900">Edit My Travel Profile</h3>
+                <button onClick={() => setEditProfileOpen(false)} className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {saveSuccess && (
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs rounded-xl flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>Profile updated and synchronized with Firebase!</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProfile} className="space-y-3.5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">First Name</label>
+                    <input
+                      type="text"
+                      value={editFirstName}
+                      onChange={(e) => setEditFirstName(e.target.value)}
+                      required
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={editLastName}
+                      onChange={(e) => setEditLastName(e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">First Name</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Phone Number</label>
                   <input
                     type="text"
-                    value={editFirstName}
-                    onChange={(e) => setEditFirstName(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="+92 345 6412992"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
                   />
                 </div>
+
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Last Name</label>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Emergency Contact (Name &amp; Phone)</label>
                   <input
                     type="text"
-                    value={editLastName}
-                    onChange={(e) => setEditLastName(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                    value={editEmergencyContact}
+                    onChange={(e) => setEditEmergencyContact(e.target.value)}
+                    placeholder="e.g. John Doe (+1 555 123 4567)"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
                   />
                 </div>
-              </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  value={editPhone}
-                  onChange={(e) => setEditPhone(e.target.value)}
-                  placeholder="+92 345 6412992"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Passport / National ID</label>
+                  <input
+                    type="text"
+                    value={editPassportNumber}
+                    onChange={(e) => setEditPassportNumber(e.target.value)}
+                    placeholder="e.g. PA1234567"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                  />
+                </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Emergency Contact (Name &amp; Phone)</label>
-                <input
-                  type="text"
-                  value={editEmergencyContact}
-                  onChange={(e) => setEditEmergencyContact(e.target.value)}
-                  placeholder="e.g. John Doe (+1 555 1234567)"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">Bio / Climbing Experience</label>
+                  <textarea
+                    rows={3}
+                    value={editBio}
+                    onChange={(e) => setEditBio(e.target.value)}
+                    placeholder="Tell us about previous treks, summits or dietary preferences..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                  />
+                </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Passport / National ID Number</label>
-                <input
-                  type="text"
-                  value={editPassportNumber}
-                  onChange={(e) => setEditPassportNumber(e.target.value)}
-                  placeholder="Required for trekking permits"
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Traveler Bio / Prior Expeditions</label>
-                <textarea
-                  value={editBio}
-                  onChange={(e) => setEditBio(e.target.value)}
-                  rows={2}
-                  placeholder="Tell our guides about your hiking experience, altitude records, or diet..."
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-                />
-              </div>
-
-              <div className="pt-3 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditProfileOpen(false)}
-                  className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingProfile}
-                  className="px-5 py-2 bg-[#5191fa] text-white font-bold rounded-xl hover:bg-[#3d7be3]"
-                >
-                  {savingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {deleteConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 text-center shadow-2xl border border-slate-100">
-            <div className="w-12 h-12 rounded-full bg-rose-50 text-rose-600 flex items-center justify-center mx-auto mb-3">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <h4 className="font-heading font-bold text-lg text-slate-900 mb-1">Delete Account &amp; Details?</h4>
-            <p className="text-xs text-slate-500 mb-6">
-              This will permanently delete your user profile from our Firestore database. This action cannot be reversed.
-            </p>
-            <div className="flex gap-2 justify-center">
-              <button
-                onClick={() => setDeleteConfirmOpen(false)}
-                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-semibold rounded-xl hover:bg-slate-50"
-              >
-                Keep Account
-              </button>
-              <button
-                onClick={handleDeleteMyAccount}
-                className="px-4 py-2 bg-rose-600 text-white text-xs font-semibold rounded-xl hover:bg-rose-700"
-              >
-                Yes, Delete My Data
-              </button>
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setEditProfileOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingProfile}
+                    className="px-5 py-2 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-xs font-semibold rounded-xl cursor-pointer"
+                  >
+                    {savingProfile ? 'Saving...' : 'Save Profile'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

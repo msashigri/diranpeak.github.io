@@ -19,8 +19,8 @@ export const TrustStats: React.FC = () => {
     },
     {
       icon: '/src/assets/rating-star.png',
-      title: '4.9/5',
-      desc: 'Achieving a flawless 4.9/5 review score reflects our unwavering commitment to excellence and customer satisfaction.'
+      title: 'Alpine Certified',
+      desc: 'Strict international mountain safety standards and certified high-altitude expedition protocols.'
     },
     {
       icon: '/src/assets/customer.png',

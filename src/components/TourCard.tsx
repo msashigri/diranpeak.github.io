@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { MapPin, Star, Heart } from 'lucide-react';
+import React from 'react';
+import { MapPin, Heart } from 'lucide-react';
 import { Tour } from '../data/toursData';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,8 +9,17 @@ interface TourCardProps {
 }
 
 export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
-  const { formatPrice } = useAuth();
-  const [liked, setLiked] = useState(false);
+  const { formatPrice, isAuthenticated, isFavorite, toggleFavorite, openLogin } = useAuth();
+  const liked = isFavorite(tour.id);
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthenticated) {
+      openLogin();
+      return;
+    }
+    await toggleFavorite(tour.id);
+  };
 
   return (
     <div
@@ -69,16 +78,19 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
           </div>
         )}
 
-        {/* Wishlist Heart */}
+        {/* Wishlist Heart - Save as Favorite for Logged In User */}
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setLiked(!liked);
-          }}
-          aria-label="Wishlist"
-          className="absolute bottom-2 right-2 text-white hover:text-[#ff9290] p-1.5 transition-colors z-10 cursor-pointer"
+          type="button"
+          onClick={handleFavoriteClick}
+          aria-label={liked ? 'Remove from favorites' : 'Save as favorite'}
+          title={isAuthenticated ? (liked ? 'Remove from favorites' : 'Save as favorite') : 'Log in to save favorite'}
+          className={`absolute bottom-2 right-2 p-2 rounded-full backdrop-blur-xs transition-all z-10 cursor-pointer ${
+            liked
+              ? 'bg-rose-500 text-white shadow-md scale-105'
+              : 'bg-black/40 text-white hover:bg-black/70 hover:scale-110'
+          }`}
         >
-          <Heart className={`w-4 h-4 ${liked ? 'fill-rose-500 text-rose-500' : 'text-white'}`} />
+          <Heart className={`w-4 h-4 ${liked ? 'fill-white text-white' : 'text-white'}`} />
         </button>
       </div>
 
@@ -97,21 +109,16 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
           </h3>
         </div>
 
-        {/* Bottom Info: Duration, Reviews & Price */}
+        {/* Bottom Info: Duration & Price (Ratings reset without any rating) */}
         <div className="px-4 pt-3 border-t border-[#f0f0f0] mt-2">
-          {/* Reviews & Duration */}
+          {/* Duration & Expedition Type */}
           <div className="flex items-center justify-between text-xs text-[#5e6d77] mb-2">
-            <div className="flex items-center gap-1 text-[#ffdc00]">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-3 h-3 fill-current" />
-              ))}
-              <span className="text-[#5e6d77] text-[11px] ml-1">
-                ({tour.reviewsCount})
-              </span>
-            </div>
+            <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+              {tour.category || 'Expedition'}
+            </span>
 
-            <span className="font-semibold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
-              {tour.daysCount}D
+            <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+              {tour.daysCount} Days
             </span>
           </div>
 

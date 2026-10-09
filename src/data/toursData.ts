@@ -67,8 +67,8 @@ export const TOURS_DATA: Tour[] = [
     price: 2300,
     originalPrice: 2500,
     discountPercent: 8,
-    rating: 4.95,
-    reviewsCount: 142,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Karakoram Range, Skardu, Pakistan',
     maxAltitude: '5,150 m (Concordia) / 5,000 m (K2 Base Camp)',
     groupSize: '4 - 12 Persons',
@@ -295,32 +295,7 @@ export const TOURS_DATA: Tour[] = [
         answer: 'All our guides carry pulse oximeters, medical oxygen cylinders, and comprehensive medical kits. We maintain active satellite communicators. If urgent evacuation is required, we coordinate military helicopter evacuation with Askari Aviation to the nearest hospital in Skardu.'
       }
     ],
-    reviews: [
-      {
-        id: 'rev-1',
-        name: 'Karlota Perurena',
-        country: 'Spain',
-        rating: 5,
-        date: 'August 2025',
-        comment: 'Trekking to K2 Base Camp with Diran Peak Adventure was the most incredible experience of my mountaineering life. The Balti staff were exceptionally attentive, the food at 4,600m in Concordia was delicious, and the safety measures gave complete peace of mind. Truly the best local team in Pakistan!'
-      },
-      {
-        id: 'rev-2',
-        name: 'Alexander Schmidt',
-        country: 'Germany',
-        rating: 5,
-        date: 'July 2025',
-        comment: '100% recommended! Having local Balti guides makes all the difference compared to foreign agencies. They know every crevasse of the Baltoro glacier like the back of their hand. Seeing K2 up close from Concordia is something you never forget.'
-      },
-      {
-        id: 'rev-3',
-        name: 'Sarah Jenkins',
-        country: 'United Kingdom',
-        rating: 5,
-        date: 'July 2025',
-        comment: 'Flawless logistics from airport pickup in Islamabad to the final celebration in Skardu. The guides are courteous, respectful, and so knowledgeable. Worth every single penny.'
-      }
-    ]
+    reviews: []
   },
   {
     id: 'k2-gondogoro-la-trek',
@@ -332,8 +307,8 @@ export const TOURS_DATA: Tour[] = [
     price: 2300,
     originalPrice: 2550,
     discountPercent: 10,
-    rating: 4.98,
-    reviewsCount: 98,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Baltoro Glacier to Hushe Valley, Pakistan',
     maxAltitude: '5,585 m (Gondogoro La Pass)',
     groupSize: '4 - 10 Persons',
@@ -399,9 +374,7 @@ export const TOURS_DATA: Tour[] = [
     faqs: [
       { question: 'Do I need technical mountaineering skills for Gondogoro La?', answer: 'You do not need to be an expert climber, but you should be confident walking with crampons on steep snow slopes (up to 45 degrees) and using a safety carabiner on fixed lines. Our team fixes the ropes and guides you every step.' }
     ],
-    reviews: [
-      { id: 'r-g1', name: 'Marco Bellini', country: 'Italy', rating: 5, date: 'July 2025', comment: 'Standing on Gondogoro Pass at 5:30 AM watching the sunrise hit K2, Broad Peak, and Laila Peak simultaneously is an image etched in my mind forever. The guides were world-class professionals.' }
-    ]
+    reviews: []
   },
   {
     id: 'k2-climbing-expedition',
@@ -413,8 +386,8 @@ export const TOURS_DATA: Tour[] = [
     price: 9500,
     originalPrice: 11000,
     discountPercent: 14,
-    rating: 5.0,
-    reviewsCount: 31,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Godwin-Austen Glacier, Gilgit-Baltistan',
     maxAltitude: '8,611 m (K2 Summit)',
     groupSize: '2 - 8 Climbers',
@@ -468,9 +441,7 @@ export const TOURS_DATA: Tour[] = [
     faqs: [
       { question: 'What prerequisites are required to join?', answer: 'Climbers must have summited at least one other 8,000-meter peak or extensive technical peaks over 7,000m (such as Spantik, Broad Peak, or Manaslu) with verified mountaineering resume.' }
     ],
-    reviews: [
-      { id: 'k2-rev1', name: 'David Thorne', country: 'United States', rating: 5, date: 'August 2025', comment: 'Diran Peak Adventure delivered flawless base camp service on K2. Having hot meals, heated communal domes, and dependable high altitude guides made our expedition both safe and successful.' }
-    ]
+    reviews: []
   },
   {
     id: 'broad-peak-expedition',
@@ -482,8 +453,8 @@ export const TOURS_DATA: Tour[] = [
     price: 5500,
     originalPrice: 6200,
     discountPercent: 11,
-    rating: 4.9,
-    reviewsCount: 24,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Godwin-Austen Glacier, Pakistan',
     maxAltitude: '8,047 m',
     groupSize: '4 - 10 Climbers',
@@ -524,9 +495,7 @@ export const TOURS_DATA: Tour[] = [
     faqs: [
       { question: 'Is oxygen mandatory for Broad Peak?', answer: 'Many experienced alpinists climb Broad Peak without supplemental oxygen, though we provide oxygen systems on request as a safety reserve.' }
     ],
-    reviews: [
-      { id: 'bp-rev', name: 'Jonas Lindqvist', country: 'Sweden', rating: 5, date: 'July 2025', comment: 'Reaching the summit of Broad Peak with Diran Peak Adventure was the peak of my life. Great porters, incredible food, solid leadership.' }
-    ]
+    reviews: []
   },
   {
     id: 'khosar-gang-expedition',
@@ -538,8 +507,8 @@ export const TOURS_DATA: Tour[] = [
     price: 2600,
     originalPrice: 2850,
     discountPercent: 8,
-    rating: 4.88,
-    reviewsCount: 46,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Shigar Valley, Baltistan',
     maxAltitude: '6,040 m',
     groupSize: '4 - 10 Persons',
@@ -576,9 +545,7 @@ export const TOURS_DATA: Tour[] = [
     faqs: [
       { question: 'Do I need prior summit experience?', answer: 'Prior trekking experience is necessary, but this peak is technically accessible to motivated beginners under our expert guide coaching.' }
     ],
-    reviews: [
-      { id: 'kg-rev', name: 'Camille Laurent', country: 'France', rating: 5, date: 'August 2025', comment: 'My first 6,000m peak! The guides taught me everything about crampons and roped glacier travel. Unforgettable summit sunrise!' }
-    ]
+    reviews: []
   },
   {
     id: 'nanga-parbat-rakaposhi-base-camp-trek',
@@ -590,8 +557,8 @@ export const TOURS_DATA: Tour[] = [
     price: 1650,
     originalPrice: 1850,
     discountPercent: 11,
-    rating: 4.92,
-    reviewsCount: 84,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Fairy Meadows & Nagar Valley, Pakistan',
     maxAltitude: '4,100 m',
     groupSize: '4 - 14 Persons',
@@ -630,9 +597,7 @@ export const TOURS_DATA: Tour[] = [
     faqs: [
       { question: 'Is this trek suitable for intermediate hikers?', answer: 'Yes! The trails are well established, altitudes are under 4,200m, and accommodations in Fairy Meadows include comfortable wooden log cabins with heaters.' }
     ],
-    reviews: [
-      { id: 'np-rev', name: 'Elena Rostova', country: 'Poland', rating: 5, date: 'September 2025', comment: 'Fairy Meadows is truly magical. Watching the sunset turn Nanga Parbat blood red from the balcony of our cabin was an experience of pure wonder.' }
-    ]
+    reviews: []
   },
   {
     id: 'lahore-multan-peshawar-swat-cultural-tour',
@@ -644,8 +609,8 @@ export const TOURS_DATA: Tour[] = [
     price: 1400,
     originalPrice: 1600,
     discountPercent: 12,
-    rating: 4.94,
-    reviewsCount: 52,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Punjab & Khyber Pakhtunkhwa, Pakistan',
     maxAltitude: '1,500 m',
     groupSize: '4 - 15 Persons',
@@ -681,9 +646,7 @@ export const TOURS_DATA: Tour[] = [
     faqs: [
       { question: 'What is the dress code for cultural tours?', answer: 'Pakistan is warm and welcoming, but modesty is respected. Long trousers, shirts covering shoulders, and a light scarf for women visiting sacred mosques and shrines are recommended.' }
     ],
-    reviews: [
-      { id: 'c-rev', name: 'Robert Tanaka', country: 'Japan', rating: 5, date: 'October 2025', comment: 'The hospitality of the Pakistani people in Peshawar and Lahore exceeded every expectation. An absolute must for history and architecture lovers.' }
-    ]
+    reviews: []
   },
   {
     id: 'spantik-peak-expedition',
@@ -695,8 +658,8 @@ export const TOURS_DATA: Tour[] = [
     price: 3800,
     originalPrice: 4200,
     discountPercent: 9,
-    rating: 4.96,
-    reviewsCount: 38,
+    rating: 0,
+    reviewsCount: 0,
     location: 'Nagar / Arando, Karakoram',
     maxAltitude: '7,027 m',
     groupSize: '4 - 10 Climbers',
@@ -729,8 +692,6 @@ export const TOURS_DATA: Tour[] = [
     faqs: [
       { question: 'What is the success rate on Spantik?', answer: 'Under our guided expedition leadership, Spantik enjoys an over 75% summit success rate in fair weather.' }
     ],
-    reviews: [
-      { id: 'sp-r1', name: 'Henrik Vang', country: 'Denmark', rating: 5, date: 'July 2025', comment: 'Spantik was my dream 7,000m climb. The Diran Peak Adventure crew made it happen with flawless high-camp stocking and warm encouragement.' }
-    ]
+    reviews: []
   }
 ];

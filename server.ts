@@ -15,14 +15,9 @@ const PORT = isProduction ? (Number(process.env.PORT) || 8080) : 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Storage directory & files
-const DATA_DIR = path.resolve(process.cwd(), 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
-
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+// Storage directory & files removed - all user authentication and data persistence are in Firebase Firestore
+let inMemoryUsers: StoredUser[] = [];
+let inMemorySessions: StoredSession[] = [];
 
 interface StoredUser {
   id: string;
@@ -49,71 +44,21 @@ interface StoredSession {
   userAgent?: string;
 }
 
-// Helper to read users
+// Helpers
 function readUsers(): StoredUser[] {
-  try {
-    if (fs.existsSync(USERS_FILE)) {
-      const data = fs.readFileSync(USERS_FILE, 'utf-8');
-      const parsed = JSON.parse(data);
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (err) {
-    console.error('Error reading users file:', err);
-  }
-
-  // Initial seed users with real bcrypt hashes
-  const salt = bcrypt.genSaltSync(10);
-  const initialUsers: StoredUser[] = [
-    {
-      id: 'usr_seed_traveler',
-      first_name: 'Alex',
-      last_name: 'Morgan',
-      email: 'traveler@diranpealadventure.com',
-      phone: '+923129903153',
-      password_hash: bcrypt.hashSync('password123', salt),
-      role: 'customer',
-      created_at: new Date('2027-01-15T10:00:00Z').toISOString(),
-      last_login_at: new Date().toISOString()
-    },
-    {
-      id: 'usr_seed_admin',
-      first_name: 'Admin',
-      last_name: 'Officer',
-      email: 'admin@diranpeakadventure.com',
-      phone: '+92 345 6412992',
-      password_hash: bcrypt.hashSync('admin123', salt),
-      role: 'admin',
-      created_at: new Date('2027-01-01T00:00:00Z').toISOString(),
-      last_login_at: new Date().toISOString()
-    }
-  ];
-
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(initialUsers, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error writing seed users:', err);
-  }
-  return initialUsers;
+  return inMemoryUsers;
 }
 
 function saveUsers(users: StoredUser[]) {
-  fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+  inMemoryUsers = users;
 }
 
 function readSessions(): StoredSession[] {
-  try {
-    if (fs.existsSync(SESSIONS_FILE)) {
-      const parsed = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf-8'));
-      if (Array.isArray(parsed)) return parsed;
-    }
-  } catch (err) {
-    console.error('Error reading sessions:', err);
-  }
-  return [];
+  return inMemorySessions;
 }
 
 function saveSessions(sessions: StoredSession[]) {
-  fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2), 'utf-8');
+  inMemorySessions = sessions;
 }
 
 function createSessionToken(userId: string, userAgent?: string, remember = true): string {

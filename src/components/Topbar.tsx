@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, Mail, Globe, ChevronDown, CalendarCheck, LogOut, ShieldCheck, Check } from 'lucide-react';
+import { Phone, Mail, Globe, ChevronDown, CalendarCheck, LogOut, ShieldCheck, Check, Heart, Facebook, Instagram } from 'lucide-react';
 import { useAuth, Currency } from '../context/AuthContext';
 import { SUPPORTED_LANGUAGES, getLanguageByCodeOrName } from '../utils/translator';
 import { PWAInstallButton } from './PWAInstallButton';
@@ -9,7 +9,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
-  const { user, isAuthenticated, isAdmin, adminAuth, currency, language, languageCode, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries } = useAuth();
+  const { user, isAuthenticated, isAdmin, adminAuth, currency, language, languageCode, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries, favorites } = useAuth();
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -22,44 +22,70 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
   return (
     <div className="bg-[#1a2b48] text-white text-[13px] py-2.5 border-b border-[#25395c] font-normal">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-y-2">
-        {/* Left: Exact Socials & Phone / Email matching chogoriadventure.com */}
-        <div className="flex items-center space-x-4 text-[#d1d4da]">
-          <div className="flex items-center space-x-3">
+        {/* Left: Social Media Icons (Facebook, Instagram, X) & Contact Info */}
+        <div className="flex items-center space-x-3 sm:space-x-4 text-[#d1d4da]">
+          <div className="flex items-center space-x-2">
+            {/* Facebook */}
             <a
               href="https://www.facebook.com/diranpeakadventure/"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-white transition-colors"
+              className="w-6 h-6 rounded-full bg-white/10 hover:bg-[#1877f2] hover:text-white flex items-center justify-center transition-all text-[#d1d4da]"
               title="Facebook"
+              aria-label="Facebook"
             >
-              <span className="font-bold text-xs">fb</span>
+              <Facebook className="w-3.5 h-3.5" />
             </a>
+
+            {/* Instagram */}
             <a
               href="https://www.instagram.com/diranpeakadventure/"
               target="_blank"
               rel="noreferrer"
-              className="hover:text-white transition-colors"
+              className="w-6 h-6 rounded-full bg-white/10 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] hover:text-white flex items-center justify-center transition-all text-[#d1d4da]"
               title="Instagram"
+              aria-label="Instagram"
             >
-              <span className="font-bold text-xs">ig</span>
+              <Instagram className="w-3.5 h-3.5" />
             </a>
+
+            {/* X (formerly Twitter) */}
+            <a
+              href="https://x.com/diranpeakadv"
+              target="_blank"
+              rel="noreferrer"
+              className="w-6 h-6 rounded-full bg-white/10 hover:bg-black hover:text-white flex items-center justify-center transition-all text-[#d1d4da]"
+              title="X (formerly Twitter)"
+              aria-label="X"
+            >
+              <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+            </a>
+
+            <span className="text-[#3b4b66] mx-1">|</span>
+
+            {/* Phone */}
             <a
               href="tel:+923456412992"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-1 hover:text-white transition-colors text-xs font-semibold"
             >
+              <Phone className="w-3 h-3 text-[#5191fa]" />
               <span>+923456412992</span>
             </a>
           </div>
 
           <span className="text-[#3b4b66]">|</span>
 
+          {/* Email */}
           <a
             href="mailto:info@diranpeakadventure.com"
-            className="hidden sm:inline hover:text-white transition-colors text-xs text-[#d1d4da]"
+            className="hidden sm:inline-flex items-center gap-1 hover:text-white transition-colors text-xs text-[#d1d4da]"
           >
-            info@diranpeakadventure.com
+            <Mail className="w-3 h-3 text-[#5191fa]" />
+            <span>info@diranpeakadventure.com</span>
           </a>
         </div>
 
@@ -179,6 +205,18 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
                     <CalendarCheck className="w-3.5 h-3.5 text-[#5191fa]" />
                     <span>{isAdmin ? 'Admin Dashboard' : 'My Bookings'}</span>
                   </button>
+                  {!isAdmin && (
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        onNavigate('dashboard');
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-slate-700 cursor-pointer"
+                    >
+                      <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500" />
+                      <span>Saved Favorites ({favorites.length})</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);

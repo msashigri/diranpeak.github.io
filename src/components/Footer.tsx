@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, Lock, Globe } from 'lucide-react';
+import { CheckCircle2, Lock, Globe, Facebook, Instagram } from 'lucide-react';
 import { DpaLogo } from './DpaLogo';
 import { SUPPORTED_LANGUAGES } from '../utils/translator';
 
@@ -72,6 +72,40 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           {/* Brand Logo Row */}
           <div className="mb-10 pb-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <DpaLogo variant="light" />
+            <div className="flex items-center gap-2">
+              <a
+                href="https://www.facebook.com/diranpeakadventure/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-[#1877f2] hover:text-white flex items-center justify-center transition-colors text-slate-600"
+                title="Facebook"
+                aria-label="Facebook"
+              >
+                <Facebook className="w-4 h-4" />
+              </a>
+              <a
+                href="https://www.instagram.com/diranpeakadventure/"
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#dc2743] hover:to-[#bc1888] hover:text-white flex items-center justify-center transition-colors text-slate-600"
+                title="Instagram"
+                aria-label="Instagram"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a
+                href="https://x.com/diranpeakadv"
+                target="_blank"
+                rel="noreferrer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-black hover:text-white flex items-center justify-center transition-colors text-slate-600"
+                title="X (formerly Twitter)"
+                aria-label="X"
+              >
+                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+              </a>
+            </div>
             <p className="text-xs text-slate-500 max-w-md">
               Licensed Karakoram &amp; Himalayan mountaineering operator (SECP Registered). Specializing in K2, Gondogoro La, Diran Peak, and Spantik climbing expeditions.
             </p>
@@ -149,9 +183,10 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                   </button>
                   <button
                     onClick={() => onNavigate('admin')}
-                    className="text-left hover:text-[#5191fa] transition-colors cursor-pointer"
+                    className="text-left hover:text-[#5191fa] transition-colors cursor-pointer flex items-center gap-1.5"
                   >  
-                    <span><Lock className="w-3.5 h-3.5" /> Portal </span>
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Portal</span>
                   </button>
                 </div>
               </div>

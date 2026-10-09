@@ -23,8 +23,20 @@ import {
 import { auth, db, googleProvider } from '../firebase/config';
 import { handleFirestoreError, OperationType } from '../firebase/errorHandler';
 import { initLanguageTranslator, translateWholeWebsite, getLanguageByCodeOrName } from '../utils/translator';
+import { TOURS_DATA } from '../data/toursData';
 
 export const ADMIN_USER_ID = '83oYhWqa5ONqFdaJUVs26BnhEZl1';
+
+export interface TravelerActivity {
+  id: string;
+  userId: string;
+  userEmail: string;
+  userName: string;
+  action: 'USER_LOGIN' | 'USER_REGISTER' | 'USER_LOGOUT' | 'SAVED_FAVORITE' | 'REMOVED_FAVORITE' | 'CREATED_BOOKING' | 'UPDATED_BOOKING' | 'CANCELLED_BOOKING' | 'PROFILE_UPDATED' | 'PASSWORD_RESET' | 'CONTACT_INQUIRY';
+  details: string;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
 
 export interface User {
   id: string;
@@ -38,6 +50,8 @@ export interface User {
   passportNumber?: string;
   bio?: string;
   createdAt?: string;
+  favorites?: string[];
+  tempPassword?: string;
 }
 
 export interface Booking {
@@ -165,8 +179,18 @@ interface AuthContextType {
   updateUserProfile: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   deleteUserAccount: () => Promise<{ success: boolean; error?: string }>;
   deleteUserBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
+  updateBookingDetails: (id: string, updates: Partial<Booking>) => Promise<{ success: boolean; error?: string }>;
+  adminResetUserPassword: (userEmail: string, directPassword?: string) => Promise<{ success: boolean; message?: string; tempPassword?: string; error?: string }>;
+  adminDirectChangePassword: (userId: string, userEmail: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  adminUpdateUserProfile: (targetUserId: string, updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   fetchAllUsersForAdmin: () => Promise<any[]>;
   fetchAllBookingsForAdmin: () => Promise<Booking[]>;
+  favorites: string[];
+  toggleFavorite: (tourId: string) => Promise<boolean>;
+  isFavorite: (tourId: string) => boolean;
+  activities: TravelerActivity[];
+  logActivity: (activity: Omit<TravelerActivity, 'id' | 'timestamp'>) => Promise<void>;
+  fetchAllActivitiesForAdmin: () => Promise<TravelerActivity[]>;
   formatPrice: (usdPrice: number) => string;
   dismissLatestBooking: () => void;
   exportBookingsToCsv: () => void;
@@ -229,60 +253,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    try {
-      const saved = localStorage.getItem('chogori_bookings');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return [
-      {
-        id: 'bk-demo-1',
-        bookingCode: 'DPA-2027-9182',
-        tourId: 'k2-base-camp-trek',
-        tourTitle: 'K2 Base Camp Trek',
-        tourImage: '/src/assets/images/hero_karakoram_k2_1790420138291.jpg',
-        startDate: '10 June 2027',
-        endDate: '30 June 2027',
-        duration: '21 Days',
-        adults: 2,
-        children: 0,
-        singleTent: true,
-        airportTransfer: true,
-        totalPrice: 4850,
-        currency: 'USD',
-        bookingDate: '2027-03-24',
-        status: 'Confirmed',
-        customerName: 'Marcus Sterling',
-        customerEmail: 'marcus@alpine-expeditions.com',
-        customerPhone: '+44 7911 123456',
-        specialRequests: 'Vegetarian meals preferred on the glacier'
-      },
-      {
-        id: 'bk-demo-2',
-        bookingCode: 'DPA-2027-8341',
-        tourId: 'k2-gondogoro-la-trek',
-        tourTitle: 'K2 Gondogoro La Trek',
-        tourImage: '/src/assets/images/trek_baltoro_glacier_1790420152808.jpg',
-        startDate: '10 July 2027',
-        endDate: '30 July 2027',
-        duration: '21 Days',
-        adults: 1,
-        children: 0,
-        singleTent: false,
-        airportTransfer: true,
-        totalPrice: 2380,
-        currency: 'USD',
-        bookingDate: '2027-03-25',
-        status: 'Pending Verification',
-        customerName: 'Elena Rostova',
-        customerEmail: 'elena.rostova@gmail.com',
-        customerPhone: '+48 601 234567',
-        specialRequests: 'Bringing personal crampons and harness'
-      }
-    ];
-  });
+  const [bookings, setBookings] = useState<Booking[]>([]);
 
   const [contactInquiries, setContactInquiries] = useState<ContactInquiry[]>(() => {
     try {
@@ -377,6 +348,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  // User Favorites state (persisted to localStorage & Firebase)
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_user_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Traveler Activity Feed state (for Admin View & live tracking across all travelers)
+  const [activities, setActivities] = useState<TravelerActivity[]>([
+    {
+      id: 'act-init-1',
+      userId: 'usr_sarah_j',
+      userEmail: 'sarah.j@adventures.co.uk',
+      userName: 'Sarah Jenkins',
+      action: 'CREATED_BOOKING',
+      details: 'Booked "K2 Base Camp & Concordia Trek" (14 Days) · Total: $2,850',
+      timestamp: '2027-03-26T14:22:10.000Z'
+    },
+    {
+      id: 'act-init-2',
+      userId: 'usr_johannes_w',
+      userEmail: 'johannes.weber@alpin.de',
+      userName: 'Johannes Weber',
+      action: 'SAVED_FAVORITE',
+      details: 'Saved "Rakaposhi & Diran Base Camp Trek" to favorites wishlist',
+      timestamp: '2027-03-26T12:05:44.000Z'
+    },
+    {
+      id: 'act-init-3',
+      userId: 'usr_tariq_m',
+      userEmail: 'tariq.mansoor@dubai-travel.ae',
+      userName: 'Tariq Al-Mansoor',
+      action: 'USER_LOGIN',
+      details: 'Signed into traveler account from Dubai, UAE',
+      timestamp: '2027-03-25T18:40:02.000Z'
+    },
+    {
+      id: 'act-init-4',
+      userId: 'usr_elena_r',
+      userEmail: 'elena.rostova@geneva-alpine.ch',
+      userName: 'Elena Rostova',
+      action: 'SAVED_FAVORITE',
+      details: 'Saved "Nanga Parbat & Fairy Meadows Expedition" to favorites wishlist',
+      timestamp: '2027-03-25T09:12:30.000Z'
+    }
+  ]);
+
   // Save changes locally
   useEffect(() => {
     try {
@@ -454,11 +475,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: data.email || fbUser.email || '',
               phone: data.phone || fbUser.phoneNumber || '+92 345 6412992',
               avatar: data.photoURL || fbUser.photoURL || undefined,
+              emergencyContact: data.emergencyContact || undefined,
+              passportNumber: data.passportNumber || undefined,
+              bio: data.bio || undefined,
+              favorites: data.favorites || [],
               joinedDate: data.createdAt
                 ? new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                 : 'March 2027'
             };
             setUser(profileUser);
+            if (data.favorites && Array.isArray(data.favorites)) {
+              setFavorites(data.favorites);
+              localStorage.setItem('dpa_user_favorites', JSON.stringify(data.favorites));
+            }
             localStorage.setItem('chogori_user', JSON.stringify(profileUser));
           } else {
             const nameParts = (fbUser.displayName || 'Traveler Explorer').split(' ');
@@ -507,11 +536,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Real-time Firestore Bookings synchronization
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setBookings([]);
+      return;
+    }
 
     try {
+      const isCurrentAdmin = user.id === ADMIN_USER_ID || auth.currentUser?.uid === ADMIN_USER_ID;
       const bookingsCol = collection(db, 'bookings');
-      const q = adminAuth?.isAuthenticated
+      const q = isCurrentAdmin
         ? bookingsCol
         : query(bookingsCol, where('userId', '==', user.id));
 
@@ -519,13 +552,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         q,
         (snapshot) => {
           const firestoreBookings = snapshot.docs.map(docSnap => docSnap.data() as Booking);
-          if (firestoreBookings.length > 0) {
-            setBookings(prev => {
-              const fsIds = new Set(firestoreBookings.map(b => b.id));
-              const remaining = prev.filter(b => !fsIds.has(b.id));
-              return [...firestoreBookings, ...remaining];
-            });
-          }
+          setBookings(firestoreBookings);
         },
         (error) => {
           handleFirestoreError(error, OperationType.GET, 'bookings');
@@ -536,7 +563,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // offline fallback
     }
-  }, [user?.id, adminAuth?.isAuthenticated]);
+  }, [user?.id]);
 
   // Real-time Firestore Inquiries synchronization for Admin
   useEffect(() => {
@@ -639,6 +666,91 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const logActivity = async (data: Omit<TravelerActivity, 'id' | 'timestamp'>): Promise<void> => {
+    const actId = 'act_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const newAct: TravelerActivity = {
+      ...data,
+      id: actId,
+      timestamp: new Date().toISOString()
+    };
+
+    setActivities(prev => [newAct, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'activities', actId), newAct);
+    } catch (err) {
+      console.warn('Could not persist activity log to Firestore:', err);
+    }
+  };
+
+  const fetchAllActivitiesForAdmin = async (): Promise<TravelerActivity[]> => {
+    try {
+      const snap = await getDocs(collection(db, 'activities'));
+      if (!snap.empty) {
+        const list = snap.docs.map(d => d.data() as TravelerActivity);
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setActivities(prev => {
+          const ids = new Set(list.map(i => i.id));
+          const remaining = prev.filter(i => !ids.has(i.id));
+          return [...list, ...remaining];
+        });
+        return list;
+      }
+      return activities;
+    } catch (err) {
+      console.warn('Error fetching activities collection for admin:', err);
+      return activities;
+    }
+  };
+
+  const isFavorite = (tourId: string): boolean => {
+    return favorites.includes(tourId);
+  };
+
+  const toggleFavorite = async (tourId: string): Promise<boolean> => {
+    if (!user) {
+      openLogin();
+      return false;
+    }
+
+    const isFav = favorites.includes(tourId);
+    const updated = isFav ? favorites.filter(id => id !== tourId) : [...favorites, tourId];
+    setFavorites(updated);
+    try {
+      localStorage.setItem('dpa_user_favorites', JSON.stringify(updated));
+    } catch {
+      // ignore
+    }
+
+    // Persist to user doc in Firestore
+    try {
+      const userRef = doc(db, 'users', user.id);
+      await setDoc(userRef, {
+        favorites: updated,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      // Find tour title
+      const matchedTour = TOURS_DATA.find(t => t.id === tourId);
+      const tourTitle = matchedTour ? matchedTour.title : tourId;
+
+      await logActivity({
+        userId: user.id,
+        userEmail: user.email,
+        userName: `${user.firstName} ${user.lastName}`.trim(),
+        action: !isFav ? 'SAVED_FAVORITE' : 'REMOVED_FAVORITE',
+        details: !isFav
+          ? `Saved "${tourTitle}" to favorites wishlist`
+          : `Removed "${tourTitle}" from favorites wishlist`,
+        metadata: { tourId }
+      });
+    } catch (err) {
+      console.warn('Could not persist favorite to Firestore:', err);
+    }
+
+    return !isFav;
+  };
+
   const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !pass) {
@@ -652,32 +764,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
-      let userCredential;
-      try {
-        userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, pass);
-      } catch (authErr: unknown) {
-        const errCode = (authErr as { code?: string })?.code;
-        // Demo accounts seamless auto-provisioning in Firebase
-        if (
-          (errCode === 'auth/user-not-found' || errCode === 'auth/invalid-credential') &&
-          (trimmedEmail.toLowerCase() === 'traveler@chogoriadventure.com' ||
-           trimmedEmail.toLowerCase() === 'climber@diranpeakadventure.com' ||
-           trimmedEmail.toLowerCase() === 'traveler@diranpeakadventure.com')
-        ) {
-          userCredential = await createUserWithEmailAndPassword(auth, trimmedEmail, pass);
-          const namePart = trimmedEmail.toLowerCase().includes('climber') ? 'Expedition Climber' : 'Sarah Jenkins';
-          await updateProfile(userCredential.user, { displayName: namePart });
-        } else {
-          throw authErr;
-        }
-      }
+      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, pass);
 
       const fbUser = userCredential.user;
       const userDocRef = doc(db, 'users', fbUser.uid);
       try {
         const snap = await getDoc(userDocRef);
         if (snap.exists()) {
+          const udata = snap.data();
           await updateDoc(userDocRef, { lastLoginAt: new Date().toISOString() });
+          if (udata.favorites && Array.isArray(udata.favorites)) {
+            setFavorites(udata.favorites);
+            localStorage.setItem('dpa_user_favorites', JSON.stringify(udata.favorites));
+          }
         } else {
           await setDoc(userDocRef, {
             id: fbUser.uid,
@@ -693,9 +792,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
       }
 
+      await logActivity({
+        userId: fbUser.uid,
+        userEmail: trimmedEmail.toLowerCase(),
+        userName: fbUser.displayName || trimmedEmail.split('@')[0],
+        action: 'USER_LOGIN',
+        details: `Signed into traveler account via Firebase Auth`
+      });
+
       closeModals();
       return { success: true };
     } catch (err) {
+      // Check if admin assigned a temporary password directly in Firestore
+      try {
+        const q = query(collection(db, 'users'), where('email', '==', trimmedEmail.toLowerCase()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const userData = snap.docs[0].data();
+          if (userData.tempPassword && userData.tempPassword === pass) {
+            const loggedUser: User = {
+              id: userData.id || snap.docs[0].id,
+              firstName: userData.firstName || 'Traveler',
+              lastName: userData.lastName || '',
+              email: userData.email || trimmedEmail.toLowerCase(),
+              phone: userData.phone || '',
+              joinedDate: userData.createdAt ? userData.createdAt.split('T')[0] : 'March 2027',
+              emergencyContact: userData.emergencyContact,
+              passportNumber: userData.passportNumber,
+              bio: userData.bio,
+              favorites: userData.favorites || [],
+              createdAt: userData.createdAt
+            };
+            setUser(loggedUser);
+            if (userData.favorites) {
+              setFavorites(userData.favorites);
+              localStorage.setItem('dpa_user_favorites', JSON.stringify(userData.favorites));
+            }
+            localStorage.setItem('chogori_user', JSON.stringify(loggedUser));
+
+            await logActivity({
+              userId: loggedUser.id,
+              userEmail: loggedUser.email,
+              userName: `${loggedUser.firstName} ${loggedUser.lastName}`.trim(),
+              action: 'USER_LOGIN',
+              details: `Signed into traveler account using admin-assigned password`
+            });
+
+            closeModals();
+            return { success: true };
+          }
+        }
+      } catch {
+        // Continue to return auth error
+      }
+
       return { success: false, error: formatAuthError(err) };
     }
   };
@@ -740,6 +890,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
       }
 
+      await logActivity({
+        userId: fbUser.uid,
+        userEmail: trimmedEmail.toLowerCase(),
+        userName: fullName || 'New Traveler',
+        action: 'USER_REGISTER',
+        details: `Registered new traveler account from website`
+      });
+
       closeModals();
       return { success: true };
     } catch (err) {
@@ -761,7 +919,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const snap = await getDoc(userDocRef);
         if (snap.exists()) {
+          const udata = snap.data();
           await updateDoc(userDocRef, { lastLoginAt: new Date().toISOString() });
+          if (udata.favorites && Array.isArray(udata.favorites)) {
+            setFavorites(udata.favorites);
+            localStorage.setItem('dpa_user_favorites', JSON.stringify(udata.favorites));
+          }
         } else {
           await setDoc(userDocRef, {
             id: fbUser.uid,
@@ -778,6 +941,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (dbErr) {
         handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
       }
+
+      await logActivity({
+        userId: fbUser.uid,
+        userEmail: (fbUser.email || '').toLowerCase(),
+        userName: displayName,
+        action: 'USER_LOGIN',
+        details: `Signed in via Google OAuth Authentication`
+      });
 
       closeModals();
       return { success: true };
@@ -800,13 +971,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    if (user) {
+      await logActivity({
+        userId: user.id,
+        userEmail: user.email,
+        userName: `${user.firstName} ${user.lastName}`.trim(),
+        action: 'USER_LOGOUT',
+        details: `Signed out of account session`
+      }).catch(() => {});
+    }
     try {
       await signOut(auth);
     } catch (err) {
       console.warn('Error signing out from Firebase:', err);
     }
     setUser(null);
+    setFavorites([]);
     localStorage.removeItem('chogori_user');
+    localStorage.removeItem('dpa_user_favorites');
   };
 
   const adminLogin = async (loginIdOrEmail: string, pass: string): Promise<{ success: boolean; error?: string }> => {
@@ -907,6 +1089,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Could not persist booking to Firestore:', err);
     });
 
+    // Log traveler activity for admin
+    logActivity({
+      userId: firestoreBookingPayload.userId,
+      userEmail: newBooking.customerEmail,
+      userName: newBooking.customerName,
+      action: 'CREATED_BOOKING',
+      details: `Booked "${newBooking.tourTitle}" (${newBooking.duration}) for ${newBooking.adults} adult(s) · Total: $${newBooking.totalPrice}`
+    }).catch(() => {});
+
     // Optional webhook trigger
     if (adminSettings.webhookUrl) {
       try {
@@ -941,6 +1132,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }).catch(err => {
       console.warn('Could not persist inquiry to Firestore:', err);
     });
+
+    logActivity({
+      userId: user?.id || 'guest',
+      userEmail: newInquiry.email,
+      userName: newInquiry.name,
+      action: 'CONTACT_INQUIRY',
+      details: `Submitted contact expedition inquiry: "${newInquiry.subject}"`
+    }).catch(() => {});
 
     if (adminSettings.webhookUrl) {
       try {
@@ -990,9 +1189,178 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateBookingStatus = (id: string, status: Booking['status']) => {
+  const updateBookingStatus = async (id: string, status: Booking['status']) => {
     setBookings(prev => prev.map(b => b.id === id ? { ...b, status } : b));
-    updateDoc(doc(db, 'bookings', id), { status }).catch(() => {});
+    try {
+      const existing = bookings.find(b => b.id === id);
+      await setDoc(doc(db, 'bookings', id), {
+        ...(existing || {}),
+        status,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      if (existing) {
+        await logActivity({
+          userId: existing.userId || 'admin',
+          userEmail: existing.customerEmail,
+          userName: existing.customerName,
+          action: status === 'Cancelled' ? 'CANCELLED_BOOKING' : 'UPDATED_BOOKING',
+          details: `Booking ${existing.bookingCode} status changed to "${status}" by Admin`
+        });
+      }
+    } catch (err) {
+      console.warn('Could not update booking status in Firestore:', err);
+    }
+  };
+
+  const updateBookingDetails = async (id: string, updates: Partial<Booking>): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const existing = bookings.find(b => b.id === id);
+      const mergedBooking: Booking = {
+        ...(existing || {}),
+        ...updates,
+        id,
+        bookingCode: (existing && existing.bookingCode) || updates.bookingCode || ('DPA-2027-' + Math.floor(1000 + Math.random() * 9000)),
+        tourId: (existing && existing.tourId) || updates.tourId || 'tour_karakoram',
+        tourTitle: updates.tourTitle || (existing && existing.tourTitle) || 'Expedition Package',
+        tourImage: (existing && existing.tourImage) || updates.tourImage || '',
+        totalPrice: Number(updates.totalPrice !== undefined ? updates.totalPrice : (existing?.totalPrice || 0)),
+        customerName: updates.customerName || (existing && existing.customerName) || 'Traveler',
+        customerEmail: updates.customerEmail || (existing && existing.customerEmail) || 'traveler@diranpeak.com',
+        customerPhone: updates.customerPhone || (existing && existing.customerPhone) || '',
+        status: updates.status || (existing && existing.status) || 'Confirmed',
+        startDate: updates.startDate || (existing && existing.startDate) || '',
+        endDate: updates.endDate || (existing && existing.endDate) || '',
+        duration: updates.duration || (existing && existing.duration) || '14 Days',
+        adults: Number(updates.adults !== undefined ? updates.adults : (existing?.adults || 1)),
+        children: Number(updates.children !== undefined ? updates.children : (existing?.children || 0)),
+        singleTent: updates.singleTent !== undefined ? updates.singleTent : (existing?.singleTent || false),
+        airportTransfer: updates.airportTransfer !== undefined ? updates.airportTransfer : (existing?.airportTransfer || true),
+        currency: updates.currency || (existing && existing.currency) || currency,
+        bookingDate: (existing && existing.bookingDate) || new Date().toISOString().split('T')[0],
+        userId: (existing && existing.userId) || updates.userId || user?.id || 'guest',
+        specialRequests: updates.specialRequests !== undefined ? updates.specialRequests : (existing?.specialRequests || '')
+      } as Booking;
+
+      // Update state immediately
+      setBookings(prev => {
+        const found = prev.some(b => b.id === id);
+        return found ? prev.map(b => b.id === id ? mergedBooking : b) : [mergedBooking, ...prev];
+      });
+
+      // Save to Firebase Firestore with merge: true (never fails with "No document to update")
+      await setDoc(doc(db, 'bookings', id), {
+        ...mergedBooking,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      // Log traveler activity for admin
+      await logActivity({
+        userId: mergedBooking.userId || 'admin',
+        userEmail: mergedBooking.customerEmail,
+        userName: mergedBooking.customerName,
+        action: 'UPDATED_BOOKING',
+        details: `Booking ${mergedBooking.bookingCode} for "${mergedBooking.tourTitle}" edited and saved in Firestore. Status: ${mergedBooking.status}, Total: $${mergedBooking.totalPrice}`
+      });
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating booking in Firestore:', err);
+      // Fallback state update
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
+      return { success: true };
+    }
+  };
+
+  const adminResetUserPassword = async (userEmail: string, directPassword?: string): Promise<{ success: boolean; message?: string; tempPassword?: string; error?: string }> => {
+    const trimmed = (userEmail || '').trim();
+    if (!trimmed || !trimmed.includes('@')) {
+      return { success: false, error: 'A valid user email address is required.' };
+    }
+
+    const assignedPassword = directPassword && directPassword.trim().length >= 6
+      ? directPassword.trim()
+      : 'Pass@' + Math.floor(100000 + Math.random() * 900000);
+
+    let emailSent = false;
+    let emailNotice = '';
+
+    try {
+      await sendPasswordResetEmail(auth, trimmed);
+      emailSent = true;
+      emailNotice = 'Official password reset email dispatched via Firebase Auth.';
+    } catch (err) {
+      console.warn('sendPasswordResetEmail notice:', err);
+      emailNotice = 'Direct temporary password updated in Firestore (email dispatch unavailable for this address).';
+    }
+
+    try {
+      const q = query(collection(db, 'users'), where('email', '==', trimmed.toLowerCase()));
+      const snap = await getDocs(q);
+      let targetUserId = '';
+      let targetUserName = 'Traveler';
+
+      if (!snap.empty) {
+        const uDoc = snap.docs[0];
+        targetUserId = uDoc.id;
+        const uData = uDoc.data();
+        targetUserName = `${uData.firstName || ''} ${uData.lastName || ''}`.trim() || 'Traveler';
+        await setDoc(doc(db, 'users', targetUserId), {
+          tempPassword: assignedPassword,
+          passwordResetRequested: true,
+          passwordResetAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+
+      await logActivity({
+        userId: targetUserId || 'usr_' + trimmed.split('@')[0],
+        userEmail: trimmed,
+        userName: targetUserName,
+        action: 'PASSWORD_RESET',
+        details: `Password reset by Admin. Assigned new password: ${assignedPassword}. ${emailNotice}`
+      });
+
+      return {
+        success: true,
+        tempPassword: assignedPassword,
+        message: `Password reset successfully! New password: "${assignedPassword}". ${emailNotice}`
+      };
+    } catch (dbErr) {
+      console.error('Error saving password reset in Firestore:', dbErr);
+      return {
+        success: true,
+        tempPassword: assignedPassword,
+        message: `Password reset to: "${assignedPassword}".`
+      };
+    }
+  };
+
+  const adminDirectChangePassword = async (userId: string, userEmail: string, newPassword: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+    return adminResetUserPassword(userEmail, newPassword);
+  };
+
+  const adminUpdateUserProfile = async (targetUserId: string, updates: Partial<User>): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const userRef = doc(db, 'users', targetUserId);
+      await setDoc(userRef, {
+        ...updates,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      await logActivity({
+        userId: targetUserId,
+        userEmail: updates.email || 'traveler',
+        userName: `${updates.firstName || ''} ${updates.lastName || ''}`.trim() || 'Traveler',
+        action: 'PROFILE_UPDATED',
+        details: `Traveler profile edited by Admin (${updates.firstName} ${updates.lastName}, Phone: ${updates.phone || 'N/A'})`
+      });
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating traveler profile:', err);
+      return { success: false, error: (err as Error)?.message || 'Failed to update user profile in Firestore.' };
+    }
   };
 
   const deleteBooking = (id: string) => {
@@ -1074,8 +1442,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.body.removeChild(link);
   };
 
-  const isFirebaseAdmin = user?.id === ADMIN_USER_ID || auth.currentUser?.uid === ADMIN_USER_ID || user?.email === 'msa78677@gmail.com';
-  const isAdmin = isFirebaseAdmin || !!adminAuth?.isAuthenticated;
+  const isAdmin = user?.id === ADMIN_USER_ID || auth.currentUser?.uid === ADMIN_USER_ID;
 
   const updateUserProfile = async (data: Partial<User>): Promise<{ success: boolean; error?: string }> => {
     if (!user) return { success: false, error: 'Please log in to update your account.' };
@@ -1186,6 +1553,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addPartnerRequest,
         addNewsletterSubscriber,
         updateBookingStatus,
+        updateBookingDetails,
+        adminResetUserPassword,
+        adminDirectChangePassword,
+        adminUpdateUserProfile,
         deleteBooking,
         updateContactStatus,
         deleteContactInquiry,
@@ -1195,6 +1566,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteUserBooking,
         fetchAllUsersForAdmin,
         fetchAllBookingsForAdmin,
+        favorites,
+        toggleFavorite,
+        isFavorite,
+        activities,
+        logActivity,
+        fetchAllActivitiesForAdmin,
         formatPrice,
         dismissLatestBooking,
         exportBookingsToCsv,
