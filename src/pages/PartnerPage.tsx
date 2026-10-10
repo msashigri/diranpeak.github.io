@@ -1,23 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Car, Building2, Handshake, CheckCircle, ArrowRight } from 'lucide-react';
 
-export const PartnerPage: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
+export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initialCategory?: string }> = ({ onNavigate, initialCategory }) => {
   const { addPartnerRequest } = useAuth();
-  const [partnerType, setPartnerType] = useState('Hotels & Resorts');
+  const [activeTab, setActiveTab] = useState<'all' | 'vehicles' | 'hotels' | 'agencies'>(
+    initialCategory === 'car' || initialCategory === 'vehicles' ? 'vehicles' :
+    initialCategory === 'hotel' || initialCategory === 'hotels' ? 'hotels' : 'all'
+  );
+  const [partnerType, setPartnerType] = useState(
+    initialCategory === 'car' || initialCategory === 'vehicles' ? '4x4 Vehicles & Transport' :
+    initialCategory === 'hotel' || initialCategory === 'hotels' ? 'Hotels & Resorts' : 'Hotels & Resorts'
+  );
+
+  useEffect(() => {
+    if (initialCategory === 'car' || initialCategory === 'vehicles') {
+      setActiveTab('vehicles');
+      setPartnerType('4x4 Vehicles & Transport');
+    } else if (initialCategory === 'hotel' || initialCategory === 'hotels') {
+      setActiveTab('hotels');
+      setPartnerType('Hotels & Resorts');
+    } else if (initialCategory === 'agencies') {
+      setActiveTab('agencies');
+      setPartnerType('International Tour Agency / Outfitter');
+    } else {
+      setActiveTab('all');
+      setPartnerType('Hotels & Resorts');
+    }
+  }, [initialCategory]);
   const [companyName, setCompanyName] = useState('');
   const [contactName, setContactName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [location, setLocation] = useState('');
+  const [details, setDetails] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    addPartnerRequest({
+    setSubmitting(true);
+    await addPartnerRequest({
       category: partnerType,
       companyName,
       contactName,
-      email
+      email,
+      phone,
+      location,
+      details
     });
+    setSubmitting(false);
     setSubmitted(true);
   };
 
@@ -41,6 +73,53 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void }> = ({
           <p className="text-xs sm:text-sm text-slate-500 mt-2">
             Join Pakistan&apos;s most reputable adventure logistics network: Hotels, 4x4 Mountain Transport, and International Outbound Travel Agencies.
           </p>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+          <button
+            onClick={() => { setActiveTab('all'); setPartnerType('Hotels & Resorts'); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeTab === 'all'
+                ? 'bg-[#1a2b48] text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            Overview &amp; All Partners
+          </button>
+          <button
+            onClick={() => { setActiveTab('vehicles'); setPartnerType('4x4 Vehicles & Transport'); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'vehicles'
+                ? 'bg-[#5191fa] text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Car className="w-4 h-4" />
+            <span>Partner Vehicles (4x4 Fleet)</span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('hotels'); setPartnerType('Hotels & Resorts'); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'hotels'
+                ? 'bg-emerald-600 text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>Partner Hotels &amp; Resorts</span>
+          </button>
+          <button
+            onClick={() => { setActiveTab('agencies'); setPartnerType('International Tour Agency / Outfitter'); }}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              activeTab === 'agencies'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Handshake className="w-4 h-4" />
+            <span>B2B Agencies &amp; Outfitters</span>
+          </button>
         </div>
 
         {/* 3 Categories Cards */}
@@ -163,11 +242,46 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void }> = ({
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Phone / WhatsApp</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+92 345 1234567"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Operating City / Region</label>
+                  <input
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Skardu, Hunza, Gilgit, Islamabad"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Fleet, Room or Service Details</label>
+                <textarea
+                  rows={3}
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                  placeholder="Tell us about your fleet (e.g. 5x Land Cruisers, 2x HiAce) or hotel capacity (e.g. 24 rooms in Karimabad)."
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                />
+              </div>
+
               <button
                 type="submit"
-                className="w-full py-2.5 px-4 bg-[#5191fa] hover:bg-[#3d7be3] text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer"
+                disabled={submitting}
+                className="w-full py-2.5 px-4 bg-[#5191fa] hover:bg-[#3d7be3] text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-50"
               >
-                Submit Partnership Application
+                {submitting ? 'Submitting to Firebase...' : 'Submit Partnership Application'}
               </button>
             </form>
           )}

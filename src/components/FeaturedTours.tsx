@@ -10,7 +10,7 @@ interface FeaturedToursProps {
 export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onViewAll }) => {
   // Section 1: Handpicked Best Sellers
   const handpickedTours = TOURS_DATA.filter(t =>
-    ['k2-base-camp-trek', 'nanga-parbat-rakaposhi-base-camp-trek', 'k2-gondogoro-la-trek', 'lahore-multan-peshawar-swat-cultural-tour', 'spantik-peak-expedition', 'broad-peak-expedition'].includes(t.id)
+    ['k2-base-camp-trek', 'nanga-parbat-rakaposhi-base-camp-trek', 'k2-gondogoro-la-trek', 'cultural-heritage-lahore-multan-peshawar-swat', 'spantik-peak-expedition', 'broad-peak-expedition'].includes(t.id)
   );
 
   // Section 2: Top Rated Expeditions

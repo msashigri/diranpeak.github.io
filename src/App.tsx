@@ -20,7 +20,7 @@ import { PartnerPage } from './pages/PartnerPage';
 import { LegalPage } from './pages/LegalPage';
 import { UserDashboardPage } from './pages/UserDashboardPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
-import { TOURS_DATA, Tour } from './data/toursData';
+import { TOURS_DATA, Tour, getTourBySlugOrId } from './data/toursData';
 import { triggerTranslationUpdate } from './utils/translator';
 
 export default function App() {
@@ -30,6 +30,7 @@ export default function App() {
   const [searchKeyword, setSearchKeyword] = useState<string>('');
   const [searchDuration, setSearchDuration] = useState<string>('all');
   const [legalTab, setLegalTab] = useState<string>('terms');
+  const [partnerCategory, setPartnerCategory] = useState<string>('all');
 
   // Scroll to top on route change & trigger translation
   useEffect(() => {
@@ -41,7 +42,7 @@ export default function App() {
 
   const handleNavigate = (route: string, param?: string) => {
     if (route === 'tour-detail') {
-      const found = TOURS_DATA.find(t => t.slug === param || t.id === param);
+      const found = getTourBySlugOrId(param || '');
       if (found) {
         setSelectedTour(found);
       }
@@ -53,6 +54,11 @@ export default function App() {
     } else if (route === 'legal') {
       setLegalTab(param || 'terms');
       setCurrentRoute('legal');
+    } else if (route === 'partner' || route === 'become-our-partner' || route === 'car' || route === 'hotel') {
+      if (route === 'car' || param === 'vehicles' || param === 'car') setPartnerCategory('vehicles');
+      else if (route === 'hotel' || param === 'hotels' || param === 'hotel') setPartnerCategory('hotels');
+      else setPartnerCategory(param || 'all');
+      setCurrentRoute('partner');
     } else {
       setCurrentRoute(route);
     }
@@ -115,7 +121,7 @@ export default function App() {
           )}
 
           {currentRoute === 'partner' && (
-            <PartnerPage onNavigate={handleNavigate} />
+            <PartnerPage initialCategory={partnerCategory} onNavigate={handleNavigate} />
           )}
 
           {currentRoute === 'legal' && (

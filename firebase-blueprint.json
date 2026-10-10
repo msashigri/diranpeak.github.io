@@ -76,6 +76,55 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "email"]
+    },
+    "TourReview": {
+      "title": "TourReview",
+      "description": "Review and rating left by a traveler or admin for a tour package",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tourId": { "type": "string", "maxLength": 100 },
+        "tourTitle": { "type": "string", "maxLength": 200 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "userName": { "type": "string", "maxLength": 150 },
+        "userEmail": { "type": "string", "format": "email", "maxLength": 150 },
+        "userCountry": { "type": "string", "maxLength": 100 },
+        "rating": { "type": "number" },
+        "comment": { "type": "string", "maxLength": 2500 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tourId", "userId", "userName", "rating", "comment"]
+    },
+    "PartnerRequest": {
+      "title": "PartnerRequest",
+      "description": "Partner application for hotels, vehicles, or travel agencies",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "maxLength": 100 },
+        "companyName": { "type": "string", "maxLength": 200 },
+        "contactName": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "format": "email", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "enum": ["Pending", "Approved", "Declined"] },
+        "date": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "category", "companyName", "contactName", "email"]
+    },
+    "Broadcast": {
+      "title": "Broadcast",
+      "description": "Email update dispatched to subscribers from noreply@diranpeakadverture.com",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "subject": { "type": "string", "maxLength": 200 },
+        "message": { "type": "string", "maxLength": 5000 },
+        "sender": { "type": "string", "maxLength": 100 },
+        "recipientCount": { "type": "number" },
+        "sentAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "subject", "message", "sender", "recipientCount"]
     }
   },
   "firestore": {
@@ -94,6 +143,18 @@
     "/subscribers/{subscriberId}": {
       "schema": { "$ref": "#/entities/NewsletterSubscriber" },
       "description": "Newsletter email subscriptions"
+    },
+    "/reviews/{reviewId}": {
+      "schema": { "$ref": "#/entities/TourReview" },
+      "description": "Customer reviews and ratings for tours and expeditions"
+    },
+    "/partners/{partnerId}": {
+      "schema": { "$ref": "#/entities/PartnerRequest" },
+      "description": "Partnership applications for hotels, vehicles, and agencies"
+    },
+    "/broadcasts/{broadcastId}": {
+      "schema": { "$ref": "#/entities/Broadcast" },
+      "description": "Email updates dispatched to subscribers"
     }
   }
 }

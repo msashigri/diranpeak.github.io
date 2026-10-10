@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TOURS_DATA, Tour } from '../data/toursData';
 import { TourCard } from '../components/TourCard';
 import { Search, Filter, SlidersHorizontal, Mountain, Compass, Calendar, ArrowUpDown } from 'lucide-react';
@@ -25,13 +25,52 @@ export const ToursListPage: React.FC<ToursListPageProps> = ({
   const [sortBy, setSortBy] = useState<'featured' | 'price-asc' | 'price-desc' | 'duration'>('featured');
   const [maxPrice, setMaxPrice] = useState(10000);
 
+  useEffect(() => {
+    setCategory(initialCategory || 'all');
+  }, [initialCategory]);
+
+  useEffect(() => {
+    if (initialSearch !== undefined) setSearchTerm(initialSearch);
+  }, [initialSearch]);
+
+  useEffect(() => {
+    if (initialDuration !== undefined) setDuration(initialDuration);
+  }, [initialDuration]);
+
   const filteredTours = useMemo(() => {
     return TOURS_DATA.filter((tour) => {
       // Category filter
-      if (category !== 'all' && tour.category !== category) {
-        // also check if category matches location keyword
-        if (!tour.location.toLowerCase().includes(category.toLowerCase())) {
-          return false;
+      if (category !== 'all') {
+        if (category === '6000m') {
+          const isExpedition = tour.category === 'expedition' || tour.category === '6000m';
+          const is6000m =
+            isExpedition &&
+            (tour.category === '6000m' ||
+             tour.id.includes('khosar') ||
+             tour.id.includes('pastore') ||
+             tour.id.includes('gondogoro-peak') ||
+             tour.id.includes('gangchan') ||
+             tour.id.includes('laila-peak-expedition') ||
+             tour.id.includes('amin-brak') ||
+             tour.id.includes('trango') ||
+             tour.id.includes('koyo-zom') ||
+             tour.title.toLowerCase().includes('6000') ||
+             tour.title.toLowerCase().includes('6,000') ||
+             tour.title.toLowerCase().includes('6040') ||
+             tour.title.toLowerCase().includes('6,040') ||
+             tour.title.toLowerCase().includes('6,209') ||
+             tour.title.toLowerCase().includes('6,096') ||
+             tour.title.toLowerCase().includes('6,388') ||
+             tour.title.toLowerCase().includes('6,872') ||
+             (typeof tour.maxAltitude === 'string' && (tour.maxAltitude.includes('6,') || tour.maxAltitude.includes('6,0'))));
+          if (!is6000m) return false;
+        } else if (category === 'expedition') {
+          if (tour.category !== 'expedition' && tour.category !== '6000m') return false;
+        } else if (tour.category !== category) {
+          // also check if category matches location keyword
+          if (!tour.location.toLowerCase().includes(category.toLowerCase())) {
+            return false;
+          }
         }
       }
 

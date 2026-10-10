@@ -114,14 +114,14 @@ export const AboutPage: React.FC<{ onNavigate: (route: string, param?: string) =
         <div className="text-center py-10 bg-[#1a2b48] rounded-3xl text-white p-8">
           <h3 className="font-heading text-2xl font-bold mb-2">Ready to Stand Before K2?</h3>
           <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto mb-6">
-            Join one of our 2027 guaranteed fixed departures or let our indigenous team craft your customized private Karakoram expedition.
+            Join one of our guaranteed Karakoram expeditions or let our indigenous team craft your customized private adventure.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <button
               onClick={() => onNavigate('tours', 'all')}
               className="px-6 py-3 bg-[#5191fa] hover:bg-[#3d7be3] text-white font-bold text-xs uppercase rounded-xl shadow-md transition-all cursor-pointer"
             >
-              Explore Fixed Departures
+              Explore All Expeditions &amp; Tours
             </button>
             <button
               onClick={() => onNavigate('contact')}

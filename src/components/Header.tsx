@@ -72,12 +72,12 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
               </button>
 
               {activeDropdown === 'trekking' && (
-                <div className="absolute top-full left-0 w-64 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
+                <div className="absolute top-full left-0 w-72 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tours', 'trekking'); }}
-                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                    className="w-full text-left px-4 py-2 text-[13px] font-bold text-[#5191fa] hover:bg-slate-50 transition-colors"
                   >
-                    All Trekking
+                    All Trekking Tours
                   </button>
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-base-camp-trek'); }}
@@ -92,16 +92,40 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
                     K2 Gondogoro La Trek
                   </button>
                   <button
-                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-base-camp-trek'); }}
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'nanga-parbat-rakaposhi-base-camp-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Nanga Parbat &amp; Rakaposhi BC Trek
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'barah-broq-moses-peak-trek'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
                     Barah Broq Moses Peak Trek
                   </button>
                   <button
-                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-base-camp-trek'); }}
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'snow-lake-biafo-hispar-la-trek'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
                     Snow Lake Biafo Hispar La Trek
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'arando-haramosh-la-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Arando Haramosh La Trek
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'machulo-la-k2-viewpoint-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Machulo La K2 Viewpoint Trek
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'rush-lake-trek'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Rush Lake Trek
                   </button>
                 </div>
               )}
@@ -125,18 +149,18 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
                 <div className="absolute top-full left-0 w-72 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tours', '6000m'); }}
-                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                    className="w-full text-left px-4 py-2 text-[13px] font-bold text-amber-600 hover:bg-slate-50 transition-colors"
                   >
                     6000m peaks in pakistan
                   </button>
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tours', 'expedition'); }}
-                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                    className="w-full text-left px-4 py-2 text-[13px] font-semibold text-[#5191fa] hover:bg-slate-50 transition-colors"
                   >
-                    All Expeditions
+                    All Expeditions (8000m &amp; 7000m)
                   </button>
                   <button
-                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'gasherbrum-1-2-climbing-expedition'); }}
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'gasherbrum-1-2-expedition'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
                     Gasherbrum 1 / 2 Expedition
@@ -145,25 +169,49 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
                     onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'broad-peak-expedition'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    Broad Peak Expedition
+                    Broad Peak Expedition (8,047m)
                   </button>
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'k2-climbing-expedition'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    K2 Climbing Expedition
+                    K2 Climbing Expedition (8,611m)
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'spantik-peak-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Spantik Peak &quot;Golden Peak&quot; (7,027m)
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'diran-peak-7273-m-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Diran Peak (7,273m) Expedition
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'khosar-gang-peak-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Khosar Gang Peak (6,040m)
                   </button>
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'pastore-peak-climbing-expedition'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    Pastore Peak Climbing Expedition
+                    Pastore Peak Climbing (6,209m)
                   </button>
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'laila-peak-expedition'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    Laila Peak Expedition
+                    Laila Peak Expedition (6,096m)
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'trango-tower-expedition'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Trango Tower Expedition
                   </button>
                 </div>
               )}
@@ -184,12 +232,54 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
               </button>
 
               {activeDropdown === 'safari' && (
-                <div className="absolute top-full left-0 w-56 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
+                <div className="absolute top-full left-0 w-72 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('tours', 'cultural'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] font-bold text-[#5191fa] hover:bg-slate-50 transition-colors"
+                  >
+                    All Safari &amp; Cultural Tours
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'skardu-tour-packages'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    All Safari Tours
+                    Skardu Tour Packages
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'hunza-tour'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Hunza Tour
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'fairy-meadows-and-hunza-trip'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Fairy Meadows &amp; Hunza Trip
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'karakoram-highway-tour-pakistan'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Karakoram Highway Tour
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'cultural-heritage-lahore-multan-peshawar-swat'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Cultural Heritage: Lahore, Multan, Peshawar &amp; Swat
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'lahore-city-tour'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Lahore City Tour
+                  </button>
+                  <button
+                    onClick={() => { handleCloseDropdown(); onNavigate('tour-detail', 'peshawar-city-tour'); }}
+                    className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
+                  >
+                    Peshawar City Tour
                   </button>
                 </div>
               )}
@@ -209,7 +299,7 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
               </button>
 
               {activeDropdown === 'info' && (
-                <div className="absolute top-full right-0 w-56 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
+                <div className="absolute top-full right-0 w-60 bg-white rounded-b-md shadow-xl border border-slate-100 py-2 z-50 animate-in fade-in duration-100">
                   <button
                     onClick={() => { handleCloseDropdown(); onNavigate('contact'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
@@ -223,22 +313,22 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
                     About Us
                   </button>
                   <button
-                    onClick={() => { handleCloseDropdown(); onNavigate('partner'); }}
+                    onClick={() => { handleCloseDropdown(); onNavigate('partner', 'all'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
                     Become Our Partner
                   </button>
                   <button
-                    onClick={() => { handleCloseDropdown(); onNavigate('partner'); }}
+                    onClick={() => { handleCloseDropdown(); onNavigate('partner', 'vehicles'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    Partners Vehicles
+                    Partner Vehicles (4x4 Fleet)
                   </button>
                   <button
-                    onClick={() => { handleCloseDropdown(); onNavigate('partner'); }}
+                    onClick={() => { handleCloseDropdown(); onNavigate('partner', 'hotels'); }}
                     className="w-full text-left px-4 py-2 text-[13px] hover:bg-slate-50 hover:text-[#5191fa] transition-colors"
                   >
-                    Partners Hotels
+                    Partner Hotels &amp; Resorts
                   </button>
                 </div>
               )}
@@ -283,7 +373,13 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
             onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'expedition'); }}
             className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
           >
-            Climbing Expedition
+            Climbing Expedition (8000m &amp; 7000m)
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('tours', '6000m'); }}
+            className="w-full text-left py-2 px-3 text-sm font-semibold text-amber-600 hover:bg-slate-50"
+          >
+            6000m Peaks in Pakistan
           </button>
           <button
             onClick={() => { setMobileMenuOpen(false); onNavigate('tours', 'cultural'); }}
@@ -304,10 +400,22 @@ export const Header: React.FC<HeaderProps> = ({ currentRoute, onNavigate }) => {
             About Us
           </button>
           <button
-            onClick={() => { setMobileMenuOpen(false); onNavigate('partner'); }}
+            onClick={() => { setMobileMenuOpen(false); onNavigate('partner', 'all'); }}
             className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
           >
             Become Our Partner
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('partner', 'vehicles'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Partner Vehicles (4x4)
+          </button>
+          <button
+            onClick={() => { setMobileMenuOpen(false); onNavigate('partner', 'hotels'); }}
+            className="w-full text-left py-2 px-3 text-sm font-medium hover:bg-slate-50 text-[#1a2b48]"
+          >
+            Partner Hotels &amp; Resorts
           </button>
 
           {/* Mobile Language Switcher */}

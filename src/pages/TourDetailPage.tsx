@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Tour, DepartureDate } from '../data/toursData';
+import { Tour } from '../data/toursData';
 import { useAuth } from '../context/AuthContext';
 import { InteractiveRouteMap } from '../components/InteractiveRouteMap';
 import {
   MapPin, Clock, Calendar, Users, Mountain, ShieldCheck, Check, X,
-  ChevronDown, ChevronUp, Star, Phone, MessageSquare, AlertCircle, Share2, Heart, Compass
+  ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Star, Phone, MessageSquare, AlertCircle, Share2, Heart, Compass
 } from 'lucide-react';
 
 interface TourDetailPageProps {
@@ -14,19 +14,90 @@ interface TourDetailPageProps {
 }
 
 export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate }) => {
-  const { formatPrice, user, createBooking, openLogin, isAuthenticated, isFavorite, toggleFavorite } = useAuth();
+  const { formatPrice, user, createBooking, openLogin, isAuthenticated, isFavorite, toggleFavorite, addReview, deleteReview, getReviewsForTour, isAdmin } = useAuth();
 
-  // Booking widget state
-  const [selectedDeparture, setSelectedDeparture] = useState<DepartureDate>(
-    tour.departures[0] || {
-      id: 'dep-custom',
-      startDate: '10 June 2027',
-      endDate: '30 June 2027',
-      price: tour.price,
-      status: 'Guaranteed',
-      seatsLeft: 5
+  // Reviews state from Firestore
+  const tourReviews = getReviewsForTour(tour.id);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewCountry, setReviewCountry] = useState(user?.emergencyContact || 'International Climber');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [reviewNotice, setReviewNotice] = useState<string | null>(null);
+
+  const handlePostReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reviewComment.trim()) return;
+    setSubmittingReview(true);
+    setReviewNotice(null);
+
+    const res = await addReview({
+      tourId: tour.id,
+      tourTitle: tour.title,
+      rating: reviewRating,
+      comment: reviewComment,
+      userCountry: reviewCountry
+    });
+
+    setSubmittingReview(false);
+    if (res.success) {
+      setReviewComment('');
+      setReviewNotice('Thank you! Your verified review has been posted directly to Firebase.');
+      setTimeout(() => setReviewNotice(null), 5000);
+    } else {
+      setReviewNotice(res.error || 'Failed to submit review.');
     }
+  };
+
+  // Interactive Departure Calendar State
+  const defaultDepartureDate = (() => {
+    const today = new Date();
+    const season2027 = new Date(2027, 5, 15); // June 15, 2027
+    if (today < season2027) return season2027;
+    const next = new Date(today);
+    next.setDate(next.getDate() + 14);
+    return next;
+  })();
+
+  const [selectedDepartureDate, setSelectedDepartureDate] = useState<Date>(defaultDepartureDate);
+  const [calendarViewDate, setCalendarViewDate] = useState<Date>(
+    new Date(defaultDepartureDate.getFullYear(), defaultDepartureDate.getMonth(), 1)
   );
+  const [bookingError, setBookingError] = useState<string | null>(null);
+
+  const tripDays = tour.daysCount && tour.daysCount > 0 ? tour.daysCount : 14;
+  const calculatedReturnDate = new Date(selectedDepartureDate);
+  calculatedReturnDate.setDate(selectedDepartureDate.getDate() + tripDays);
+
+  const formattedStartDate = selectedDepartureDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  const formattedEndDate = calculatedReturnDate.toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+
+  const handlePrevMonth = () => {
+    setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const calendarYear = calendarViewDate.getFullYear();
+  const calendarMonth = calendarViewDate.getMonth();
+  const firstDayOfWeek = new Date(calendarYear, calendarMonth, 1).getDay();
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const calendarMonthName = calendarViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [singleTent, setSingleTent] = useState(false);
@@ -59,7 +130,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
   // Pricing calculations
   const singleTentCost = singleTent ? 250 : 0;
   const airportCost = airportTransfer ? 80 : 0;
-  const totalPrice = (adults * selectedDeparture.price) + (children * (selectedDeparture.price * 0.75)) + singleTentCost + airportCost;
+  const totalPrice = (adults * tour.price) + (children * (tour.price * 0.75)) + singleTentCost + airportCost;
 
   const toggleDay = (day: number) => {
     setExpandedDays(prev => ({ ...prev, [day]: !prev[day] }));
@@ -71,12 +142,13 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
 
   const handleBookNow = (e: React.FormEvent) => {
     e.preventDefault();
+    setBookingError(null);
     if (!guestName.trim()) {
-      alert('Please enter your full name for the booking.');
+      setBookingError('Please enter your full name for the booking reservation.');
       return;
     }
     if (!guestEmail.trim() || !guestEmail.includes('@')) {
-      alert('Please enter a valid email address.');
+      setBookingError('Please enter a valid email address.');
       return;
     }
 
@@ -84,8 +156,8 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
       tourId: tour.id,
       tourTitle: tour.title,
       tourImage: tour.image,
-      startDate: selectedDeparture.startDate,
-      endDate: selectedDeparture.endDate,
+      startDate: formattedStartDate,
+      endDate: formattedEndDate,
       duration: tour.duration,
       adults,
       children,
@@ -198,7 +270,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                 />
                 {tour.discountPercent && (
                   <div className="absolute top-4 left-4 bg-[#fa5636] text-white text-xs font-black uppercase px-2.5 py-1 rounded shadow-md">
-                    {tour.discountPercent}% OFF 2027 Fixed Departures
+                    {tour.discountPercent}% OFF Special Booking
                   </div>
                 )}
               </div>
@@ -280,78 +352,6 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                 tourTitle={tour.title}
               />
             </div>
-
-            {/* Fixed Departures and Costs Table */}
-            {tour.departures && tour.departures.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4">
-                  <div>
-                    <h2 className="font-heading text-xl font-bold text-[#1a2b48]">
-                      Fixed Departures &amp; Costs 2027
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Guaranteed group departures starting and ending in Islamabad
-                    </p>
-                  </div>
-                  <div className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2.5 py-1 rounded-full mt-2 sm:mt-0 w-fit">
-                    100% Guaranteed Departures
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs border border-slate-200 rounded-xl overflow-hidden">
-                    <thead className="bg-slate-100 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
-                      <tr>
-                        <th className="py-3 px-4">Start Date</th>
-                        <th className="py-3 px-4">End Date</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4">Price / Person</th>
-                        <th className="py-3 px-4 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200 text-slate-700">
-                      {tour.departures.map((dep) => (
-                        <tr
-                          key={dep.id}
-                          className={`hover:bg-blue-50/40 transition-colors ${
-                            selectedDeparture.id === dep.id ? 'bg-blue-50/70 font-semibold' : ''
-                          }`}
-                        >
-                          <td className="py-3 px-4 font-bold text-[#1a2b48]">{dep.startDate}</td>
-                          <td className="py-3 px-4">{dep.endDate}</td>
-                          <td className="py-3 px-4">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
-                              dep.status === 'Guaranteed'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : dep.status === 'Filling Fast'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}>
-                              {dep.status} ({dep.seatsLeft} left)
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 font-extrabold text-[#1a2b48]">
-                            {formatPrice(dep.price)}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedDeparture(dep);
-                                // scroll smoothly to booking box
-                                window.scrollTo({ top: 350, behavior: 'smooth' });
-                              }}
-                              className="px-3 py-1.5 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-[11px] font-bold rounded-lg transition-colors cursor-pointer"
-                            >
-                              Join Now
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
 
             {/* Day by Day Itinerary */}
             <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80">
@@ -531,6 +531,178 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                 </div>
               </div>
             </div>
+
+            {/* Traveler Reviews & Feedback Section */}
+            <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                <div>
+                  <h2 className="font-heading text-lg sm:text-xl font-bold text-[#1a2b48] flex items-center gap-2">
+                    <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                    <span>Traveler Reviews &amp; Feedback</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {tourReviews.length === 0 ? '0 Reviews recorded' : `${tourReviews.length} Verified Review${tourReviews.length === 1 ? '' : 's'}`}
+                  </p>
+                </div>
+
+                {!isAuthenticated && (
+                  <button
+                    onClick={openLogin}
+                    className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-[#5191fa] text-xs font-bold rounded-xl transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    Log In to Give Review
+                  </button>
+                )}
+              </div>
+
+              {/* Review Notification Banner */}
+              {reviewNotice && (
+                <div className="mb-6 p-4 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center justify-between">
+                  <span>{reviewNotice}</span>
+                  <button onClick={() => setReviewNotice(null)} className="text-blue-700 hover:text-blue-900 cursor-pointer ml-2">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Reviews List */}
+              {tourReviews.length > 0 ? (
+                <div className="space-y-4 mb-8">
+                  {tourReviews.map((rev) => (
+                    <div key={rev.id} className="p-4 bg-slate-50/70 rounded-xl border border-slate-100">
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#1a2b48] to-[#5191fa] text-white flex items-center justify-center font-bold text-xs">
+                            {rev.userName[0]?.toUpperCase() || 'T'}
+                          </div>
+                          <div>
+                            <div className="font-bold text-xs text-slate-900 flex items-center gap-2">
+                              <span>{rev.userName}</span>
+                              {rev.userCountry && (
+                                <span className="text-[10px] text-slate-400 font-normal">({rev.userCountry})</span>
+                              )}
+                            </div>
+                            <div className="text-[10px] text-slate-400">
+                              {new Date(rev.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star
+                                key={s}
+                                className={`w-3.5 h-3.5 ${s <= rev.rating ? 'text-amber-400 fill-amber-400' : 'text-slate-200'}`}
+                              />
+                            ))}
+                          </div>
+                          {isAdmin && (
+                            <button
+                              onClick={() => deleteReview(rev.id)}
+                              className="text-[10px] text-rose-500 hover:text-rose-700 ml-2 cursor-pointer font-semibold"
+                              title="Delete Review (Admin)"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-700 leading-relaxed pl-10 font-medium">
+                        &ldquo;{rev.comment}&rdquo;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 bg-slate-50 rounded-xl text-center mb-8 border border-slate-100">
+                  <Star className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-xs text-slate-600 font-medium">0 reviews recorded for this expedition.</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Be the first mountaineer or traveler to share authentic feedback!</p>
+                </div>
+              )}
+
+              {/* Review Submission Form for Logged-In User or Admin */}
+              {isAuthenticated ? (
+                <div className="pt-4 border-t border-slate-100">
+                  <h3 className="font-heading font-bold text-sm text-[#1a2b48] mb-3">
+                    Leave Your Review as {user?.firstName || 'Traveler'} {isAdmin && <span className="text-[10px] text-amber-600 font-normal">(Admin Review)</span>}
+                  </h3>
+
+                  <form onSubmit={handlePostReview} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                        Your Expedition Rating
+                      </label>
+                      <div className="flex items-center gap-1.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            type="button"
+                            key={star}
+                            onClick={() => setReviewRating(star)}
+                            className="p-1 cursor-pointer transition-transform hover:scale-110"
+                          >
+                            <Star
+                              className={`w-5 h-5 ${star <= reviewRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`}
+                            />
+                          </button>
+                        ))}
+                        <span className="text-xs font-bold text-slate-700 ml-2">
+                          {reviewRating} of 5 Stars
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Your Country / Alpine Club (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={reviewCountry}
+                        onChange={(e) => setReviewCountry(e.target.value)}
+                        placeholder="e.g. Switzerland, UK, Alpine Club of Canada"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Detailed Review &amp; Expedition Experience
+                      </label>
+                      <textarea
+                        rows={3}
+                        required
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder="Share your experience regarding the Balti guide crew, camps, mountain safety, and itinerary highlights..."
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="px-6 py-2.5 bg-[#5191fa] hover:bg-[#3875dc] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md disabled:opacity-50"
+                    >
+                      {submittingReview ? 'Posting Review to Firebase...' : 'Submit Verified Review'}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div className="p-4 bg-blue-50/60 rounded-xl border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <span className="text-slate-700">
+                    Logged-in travelers and administrators can leave ratings and reviews for this tour.
+                  </span>
+                  <button
+                    onClick={openLogin}
+                    className="px-4 py-2 bg-[#5191fa] text-white font-bold rounded-lg cursor-pointer hover:bg-[#3875dc] shrink-0"
+                  >
+                    Log In to Review
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* RIGHT COLUMN: Sticky Booking & Enquiry Box */}
@@ -547,7 +719,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                       </span>
                     )}
                     <span className="text-2xl font-black text-[#1a2b48]">
-                      {formatPrice(selectedDeparture.price)}
+                      {formatPrice(tour.price)}
                     </span>
                     <span className="text-xs text-slate-500">/ person</span>
                   </div>
@@ -570,7 +742,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  Book Fixed Date
+                  Book Departure
                 </button>
                 <button
                   type="button"
@@ -588,25 +760,148 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
               {/* ============ BOOKING TAB ============ */}
               {enquiryType === 'book' && (
                 <form onSubmit={handleBookNow} className="space-y-4">
-                  {/* Select Departure Date */}
+                  {bookingError && (
+                    <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between shadow-xs">
+                      <div className="flex items-center gap-1.5">
+                        <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                        <span>{bookingError}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBookingError(null)}
+                        className="text-rose-600 hover:text-rose-900 cursor-pointer ml-2"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Interactive Departure Calendar */}
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      Departure Date
-                    </label>
-                    <select
-                      value={selectedDeparture.id}
-                      onChange={(e) => {
-                        const dep = tour.departures.find(d => d.id === e.target.value);
-                        if (dep) setSelectedDeparture(dep);
-                      }}
-                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#5191fa] cursor-pointer"
-                    >
-                      {tour.departures.map(d => (
-                        <option key={d.id} value={d.id}>
-                          {d.startDate} - {d.endDate} ({d.status})
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-[#5191fa]" />
+                        <span>Choose Departure Date</span>
+                      </label>
+                      <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
+                        Live Availability
+                      </span>
+                    </div>
+
+                    {/* Calendar Box */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3">
+                      {/* Month Navigation Header */}
+                      <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
+                        <button
+                          type="button"
+                          onClick={handlePrevMonth}
+                          className="p-1.5 text-slate-600 hover:text-[#5191fa] hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
+                          title="Previous Month"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <div className="text-xs font-extrabold text-[#1a2b48]">
+                          {calendarMonthName}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleNextMonth}
+                          className="p-1.5 text-slate-600 hover:text-[#5191fa] hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
+                          title="Next Month"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Day of Week Row */}
+                      <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
+                        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
+                          <div key={d} className="text-[10px] font-bold text-slate-400">
+                            {d}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Days Grid */}
+                      <div className="grid grid-cols-7 gap-1 text-center">
+                        {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
+                          <div key={`empty-${idx}`} className="h-7 w-7" />
+                        ))}
+                        {Array.from({ length: daysInMonth }).map((_, i) => {
+                          const day = i + 1;
+                          const cellDate = new Date(calendarYear, calendarMonth, day);
+                          const isSelected =
+                            selectedDepartureDate.getFullYear() === calendarYear &&
+                            selectedDepartureDate.getMonth() === calendarMonth &&
+                            selectedDepartureDate.getDate() === day;
+                          const isPast = cellDate < todayMidnight;
+
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              disabled={isPast}
+                              onClick={() => setSelectedDepartureDate(cellDate)}
+                              className={`h-7 w-7 mx-auto rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${
+                                isSelected
+                                  ? 'bg-[#5191fa] text-white font-extrabold ring-2 ring-blue-300 shadow-md scale-105'
+                                  : isPast
+                                  ? 'text-slate-300 cursor-not-allowed line-through text-[10px]'
+                                  : 'text-slate-700 hover:bg-blue-100/70 hover:text-[#5191fa]'
+                              }`}
+                            >
+                              {day}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Quick Season Hop */}
+                      <div className="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500">
+                        <span className="font-medium">Quick Jump:</span>
+                        <div className="flex gap-1">
+                          {[
+                            { label: 'May', month: 4, year: 2027 },
+                            { label: 'Jun', month: 5, year: 2027 },
+                            { label: 'Jul', month: 6, year: 2027 },
+                            { label: 'Aug', month: 7, year: 2027 },
+                            { label: 'Sep', month: 8, year: 2027 }
+                          ].map((s) => (
+                            <button
+                              key={s.label}
+                              type="button"
+                              onClick={() => {
+                                setCalendarViewDate(new Date(s.year, s.month, 1));
+                                setSelectedDepartureDate(new Date(s.year, s.month, 10));
+                              }}
+                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
+                                calendarMonth === s.month && calendarYear === s.year
+                                  ? 'bg-[#5191fa] text-white shadow-xs'
+                                  : 'bg-white text-slate-600 hover:bg-slate-200/80 border border-slate-200'
+                              }`}
+                            >
+                              {s.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Selected Itinerary Dates Card */}
+                    <div className="mt-2.5 p-3 bg-blue-50/70 border border-blue-100 rounded-xl space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 text-[11px] font-medium">Departure Date:</span>
+                        <span className="font-bold text-[#1a2b48]">{formattedStartDate}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500 text-[11px] font-medium">Estimated Return:</span>
+                        <span className="font-semibold text-slate-700">{formattedEndDate}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] text-[#5191fa] font-bold pt-1 border-t border-blue-100">
+                        <span>Total Trip Duration:</span>
+                        <span>{tour.duration || `${tripDays} Days`}</span>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Guests: Adults & Children */}

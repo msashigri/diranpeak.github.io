@@ -95,14 +95,55 @@ export interface PartnerRequest {
   companyName: string;
   contactName: string;
   email: string;
+  phone?: string;
+  location?: string;
+  details?: string;
   date: string;
-  status: 'Pending' | 'Approved' | 'Reviewing';
+  status: 'Pending' | 'Approved' | 'Declined';
+  createdAt?: string;
 }
 
 export interface NewsletterSubscriber {
   id: string;
   email: string;
   date: string;
+  createdAt?: string;
+}
+
+export interface TourReview {
+  id: string;
+  tourId: string;
+  tourTitle: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userCountry?: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface Broadcast {
+  id: string;
+  subject: string;
+  message: string;
+  tourTitle?: string;
+  sender: string;
+  recipientCount: number;
+  sentAt: string;
+  status: 'Sent';
+}
+
+export interface AlertSettings {
+  emailAlertsEnabled: boolean;
+  adminAlertEmail: string;
+  newBookingAlert: boolean;
+  newContactMessageAlert: boolean;
+  newPartnerRequestAlert: boolean;
+  newReviewAlert: boolean;
+  newSubscriberAlert: boolean;
+  autoNotifySubscribersOnNewPackage: boolean;
+  autoNotifySubscribersOnPackageUpdate: boolean;
 }
 
 export interface AdminSettings {
@@ -154,6 +195,9 @@ interface AuthContextType {
   contactInquiries: ContactInquiry[];
   partnerRequests: PartnerRequest[];
   newsletterSubscribers: NewsletterSubscriber[];
+  reviews: TourReview[];
+  broadcasts: Broadcast[];
+  alertSettings: AlertSettings;
   adminSettings: AdminSettings;
   latestBooking: Booking | null;
   setCurrency: (c: Currency) => void;
@@ -169,8 +213,17 @@ interface AuthContextType {
   logout: () => void;
   createBooking: (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>) => Booking;
   addContactInquiry: (inquiry: Omit<ContactInquiry, 'id' | 'date' | 'status'>) => ContactInquiry;
-  addPartnerRequest: (request: Omit<PartnerRequest, 'id' | 'date' | 'status'>) => PartnerRequest;
-  addNewsletterSubscriber: (email: string) => void;
+  addPartnerRequest: (request: Omit<PartnerRequest, 'id' | 'date' | 'status'>) => Promise<PartnerRequest>;
+  updatePartnerStatus: (id: string, status: PartnerRequest['status']) => Promise<void>;
+  deletePartnerRequest: (id: string) => Promise<void>;
+  addNewsletterSubscriber: (email: string) => Promise<void>;
+  deleteSubscriber: (id: string) => Promise<void>;
+  addReview: (review: { tourId: string; tourTitle: string; rating: number; comment: string; userName?: string; userCountry?: string }) => Promise<{ success: boolean; error?: string }>;
+  deleteReview: (reviewId: string) => Promise<{ success: boolean; error?: string }>;
+  getReviewsForTour: (tourId: string) => TourReview[];
+  sendSubscriberBroadcast: (subject: string, message: string, tourTitle?: string) => Promise<{ success: boolean; count: number; error?: string }>;
+  notifySubscribersOfPackageChange: (action: 'added' | 'updated', tourTitle: string, tourId: string) => Promise<void>;
+  updateAlertSettings: (settings: Partial<AlertSettings>) => Promise<void>;
   updateBookingStatus: (id: string, status: Booking['status']) => void;
   deleteBooking: (id: string) => void;
   updateContactStatus: (id: string, status: ContactInquiry['status']) => void;
@@ -185,6 +238,9 @@ interface AuthContextType {
   adminUpdateUserProfile: (targetUserId: string, updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   fetchAllUsersForAdmin: () => Promise<any[]>;
   fetchAllBookingsForAdmin: () => Promise<Booking[]>;
+  fetchAllInquiriesForAdmin: () => Promise<ContactInquiry[]>;
+  fetchAllPartnersForAdmin: () => Promise<PartnerRequest[]>;
+  fetchAllSubscribersForAdmin: () => Promise<NewsletterSubscriber[]>;
   favorites: string[];
   toggleFavorite: (tourId: string) => Promise<boolean>;
   isFavorite: (tourId: string) => boolean;
@@ -286,46 +342,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ];
   });
 
-  const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>(() => {
-    try {
-      const saved = localStorage.getItem('chogori_partner_requests');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return [
-      {
-        id: 'pr-1',
-        category: 'Hotels & Resorts',
-        companyName: 'Shigar River Eco Resort',
-        contactName: 'Fida Hussain',
-        email: 'manager@shigarresort.pk',
-        date: '2027-03-22',
-        status: 'Pending'
-      },
-      {
-        id: 'pr-2',
-        category: '4x4 Vehicles & Transport',
-        companyName: 'Baltistan Land Cruiser Association',
-        contactName: 'Ghulam Abbas',
-        email: 'abbas.transport@skardu.pk',
-        date: '2027-03-20',
-        status: 'Approved'
-      }
-    ];
-  });
-
-  const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>(() => {
-    try {
-      const saved = localStorage.getItem('chogori_subscribers');
-      if (saved) return JSON.parse(saved);
-    } catch {
-      // fallback
-    }
-    return [
-      { id: 'sub-1', email: 'climber.journal@gmail.com', date: '2027-03-24' },
-      { id: 'sub-2', email: 'hiker.alex@yahoo.com', date: '2027-03-25' }
-    ];
+  const [partnerRequests, setPartnerRequests] = useState<PartnerRequest[]>([]);
+  const [newsletterSubscribers, setNewsletterSubscribers] = useState<NewsletterSubscriber[]>([]);
+  const [reviews, setReviews] = useState<TourReview[]>([]);
+  const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
+  const [alertSettings, setAlertSettings] = useState<AlertSettings>({
+    emailAlertsEnabled: true,
+    adminAlertEmail: 'msa78677@gmail.com',
+    newBookingAlert: true,
+    newContactMessageAlert: true,
+    newPartnerRequestAlert: true,
+    newReviewAlert: true,
+    newSubscriberAlert: true,
+    autoNotifySubscribersOnNewPackage: true,
+    autoNotifySubscribersOnPackageUpdate: true
   });
 
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null);
@@ -565,34 +595,128 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user?.id]);
 
-  // Real-time Firestore Inquiries synchronization for Admin
+  // Real-time Firestore Inquiries synchronization
   useEffect(() => {
-    if (!adminAuth?.isAuthenticated) return;
-
     try {
       const inqCol = collection(db, 'inquiries');
       const unsubscribe = onSnapshot(
         inqCol,
         (snapshot) => {
           const firestoreInquiries = snapshot.docs.map(docSnap => docSnap.data() as ContactInquiry);
-          if (firestoreInquiries.length > 0) {
-            setContactInquiries(prev => {
-              const fsIds = new Set(firestoreInquiries.map(i => i.id));
-              const remaining = prev.filter(i => !fsIds.has(i.id));
-              return [...firestoreInquiries, ...remaining];
-            });
-          }
+          setContactInquiries(firestoreInquiries);
         },
         (error) => {
           handleFirestoreError(error, OperationType.GET, 'inquiries');
         }
       );
-
       return () => unsubscribe();
     } catch {
       // offline fallback
     }
-  }, [adminAuth?.isAuthenticated]);
+  }, []);
+
+  // Real-time Firestore Reviews synchronization
+  useEffect(() => {
+    try {
+      const reviewsCol = collection(db, 'reviews');
+      const unsubscribe = onSnapshot(
+        reviewsCol,
+        (snapshot) => {
+          const firestoreReviews = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as TourReview));
+          setReviews(firestoreReviews);
+        },
+        (error) => {
+          handleFirestoreError(error, OperationType.GET, 'reviews');
+        }
+      );
+      return () => unsubscribe();
+    } catch {
+      // offline fallback
+    }
+  }, []);
+
+  // Real-time Firestore Partners synchronization
+  useEffect(() => {
+    try {
+      const partnersCol = collection(db, 'partners');
+      const unsubscribe = onSnapshot(
+        partnersCol,
+        (snapshot) => {
+          const firestorePartners = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as PartnerRequest));
+          setPartnerRequests(firestorePartners);
+        },
+        (error) => {
+          handleFirestoreError(error, OperationType.GET, 'partners');
+        }
+      );
+      return () => unsubscribe();
+    } catch {
+      // offline fallback
+    }
+  }, []);
+
+  // Real-time Firestore Newsletter Subscribers synchronization
+  useEffect(() => {
+    try {
+      const subsCol = collection(db, 'subscribers');
+      const unsubscribe = onSnapshot(
+        subsCol,
+        (snapshot) => {
+          const firestoreSubs = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as NewsletterSubscriber));
+          setNewsletterSubscribers(firestoreSubs);
+        },
+        (error) => {
+          handleFirestoreError(error, OperationType.GET, 'subscribers');
+        }
+      );
+      return () => unsubscribe();
+    } catch {
+      // offline fallback
+    }
+  }, []);
+
+  // Real-time Firestore Broadcasts synchronization
+  useEffect(() => {
+    try {
+      const broadcastsCol = collection(db, 'broadcasts');
+      const unsubscribe = onSnapshot(
+        broadcastsCol,
+        (snapshot) => {
+          const firestoreBroadcasts = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Broadcast));
+          // Sort newest first
+          firestoreBroadcasts.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
+          setBroadcasts(firestoreBroadcasts);
+        },
+        (error) => {
+          handleFirestoreError(error, OperationType.GET, 'broadcasts');
+        }
+      );
+      return () => unsubscribe();
+    } catch {
+      // offline fallback
+    }
+  }, []);
+
+  // Real-time Firestore Alert Settings synchronization
+  useEffect(() => {
+    try {
+      const alertDocRef = doc(db, 'alertSettings', 'general');
+      const unsubscribe = onSnapshot(
+        alertDocRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            setAlertSettings(snapshot.data() as AlertSettings);
+          }
+        },
+        (error) => {
+          handleFirestoreError(error, OperationType.GET, 'alertSettings');
+        }
+      );
+      return () => unsubscribe();
+    } catch {
+      // offline fallback
+    }
+  }, []);
 
   // Initialize translator
   useEffect(() => {
@@ -1156,36 +1280,224 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return newInquiry;
   };
 
-  const addPartnerRequest = (request: Omit<PartnerRequest, 'id' | 'date' | 'status'>): PartnerRequest => {
+  const addPartnerRequest = async (request: Omit<PartnerRequest, 'id' | 'date' | 'status'>): Promise<PartnerRequest> => {
+    const id = 'pr_' + Date.now();
     const newReq: PartnerRequest = {
       ...request,
-      id: 'pr_' + Date.now(),
+      id,
       date: new Date().toISOString().split('T')[0],
-      status: 'Pending'
+      status: 'Pending',
+      createdAt: new Date().toISOString()
     };
     setPartnerRequests(prev => [newReq, ...prev]);
+    try {
+      await setDoc(doc(db, 'partners', id), newReq);
+      await logActivity({
+        userId: user?.id || 'guest',
+        userEmail: newReq.email,
+        userName: newReq.contactName,
+        action: 'CONTACT_INQUIRY',
+        details: `Submitted new partnership application for ${newReq.category} (${newReq.companyName})`
+      });
+    } catch (err) {
+      console.warn('Could not persist partner request to Firestore:', err);
+    }
     return newReq;
   };
 
-  const addNewsletterSubscriber = (email: string) => {
+  const updatePartnerStatus = async (id: string, status: PartnerRequest['status']) => {
+    setPartnerRequests(prev => prev.map(p => p.id === id ? { ...p, status } : p));
+    try {
+      await updateDoc(doc(db, 'partners', id), { status });
+    } catch (err) {
+      console.warn('Error updating partner status in Firestore:', err);
+    }
+  };
+
+  const deletePartnerRequest = async (id: string) => {
+    setPartnerRequests(prev => prev.filter(p => p.id !== id));
+    try {
+      await deleteDoc(doc(db, 'partners', id));
+    } catch (err) {
+      console.warn('Error deleting partner in Firestore:', err);
+    }
+  };
+
+  const addNewsletterSubscriber = async (email: string) => {
     if (!email || !email.includes('@')) return;
-    const exists = newsletterSubscribers.some(s => s.email.toLowerCase() === email.toLowerCase());
+    const trimmed = email.trim().toLowerCase();
+    const exists = newsletterSubscribers.some(s => s.email.toLowerCase() === trimmed);
     if (!exists) {
       const subscriberId = 'sub_' + Date.now();
       const newSub: NewsletterSubscriber = {
         id: subscriberId,
-        email: email.trim().toLowerCase(),
-        date: new Date().toISOString().split('T')[0]
+        email: trimmed,
+        date: new Date().toISOString().split('T')[0],
+        createdAt: new Date().toISOString()
       };
       setNewsletterSubscribers(prev => [newSub, ...prev]);
 
-      // Persist to Firebase Firestore
-      setDoc(doc(db, 'subscribers', subscriberId), {
-        ...newSub,
-        createdAt: new Date().toISOString()
-      }).catch(err => {
+      try {
+        await setDoc(doc(db, 'subscribers', subscriberId), newSub);
+        await logActivity({
+          userId: user?.id || 'guest',
+          userEmail: trimmed,
+          userName: 'New Subscriber',
+          action: 'CONTACT_INQUIRY',
+          details: `Subscribed to expedition newsletter announcements`
+        });
+      } catch (err) {
         console.warn('Could not persist subscriber to Firestore:', err);
+      }
+    }
+  };
+
+  const deleteSubscriber = async (id: string) => {
+    setNewsletterSubscribers(prev => prev.filter(s => s.id !== id));
+    try {
+      await deleteDoc(doc(db, 'subscribers', id));
+    } catch (err) {
+      console.warn('Error deleting subscriber in Firestore:', err);
+    }
+  };
+
+  const addReview = async (reviewData: { tourId: string; tourTitle: string; rating: number; comment: string; userName?: string; userCountry?: string }): Promise<{ success: boolean; error?: string }> => {
+    if (!user && !auth.currentUser) {
+      return { success: false, error: 'You must be logged in to leave an expedition review.' };
+    }
+    const currentUid = user?.id || auth.currentUser?.uid || '';
+    const currentEmail = user?.email || auth.currentUser?.email || '';
+    const currentName = reviewData.userName || (user ? `${user.firstName} ${user.lastName}`.trim() : auth.currentUser?.displayName) || 'Traveler';
+    const reviewId = 'rev_' + Date.now();
+
+    const newReview: TourReview = {
+      id: reviewId,
+      tourId: reviewData.tourId,
+      tourTitle: reviewData.tourTitle,
+      userId: currentUid,
+      userName: currentName,
+      userEmail: currentEmail,
+      userCountry: reviewData.userCountry || 'International Explorer',
+      rating: reviewData.rating,
+      comment: reviewData.comment.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    setReviews(prev => [newReview, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'reviews', reviewId), newReview);
+      await logActivity({
+        userId: currentUid,
+        userEmail: currentEmail,
+        userName: currentName,
+        action: 'CONTACT_INQUIRY',
+        details: `Reviewed "${newReview.tourTitle}" with ${newReview.rating} stars`
       });
+      return { success: true };
+    } catch (err) {
+      console.error('Error saving review to Firestore:', err);
+      return { success: false, error: (err as Error)?.message || 'Failed to submit review to Firestore.' };
+    }
+  };
+
+  const deleteReview = async (reviewId: string): Promise<{ success: boolean; error?: string }> => {
+    setReviews(prev => prev.filter(r => r.id !== reviewId));
+    try {
+      await deleteDoc(doc(db, 'reviews', reviewId));
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: (err as Error)?.message };
+    }
+  };
+
+  const getReviewsForTour = (tourId: string): TourReview[] => {
+    return reviews.filter(r => r.tourId === tourId);
+  };
+
+  const sendSubscriberBroadcast = async (subject: string, message: string, tourTitle?: string): Promise<{ success: boolean; count: number; error?: string }> => {
+    if (!subject.trim() || !message.trim()) {
+      return { success: false, count: 0, error: 'Subject and message body are required.' };
+    }
+    const count = newsletterSubscribers.length;
+    const broadcastId = 'bc_' + Date.now();
+    const newBroadcast: Broadcast = {
+      id: broadcastId,
+      subject: subject.trim(),
+      message: message.trim(),
+      tourTitle: tourTitle || undefined,
+      sender: 'noreply@diranpeakadverture.com',
+      recipientCount: count,
+      sentAt: new Date().toISOString(),
+      status: 'Sent'
+    };
+
+    setBroadcasts(prev => [newBroadcast, ...prev]);
+
+    try {
+      await setDoc(doc(db, 'broadcasts', broadcastId), newBroadcast);
+      await logActivity({
+        userId: user?.id || 'admin',
+        userEmail: 'noreply@diranpeakadverture.com',
+        userName: 'Admin Operations',
+        action: 'CONTACT_INQUIRY',
+        details: `Dispatched subscriber update to ${count} recipient(s) via noreply@diranpeakadverture.com: "${newBroadcast.subject}"`
+      });
+      return { success: true, count };
+    } catch (err) {
+      console.error('Error dispatching broadcast in Firestore:', err);
+      return { success: false, count, error: (err as Error)?.message };
+    }
+  };
+
+  const notifySubscribersOfPackageChange = async (action: 'added' | 'updated', tourTitle: string, tourId: string) => {
+    const subject = action === 'added'
+      ? `New Expedition Launched: ${tourTitle} - Diran Peak Adventure`
+      : `Itinerary & Dates Updated: ${tourTitle} - Diran Peak Adventure`;
+
+    const message = action === 'added'
+      ? `Dear Mountaineer & Explorer,\n\nWe are delighted to announce our newest expedition: "${tourTitle}". Verified mountain guide assignments, confirmed departure dates, and detailed GPS itineraries are now live.\n\nExplore and book online: https://diranpeakadventure.com/tour/${tourId}\n\nWarm regards,\nExpedition Logistics Desk\nDiran Peak Adventure\nEmail: noreply@diranpeakadverture.com`
+      : `Dear Mountaineer & Explorer,\n\nOur expedition operations desk has recently updated itineraries, high-altitude gear schedules, and departure bookings for "${tourTitle}".\n\nReview the updated package details here: https://diranpeakadventure.com/tour/${tourId}\n\nWarm regards,\nExpedition Logistics Desk\nDiran Peak Adventure\nEmail: noreply@diranpeakadverture.com`;
+
+    await sendSubscriberBroadcast(subject, message, tourTitle);
+  };
+
+  const updateAlertSettings = async (settings: Partial<AlertSettings>): Promise<void> => {
+    setAlertSettings(prev => ({ ...prev, ...settings }));
+    try {
+      await setDoc(doc(db, 'alertSettings', 'general'), settings, { merge: true });
+    } catch (err) {
+      console.warn('Error saving alert settings to Firestore:', err);
+    }
+  };
+
+  const fetchAllInquiriesForAdmin = async (): Promise<ContactInquiry[]> => {
+    try {
+      const snap = await getDocs(collection(db, 'inquiries'));
+      return snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as ContactInquiry));
+    } catch (err) {
+      console.warn('Error fetching inquiries:', err);
+      return contactInquiries;
+    }
+  };
+
+  const fetchAllPartnersForAdmin = async (): Promise<PartnerRequest[]> => {
+    try {
+      const snap = await getDocs(collection(db, 'partners'));
+      return snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as PartnerRequest));
+    } catch (err) {
+      console.warn('Error fetching partners:', err);
+      return partnerRequests;
+    }
+  };
+
+  const fetchAllSubscribersForAdmin = async (): Promise<NewsletterSubscriber[]> => {
+    try {
+      const snap = await getDocs(collection(db, 'subscribers'));
+      return snap.docs.map((d: any) => ({ id: d.id, ...d.data() } as NewsletterSubscriber));
+    } catch (err) {
+      console.warn('Error fetching subscribers:', err);
+      return newsletterSubscribers;
     }
   };
 
@@ -1535,6 +1847,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         contactInquiries,
         partnerRequests,
         newsletterSubscribers,
+        reviews,
+        broadcasts,
+        alertSettings,
         adminSettings,
         latestBooking,
         setCurrency: setCurrencyState,
@@ -1551,7 +1866,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createBooking,
         addContactInquiry,
         addPartnerRequest,
+        updatePartnerStatus,
+        deletePartnerRequest,
         addNewsletterSubscriber,
+        deleteSubscriber,
+        addReview,
+        deleteReview,
+        getReviewsForTour,
+        sendSubscriberBroadcast,
+        notifySubscribersOfPackageChange,
+        updateAlertSettings,
         updateBookingStatus,
         updateBookingDetails,
         adminResetUserPassword,
@@ -1566,6 +1890,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteUserBooking,
         fetchAllUsersForAdmin,
         fetchAllBookingsForAdmin,
+        fetchAllInquiriesForAdmin,
+        fetchAllPartnersForAdmin,
+        fetchAllSubscribersForAdmin,
         favorites,
         toggleFavorite,
         isFavorite,

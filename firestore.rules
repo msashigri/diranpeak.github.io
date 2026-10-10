@@ -142,5 +142,29 @@ service cloud.firestore {
       allow create: if isSignedIn() && (incoming().userId == request.auth.uid || isAdmin());
       allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid || isAdmin());
     }
+
+    // 8. Reviews Collection (Tour reviews by travelers & admins)
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+    }
+
+    // 9. Partners Collection (Vehicles, Hotels, B2B applications)
+    match /partners/{partnerId} {
+      allow create: if true;
+      allow read, list, update, delete: if isAdmin();
+    }
+
+    // 10. Broadcasts Collection (Subscriber email updates from noreply@diranpeakadverture.com)
+    match /broadcasts/{broadcastId} {
+      allow read, list, create, update, delete: if isAdmin();
+    }
+
+    // 11. Alert Settings Collection
+    match /alertSettings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
   }
 }
