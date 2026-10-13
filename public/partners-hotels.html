@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partners Hotels &amp; Alpine Resorts | Diran Peak Adventure</title>
+  <meta name="description" content="Explore Diran Peak Adventure's handpicked partner hotels in Pakistan: Eagle's Nest Hunza, Shangrila Resort Skardu, Grand Islamabad Hotel, and Serena Shigar Fort.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #5191fa;
+      --color-primary-dark: #3875dc;
+      --color-navy: #1a2b48;
+      --color-navy-dark: #111d31;
+      --color-dark: #222222;
+      --color-slate: #5e6d77;
+      --color-border: #eaeef3;
+      --color-bg-light: #f7f8fa;
+      --color-coral: #fa5636;
+      --color-emerald: #10b981;
+      --color-amber: #f59e0b;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --font-main: 'Poppins', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      color: var(--color-navy);
+      background-color: var(--color-bg-light);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Top Utility Bar */
+    .topbar {
+      background: var(--color-navy);
+      color: #d1d4da;
+      font-size: 13px;
+      padding: 10px 0;
+      border-bottom: 1px solid #25395c;
+    }
+    .topbar-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .topbar-contact {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .topbar-contact a:hover {
+      color: #ffffff;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .currency-lang-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
+
+    /* Main Header Navigation */
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 84px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 21px;
+      color: var(--color-navy);
+      letter-spacing: -0.5px;
+    }
+    .brand-logo svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--color-primary);
+    }
+    .brand-logo span.highlight {
+      color: var(--color-primary);
+    }
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .nav-menu a {
+      transition: color 0.2s;
+    }
+    .nav-menu a:hover,
+    .nav-menu a.active {
+      color: var(--color-primary);
+    }
+    .nav-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-primary);
+      color: #ffffff !important;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+    }
+    .nav-cta-btn:hover {
+      background: var(--color-primary-dark);
+    }
+
+    /* Breadcrumbs */
+    .breadcrumb-bar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--color-border);
+      padding: 12px 0;
+      font-size: 13px;
+      color: var(--color-slate);
+    }
+    .breadcrumb-bar a {
+      color: var(--color-slate);
+    }
+    .breadcrumb-bar a:hover {
+      color: var(--color-primary);
+    }
+    .breadcrumb-bar span.active {
+      color: var(--color-navy);
+      font-weight: 600;
+    }
+
+    /* Hero Banner */
+    .hotel-hero {
+      position: relative;
+      background: linear-gradient(rgba(26, 43, 72, 0.75), rgba(17, 29, 49, 0.88)), url('/images/shangrila_skardu_resort.jpg') center/cover no-repeat;
+      color: #ffffff;
+      padding: 70px 0 60px;
+      margin-bottom: 40px;
+    }
+    .hotel-hero-content {
+      max-width: 820px;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #ffffff;
+      margin-bottom: 14px;
+    }
+    .hotel-hero h1 {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 14px;
+    }
+    .hotel-hero p {
+      font-size: 16px;
+      color: #e2e8f0;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    /* Key Stats Strip */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-top: 30px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      padding-top: 24px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      padding: 16px 20px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(255,255,255,0.15);
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 26px;
+      font-weight: 800;
+      color: #ffffff;
+    }
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+
+    /* Control & Filter Bar */
+    .filter-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 18px 24px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.03);
+      margin-bottom: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .filter-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .btn-filter {
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      background: #f1f5f9;
+      color: var(--color-slate);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-filter:hover {
+      background: #e2e8f0;
+      color: var(--color-navy);
+    }
+    .btn-filter.active {
+      background: var(--color-primary);
+      color: #ffffff;
+    }
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 6px 12px;
+      min-width: 260px;
+    }
+    .search-box input {
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 13px;
+      width: 100%;
+      color: var(--color-navy);
+      font-family: inherit;
+    }
+
+    /* Hotels Grid */
+    .hotels-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+    .hotel-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      display: flex;
+      flex-col;
+      flex-direction: column;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .hotel-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+    }
+    .hotel-img-wrap {
+      position: relative;
+      height: 230px;
+      overflow: hidden;
+      background: #e2e8f0;
+    }
+    .hotel-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.4s;
+    }
+    .hotel-card:hover .hotel-img {
+      transform: scale(1.04);
+    }
+    .hotel-tag {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      background: rgba(26, 43, 72, 0.85);
+      backdrop-filter: blur(4px);
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .hotel-rating {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: #ffffff;
+      color: var(--color-navy);
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .hotel-rating svg {
+      width: 14px;
+      height: 14px;
+      fill: #f59e0b;
+    }
+
+    .hotel-body {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      flex-grow: 1;
+    }
+    .hotel-location {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .hotel-title {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--color-navy);
+      line-height: 1.3;
+      margin-bottom: 8px;
+    }
+    .hotel-desc {
+      font-size: 13px;
+      color: var(--color-slate);
+      line-height: 1.6;
+      margin-bottom: 16px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Amenities Pill Tags */
+    .hotel-amenities {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+    .amenity-pill {
+      font-size: 11px;
+      background: #f1f5f9;
+      color: #475569;
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    /* Room Types Box */
+    .hotel-rooms-box {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #334155;
+      margin-bottom: 18px;
+    }
+    .hotel-rooms-box strong {
+      color: var(--color-navy);
+    }
+
+    /* Price and Action Bar */
+    .hotel-footer {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .price-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--color-slate);
+    }
+    .price-value {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--color-primary);
+    }
+    .price-sub {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .btn-inquire {
+      background: var(--color-primary);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 9px 18px;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-inquire:hover {
+      background: var(--color-primary-dark);
+    }
+
+    /* Why Partner Section */
+    .benefits-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 50px 40px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.02);
+      margin-bottom: 60px;
+    }
+    .section-header {
+      text-align: center;
+      max-width: 720px;
+      margin: 0 auto 40px;
+    }
+    .section-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-primary);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .section-title {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--color-navy);
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+    .section-desc {
+      font-size: 14px;
+      color: var(--color-slate);
+      line-height: 1.6;
+    }
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .benefit-card {
+      background: #f8fafc;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+    }
+    .benefit-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: rgba(81, 145, 250, 0.1);
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 14px;
+    }
+    .benefit-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 8px;
+    }
+    .benefit-text {
+      font-size: 13px;
+      color: var(--color-slate);
+      line-height: 1.6;
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 50px 40px;
+      margin-bottom: 60px;
+    }
+    .faq-list {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--color-border);
+      padding: 18px 0;
+    }
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--color-navy);
+    }
+    .faq-question:hover {
+      color: var(--color-primary);
+    }
+    .faq-answer {
+      font-size: 13px;
+      color: var(--color-slate);
+      line-height: 1.6;
+      margin-top: 10px;
+      padding-left: 12px;
+      border-left: 3px solid var(--color-primary);
+      display: none;
+    }
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+    .faq-toggle-icon {
+      font-size: 18px;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+
+    /* Hotel Partner Onboarding Form */
+    .form-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 50px 40px;
+      max-width: 760px;
+      margin: 0 auto 60px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: inherit;
+      background: #f8fafc;
+      color: var(--color-navy);
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      background: #ffffff;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .btn-submit {
+      width: 100%;
+      background: var(--color-primary);
+      color: #ffffff;
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+      margin-top: 10px;
+    }
+    .btn-submit:hover {
+      background: var(--color-primary-dark);
+    }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17, 29, 49, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+    .modal-card {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      max-width: 500px;
+      width: 100%;
+      padding: 28px;
+      position: relative;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .modal-close {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      border: none;
+      background: transparent;
+      font-size: 20px;
+      cursor: pointer;
+      color: #94a3b8;
+    }
+    .modal-close:hover {
+      color: var(--color-navy);
+    }
+    .modal-header {
+      margin-bottom: 20px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--color-navy);
+    }
+    .modal-subtitle {
+      font-size: 13px;
+      color: var(--color-slate);
+      margin-top: 4px;
+    }
+
+    /* Footer */
+    .footer {
+      background: #111d31;
+      color: #cbd5e1;
+      padding: 60px 0 24px;
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr;
+      gap: 36px;
+      margin-bottom: 40px;
+    }
+    .footer-col h4 {
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .footer-links {
+      list-style: none;
+    }
+    .footer-links li {
+      margin-bottom: 8px;
+    }
+    .footer-links a:hover {
+      color: var(--color-primary);
+    }
+    .footer-bottom {
+      border-top: 1px solid #1e2e4a;
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 900px) {
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .hotels-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 640px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .hotel-hero h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Utility Bar -->
+  <header class="topbar">
+    <div class="container topbar-content">
+      <div class="topbar-contact">
+        <span>📍 Main Bazar, Skardu, Gilgit-Baltistan &amp; Blue Area, Islamabad</span>
+        <a href="tel:+923445937107">📞 +92 344 5937107</a>
+        <a href="mailto:info@diranpeakadventure.com">✉️ info@diranpeakadventure.com</a>
+      </div>
+      <div class="topbar-actions">
+        <span class="currency-lang-pill">🌐 EN</span>
+        <span class="currency-lang-pill">💵 USD ($) / PKR</span>
+        <a href="/page/become-our-partner/" style="color:#5191fa; font-weight:600;">Become a Partner</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Main Header -->
+  <nav class="header">
+    <div class="container header-content">
+      <a href="/" class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M14 6l-4.2 8.4 2.8 1.4 3.4-6.8 5 10H3l5-10 2 4 1.8-.9L8.4 6 1 20h22L14 6z"/></svg>
+        <span>Diran Peak <span class="highlight">Adventure</span></span>
+      </a>
+
+      <div class="nav-menu">
+        <a href="/">Home</a>
+        <a href="/#tours">Expeditions &amp; Treks</a>
+        <a href="/about-us.html">About Us</a>
+        <a href="/page/hotel/" class="active">Partners Hotels</a>
+        <a href="/page/car/">Partners Vehicles</a>
+        <a href="/page/become-our-partner/">Become Partner</a>
+        <a href="/#contact" class="nav-cta-btn">Book Expedition</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Breadcrumbs -->
+  <div class="breadcrumb-bar">
+    <div class="container">
+      <a href="/">Home</a> / <a href="/page/become-our-partner/">Partners Network</a> / <span class="active">Partners Hotels &amp; Alpine Lodges</span>
+    </div>
+  </div>
+
+  <!-- Hero Banner -->
+  <section class="hotel-hero">
+    <div class="container hotel-hero-content">
+      <span class="badge-pill">✨ Official Alpine Hospitality Network</span>
+      <h1>Partners Hotels &amp; Heritage Lodges in Pakistan</h1>
+      <p>
+        Handpicked luxury viewpoints, 400-year-old fort palaces, lakeside chalets, and base camp eco-cottages across Islamabad, Skardu, Hunza Valley, and Nanga Parbat. Guaranteed hot water, reliable electricity, and warm Karakoram hospitality.
+      </p>
+
+      <div class="stats-strip">
+        <div class="stat-card">
+          <div class="stat-number">45+</div>
+          <div class="stat-label">Partner Hotels &amp; Resorts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Inspected &amp; Certified</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">24/7</div>
+          <div class="stat-label">Generator &amp; Hot Water</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-number">Best</div>
+          <div class="stat-label">Direct Expedition Rates</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- Filters & Search Toolbar -->
+    <div class="filter-card">
+      <div class="filter-buttons">
+        <button class="btn-filter active" onclick="filterHotels('all', this)">All Regions (6)</button>
+        <button class="btn-filter" onclick="filterHotels('hunza', this)">Hunza Valley</button>
+        <button class="btn-filter" onclick="filterHotels('skardu', this)">Skardu &amp; Shigar</button>
+        <button class="btn-filter" onclick="filterHotels('islamabad', this)">Islamabad</button>
+        <button class="btn-filter" onclick="filterHotels('fairy-meadows', this)">Fairy Meadows</button>
+      </div>
+
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="hotelSearchInput" placeholder="Search hotel name or city..." onkeyup="searchHotels()">
+      </div>
+    </div>
+
+    <!-- Hotels Grid -->
+    <div class="hotels-grid" id="hotelsGrid">
+
+      <!-- Hotel 1: Eagle's Nest Hunza -->
+      <article class="hotel-card" data-region="hunza" data-name="eagle's nest hotel hunza duikar karimabad">
+        <div class="hotel-img-wrap">
+          <img src="/images/eagles_nest_hotel_hunza.jpg" alt="Eagle's Nest Hotel Hunza" class="hotel-img">
+          <span class="hotel-tag">Panoramic Mountain View</span>
+          <div class="hotel-rating">
+            <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span>4.9</span> <span style="color:#94a3b8; font-weight:400;">(128)</span>
+          </div>
+        </div>
+        <div class="hotel-body">
+          <div class="hotel-location">📍 Duikar Village, Karimabad, Hunza Valley</div>
+          <h2 class="hotel-title">Eagle's Nest Hotel Hunza</h2>
+          <p class="hotel-desc">
+            Perched on the dramatic high ridge of Duikar overlooking the entire Hunza &amp; Nagar Valleys. Renowned worldwide for 360-degree sunrise views of Ladyfinger Peak, Ultar Sar, and Golden Peak (Spantik).
+          </p>
+
+          <div class="hotel-amenities">
+            <span class="amenity-pill">🌄 Panoramic Terrace</span>
+            <span class="amenity-pill">🔥 Campfire Evenings</span>
+            <span class="amenity-pill">📶 High-Speed WiFi</span>
+            <span class="amenity-pill">☕ Hunza Herb Cuisine</span>
+          </div>
+
+          <div class="hotel-rooms-box">
+            <strong>Room Types:</strong> Deluxe Mountain View, Duikar Executive Suite, Alpine Balcony Room
+          </div>
+
+          <div class="hotel-footer">
+            <div>
+              <div class="price-label">Nightly Rate</div>
+              <div class="price-value">$85 <span class="price-sub">/ 24,000 PKR</span></div>
+            </div>
+            <button class="btn-inquire" onclick="openBookingModal('Eagle\'s Nest Hotel Hunza', '$85 / night')">Reserve Room</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Hotel 2: Shangrila Resort Skardu -->
+      <article class="hotel-card" data-region="skardu" data-name="shangrila resort skardu lower kachura lake">
+        <div class="hotel-img-wrap">
+          <img src="/images/shangrila_skardu_resort.jpg" alt="Shangrila Resort Skardu" class="hotel-img">
+          <span class="hotel-tag">Heaven On Earth</span>
+          <div class="hotel-rating">
+            <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span>5.0</span> <span style="color:#94a3b8; font-weight:400;">(186)</span>
+          </div>
+        </div>
+        <div class="hotel-body">
+          <div class="hotel-location">📍 Lower Kachura Lake, Skardu, Gilgit-Baltistan</div>
+          <h2 class="hotel-title">Shangrila Resort Skardu</h2>
+          <p class="hotel-desc">
+            Pakistan's iconic lakeside sanctuary constructed around the heart-shaped Lower Kachura Lake. Featuring Chinese pagoda chalets, apple and apricot orchards, trout hatchery, and majestic Karakoram cliffs.
+          </p>
+
+          <div class="hotel-amenities">
+            <span class="amenity-pill">🛶 Private Boating</span>
+            <span class="amenity-pill">🐟 Fresh Trout Dining</span>
+            <span class="amenity-pill">✈️ Airport VIP Shuttle</span>
+            <span class="amenity-pill">⚡ 24/7 Power Backup</span>
+          </div>
+
+          <div class="hotel-rooms-box">
+            <strong>Room Types:</strong> Lakeside Swiss Cottage, Pagoda Presidential Suite, Garden VIP Villa
+          </div>
+
+          <div class="hotel-footer">
+            <div>
+              <div class="price-label">Nightly Rate</div>
+              <div class="price-value">$140 <span class="price-sub">/ 39,000 PKR</span></div>
+            </div>
+            <button class="btn-inquire" onclick="openBookingModal('Shangrila Resort Skardu', '$140 / night')">Reserve Room</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Hotel 3: Grand Islamabad Hotel -->
+      <article class="hotel-card" data-region="islamabad" data-name="grand islamabad hotel transit hub capital">
+        <div class="hotel-img-wrap">
+          <img src="/images/hero_karakoram_k2_1790420138291.jpg" alt="Grand Islamabad Hotel" class="hotel-img">
+          <span class="hotel-tag">Expedition Transit Hub</span>
+          <div class="hotel-rating">
+            <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span>4.8</span> <span style="color:#94a3b8; font-weight:400;">(94)</span>
+          </div>
+        </div>
+        <div class="hotel-body">
+          <div class="hotel-location">📍 Sector G-9 / Blue Area Corridor, Islamabad</div>
+          <h2 class="hotel-title">Grand Islamabad Hotel</h2>
+          <p class="hotel-desc">
+            Comfortable modern hotel serving as our expedition assembly and briefing headquarters. Convenient airport transfers, mountaineering duffel storage, briefing hall, and international buffet dining.
+          </p>
+
+          <div class="hotel-amenities">
+            <span class="amenity-pill">🚐 Airport Pick &amp; Drop</span>
+            <span class="amenity-pill">🧳 Gear Storage Lockers</span>
+            <span class="amenity-pill">📶 High-Speed WiFi</span>
+            <span class="amenity-pill">🍳 Hot Buffet Breakfast</span>
+          </div>
+
+          <div class="hotel-rooms-box">
+            <strong>Room Types:</strong> Executive King, Twin Expedition Room, Deluxe Family Suite
+          </div>
+
+          <div class="hotel-footer">
+            <div>
+              <div class="price-label">Nightly Rate</div>
+              <div class="price-value">$65 <span class="price-sub">/ 18,000 PKR</span></div>
+            </div>
+            <button class="btn-inquire" onclick="openBookingModal('Grand Islamabad Hotel', '$65 / night')">Reserve Room</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Hotel 4: Serena Shigar Fort -->
+      <article class="hotel-card" data-region="skardu" data-name="serena shigar fort palace fong-khar heritage skardu">
+        <div class="hotel-img-wrap">
+          <img src="/images/skardu_valley_landscape_1790420181912.jpg" alt="Serena Shigar Fort" class="hotel-img">
+          <span class="hotel-tag">400-Year Historic Fort</span>
+          <div class="hotel-rating">
+            <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span>4.9</span> <span style="color:#94a3b8; font-weight:400;">(112)</span>
+          </div>
+        </div>
+        <div class="hotel-body">
+          <div class="hotel-location">📍 Shigar Oasis (Askole Gateway), Skardu</div>
+          <h2 class="hotel-title">Serena Shigar Fort (Palace of Rock)</h2>
+          <p class="hotel-desc">
+            A lovingly restored 17th-century Rajas palace constructed of stone and carved cedar wood. Set in a lush apricot valley on the direct route to Askole and the K2 Baltoro Glacier trailhead.
+          </p>
+
+          <div class="hotel-amenities">
+            <span class="amenity-pill">🏛️ Living Museum</span>
+            <span class="amenity-pill">🌳 Ancient Walnut Orchards</span>
+            <span class="amenity-pill">🍵 Royal Courtyard Tea</span>
+            <span class="amenity-pill">🔥 Wood-Carved Fireplaces</span>
+          </div>
+
+          <div class="hotel-rooms-box">
+            <strong>Room Types:</strong> Royal Raja Suite, Heritage Palace Deluxe, Garden Pavilion Room
+          </div>
+
+          <div class="hotel-footer">
+            <div>
+              <div class="price-label">Nightly Rate</div>
+              <div class="price-value">$165 <span class="price-sub">/ 46,000 PKR</span></div>
+            </div>
+            <button class="btn-inquire" onclick="openBookingModal('Serena Shigar Fort', '$165 / night')">Reserve Room</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Hotel 5: Luxus Hunza Resort -->
+      <article class="hotel-card" data-region="hunza" data-name="luxus hunza resort attabad lake waterfront luxury">
+        <div class="hotel-img-wrap">
+          <img src="/images/prado_4x4_mountain.jpg" alt="Luxus Hunza Resort Attabad Lake" class="hotel-img">
+          <span class="hotel-tag">Attabad Lakefront</span>
+          <div class="hotel-rating">
+            <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span>4.9</span> <span style="color:#94a3b8; font-weight:400;">(76)</span>
+          </div>
+        </div>
+        <div class="hotel-body">
+          <div class="hotel-location">📍 Attabad Lake, Upper Hunza, Gilgit-Baltistan</div>
+          <h2 class="hotel-title">Luxus Hunza Attabad Lake Resort</h2>
+          <p class="hotel-desc">
+            Ultra-luxurious waterfront suites situated directly above the turquoise waters of Attabad Lake. Panoramic glass balconies, heated mattress pads, private speedboat docking, and Karakoram alpine vistas.
+          </p>
+
+          <div class="hotel-amenities">
+            <span class="amenity-pill">🚤 Jet-Boat Charters</span>
+            <span class="amenity-pill">🪟 Full-Glass Balconies</span>
+            <span class="amenity-pill">☕ Lakeside Deck Bistro</span>
+            <span class="amenity-pill">✨ Stargazing Sky Roofs</span>
+          </div>
+
+          <div class="hotel-rooms-box">
+            <strong>Room Types:</strong> Glacial Turquoise Suite, Waterfront Luxury Chalet, Family Penthouse
+          </div>
+
+          <div class="hotel-footer">
+            <div>
+              <div class="price-label">Nightly Rate</div>
+              <div class="price-value">$175 <span class="price-sub">/ 49,000 PKR</span></div>
+            </div>
+            <button class="btn-inquire" onclick="openBookingModal('Luxus Hunza Attabad Lake Resort', '$175 / night')">Reserve Room</button>
+          </div>
+        </div>
+      </article>
+
+      <!-- Hotel 6: Raikot Serai Fairy Meadows -->
+      <article class="hotel-card" data-region="fairy-meadows" data-name="raikot serai fairy meadows nanga parbat cottages chalets">
+        <div class="hotel-img-wrap">
+          <img src="/images/trek_baltoro_glacier_1790420152808.jpg" alt="Raikot Serai Fairy Meadows" class="hotel-img">
+          <span class="hotel-tag">Nanga Parbat Base</span>
+          <div class="hotel-rating">
+            <svg viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+            <span>4.8</span> <span style="color:#94a3b8; font-weight:400;">(145)</span>
+          </div>
+        </div>
+        <div class="hotel-body">
+          <div class="hotel-location">📍 Fairy Meadows (3,300m), Raikot Valley</div>
+          <h2 class="hotel-title">Raikot Serai &amp; Fairy Meadows Cottages</h2>
+          <p class="hotel-desc">
+            Charming pine and cedar log cabins set amidst alpine wilderness directly facing the monumental Raikot Face of Nanga Parbat (8,126m). Cozy wood bukhari stoves, wholesome mountain meals, and warm bedding.
+          </p>
+
+          <div class="hotel-amenities">
+            <span class="amenity-pill">🌲 Pine Log Architecture</span>
+            <span class="amenity-pill">🪵 Wood-Burning Stoves</span>
+            <span class="amenity-pill">⛺ Base Camp Trek Desk</span>
+            <span class="amenity-pill">🔥 Nightly Campfire</span>
+          </div>
+
+          <div class="hotel-rooms-box">
+            <strong>Room Types:</strong> Cedar Log Cottage, Alpine Glamping Tent, Mountain Team Dorm
+          </div>
+
+          <div class="hotel-footer">
+            <div>
+              <div class="price-label">Nightly Rate</div>
+              <div class="price-value">$55 <span class="price-sub">/ 15,000 PKR</span></div>
+            </div>
+            <button class="btn-inquire" onclick="openBookingModal('Raikot Serai Fairy Meadows', '$55 / night')">Reserve Room</button>
+          </div>
+        </div>
+      </article>
+
+    </div>
+
+    <!-- Why Partner Benefits Grid -->
+    <section class="benefits-section">
+      <div class="section-header">
+        <span class="section-eyebrow">Hotel &amp; Resort Operators</span>
+        <h3 class="section-title">Why Partner Your Hotel with Diran Peak Adventure?</h3>
+        <p class="section-desc">
+          We bring hundreds of high-value international mountaineering teams, cultural delegations, and trekking expeditions to Pakistan each year.
+        </p>
+      </div>
+
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <div class="benefit-icon">📈</div>
+          <h4 class="benefit-title">High Peak-Season Occupancy</h4>
+          <p class="benefit-text">
+            Block bookings for multi-night expedition staging in Islamabad, Skardu, and Hunza from May through October, eliminating low-season vacancy.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">💳</div>
+          <h4 class="benefit-title">Direct &amp; Prompt Settlements</h4>
+          <p class="benefit-text">
+            Guaranteed advance deposits prior to group arrival and swift final settlement within 48 hours via direct bank wire transfer.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">🌍</div>
+          <h4 class="benefit-title">Respectful International Clients</h4>
+          <p class="benefit-text">
+            Our climbers and trekkers hail from Europe, North America, Japan, and Australia. They treat local staff and heritage facilities with high regard.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">🤝</div>
+          <h4 class="benefit-title">Joint Seasonal Marketing</h4>
+          <p class="benefit-text">
+            Your property receives prominent placement on our global website, digital tour dossiers, and at international adventure travel expos.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">🛡️</div>
+          <h4 class="benefit-title">Vetted Group Logistics</h4>
+          <p class="benefit-text">
+            We handle baggage delivery, mountain transfers, meal pre-orders, and check-in rosters so your front desk operations run effortlessly.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">⭐</div>
+          <h4 class="benefit-title">Quality Assurance Partnership</h4>
+          <p class="benefit-text">
+            We work with hotel management to provide guest feedback, staff hospitality tips, and eco-sustainable tourism best practices.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hotel Partner FAQs -->
+    <section class="faq-section">
+      <div class="section-header">
+        <span class="section-eyebrow">Frequently Asked Questions</span>
+        <h3 class="section-title">Hotel Partner FAQs</h3>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item active">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>What are the minimum requirements to become a partner hotel?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            Partner accommodations must have clean, hygienic en-suite bathrooms, continuous hot water supply, reliable power backup (generator or solar), fresh linens, clean drinking water, and courteous staff. For remote mountain locations like Fairy Meadows, traditional log huts with clean bedding and wood stoves are fully welcomed.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>How does Diran Peak Adventure handle payments and deposits?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            We provide a 50% room deposit upon confirmation of group itinerary dates, and the remaining 50% balance is settled directly into your commercial bank account upon check-out or within 48 hours.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Can boutique guest houses and heritage forts join?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            Yes! In fact, our international guests love boutique heritage properties, restored forts, and rustic stone cottages that reflect authentic Balti, Hunzakut, or Shina architecture and culture.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>How are room allocations and cancellation policies managed?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            Due to the unpredictable nature of mountain flights between Islamabad and Skardu/Gilgit, we maintain mutually agreed flexible weather clauses in our partnership agreements to protect both hoteliers and arriving climbers.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Hotel Partner Application Form -->
+    <section class="form-section" id="partner-apply">
+      <div class="section-header" style="margin-bottom: 24px;">
+        <span class="section-eyebrow">Hotel Registration</span>
+        <h3 class="section-title">List Your Hotel with Diran Peak Adventure</h3>
+        <p class="section-desc">Submit your property information below. Our hospitality operations manager will reach out to inspect and finalize partnership agreements.</p>
+      </div>
+
+      <form id="hotelPartnerForm" onsubmit="handleHotelPartnerSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Hotel / Resort Name *</label>
+          <input type="text" class="form-control" id="formHotelName" required placeholder="e.g. Karakoram View Hotel & Resort">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contact Person *</label>
+            <input type="text" class="form-control" id="formContactPerson" required placeholder="General Manager / Owner">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" class="form-control" id="formEmail" required placeholder="reservations@hotel.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">WhatsApp / Phone *</label>
+            <input type="tel" class="form-control" id="formPhone" required placeholder="+92 344 1234567">
+          </div>
+          <div class="form-group">
+            <label class="form-label">City / Region *</label>
+            <input type="text" class="form-control" id="formCity" required placeholder="e.g. Skardu, Hunza, Gilgit, Islamabad">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Total Rooms / Cottages *</label>
+            <input type="number" class="form-control" id="formRooms" min="1" required placeholder="e.g. 24">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Star / Category *</label>
+            <select class="form-control" id="formCategory">
+              <option value="Luxury Alpine Resort">Luxury Alpine Resort (4-5 Star)</option>
+              <option value="Heritage Fort / Boutique">Heritage Fort / Boutique Palace</option>
+              <option value="Comfort Expedition Hotel">Comfort Expedition Hotel (3 Star)</option>
+              <option value="Base Camp Cottages & Eco Lodge">Base Camp Cottages &amp; Eco Lodge</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Amenities &amp; Features</label>
+          <input type="text" class="form-control" id="formAmenities" placeholder="e.g. 24/7 Generator, En-suite Hot Bath, Restaurant, WiFi, Mountain View">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Additional Property Notes</label>
+          <textarea class="form-control" id="formNotes" rows="3" placeholder="Tell us about your property location, nearby trails, and seasonal wholesale rates..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">Submit Hotel Partnership Application</button>
+      </form>
+
+      <div id="formSuccessMessage" style="display:none; text-align:center; padding:24px 0;">
+        <div style="font-size:36px; margin-bottom:8px;">✅</div>
+        <h4 style="font-size:18px; font-weight:700; color:var(--color-navy); margin-bottom:6px;">Application Received Successfully!</h4>
+        <p style="font-size:13px; color:var(--color-slate);">Thank you for registering your property. Our hospitality coordinator in Skardu will contact you within 24 hours.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Reservation Inquiry Modal -->
+  <div class="modal-backdrop" id="inquiryModal">
+    <div class="modal-card">
+      <button class="modal-close" onclick="closeBookingModal()">✕</button>
+      <div class="modal-header">
+        <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--color-primary); letter-spacing:0.5px;">Hotel Reservation Inquiry</span>
+        <h3 class="modal-title" id="modalHotelName">Hotel Name</h3>
+        <p class="modal-subtitle">Estimated Rate: <strong id="modalHotelRate" style="color:var(--color-primary);">$85 / night</strong></p>
+      </div>
+
+      <form id="reservationForm" onsubmit="handleReservationSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Your Full Name *</label>
+          <input type="text" class="form-control" id="resName" required placeholder="Full Name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" class="form-control" id="resEmail" required placeholder="name@domain.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">WhatsApp Number *</label>
+            <input type="tel" class="form-control" id="resPhone" required placeholder="+92 300 1234567">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Check-In Date *</label>
+            <input type="date" class="form-control" id="resCheckIn" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Check-Out Date *</label>
+            <input type="date" class="form-control" id="resCheckOut" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Guests *</label>
+            <input type="number" class="form-control" id="resGuests" min="1" value="2" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Room Type</label>
+            <select class="form-control" id="resRoomType">
+              <option value="Deluxe Mountain View">Deluxe Mountain View</option>
+              <option value="Executive Suite">Executive Suite</option>
+              <option value="Standard Double">Standard Double</option>
+              <option value="Twin Expedition Room">Twin Expedition Room</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Special Requests / Tour Notes</label>
+          <textarea class="form-control" id="resNotes" rows="2" placeholder="e.g. Late airport arrival, extra heating, dietary preferences..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit" style="margin-top:4px;">Dispatch Reservation Inquiry</button>
+      </form>
+
+      <div id="modalSuccessMsg" style="display:none; text-align:center; padding:20px 0;">
+        <div style="font-size:32px; margin-bottom:8px;">🎉</div>
+        <h4 style="font-size:16px; font-weight:700; color:var(--color-navy); margin-bottom:4px;">Inquiry Dispatched!</h4>
+        <p style="font-size:12px; color:var(--color-slate);">We have received your room request and our desk will confirm availability and coordinate your booking.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="color:#ffffff; margin-bottom:14px;">
+            <svg viewBox="0 0 24 24" style="fill:#5191fa;"><path d="M14 6l-4.2 8.4 2.8 1.4 3.4-6.8 5 10H3l5-10 2 4 1.8-.9L8.4 6 1 20h22L14 6z"/></svg>
+            <span>Diran Peak <span class="highlight">Adventure</span></span>
+          </div>
+          <p style="line-height:1.7; color:#94a3b8; margin-bottom:16px;">
+            Licensed government tour and mountain trekking company (DTS License # 2041). Providing luxury hospitality, 4x4 mountain fleets, and peak expedition logistics throughout the Karakoram and Western Himalayas.
+          </p>
+          <p style="color:#cbd5e1;">📍 Main Bazar, Skardu, Gilgit-Baltistan</p>
+          <p style="color:#cbd5e1;">📞 +92 344 5937107 | ✉️ info@diranpeakadventure.com</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Expeditions &amp; Treks</h4>
+          <ul class="footer-links">
+            <li><a href="/#tours">K2 Base Camp &amp; Gondogoro La</a></li>
+            <li><a href="/#tours">Diran Peak &amp; Rakaposhi Base</a></li>
+            <li><a href="/#tours">Nanga Parbat Fairy Meadows</a></li>
+            <li><a href="/#tours">Baltoro Glacier Trek</a></li>
+            <li><a href="/#tours">Khunjerab &amp; Karakoram Highway</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Partner Network</h4>
+          <ul class="footer-links">
+            <li><a href="/page/hotel/">Partners Hotels</a></li>
+            <li><a href="/page/car/">Partners Vehicles (4x4)</a></li>
+            <li><a href="/page/become-our-partner/">Become Partner</a></li>
+            <li><a href="/about-us.html">About Our Company</a></li>
+            <li><a href="/#contact">Contact Skardu Desk</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Official Accreditation</h4>
+          <p style="color:#94a3b8; line-height:1.6; margin-bottom:12px;">
+            Department of Tourist Services (DTS) Government of Pakistan License # 2041. Member of Alpine Club of Pakistan.
+          </p>
+          <div style="background:rgba(255,255,255,0.06); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+            <div style="font-weight:700; color:#ffffff; font-size:12px;">24/7 Operations Desk</div>
+            <div style="color:#5191fa; font-weight:700; margin-top:2px;">+92 344 5937107</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Diran Peak Adventure. All Rights Reserved.</div>
+        <div>Clone of chogoriadventure.com/page/hotel/ · Replicated with HTML and CSS</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    function filterHotels(region, btnElement) {
+      document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+      btnElement.classList.add('active');
+
+      const cards = document.querySelectorAll('.hotel-card');
+      cards.forEach(card => {
+        if (region === 'all' || card.getAttribute('data-region') === region) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function searchHotels() {
+      const q = document.getElementById('hotelSearchInput').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.hotel-card');
+      cards.forEach(card => {
+        const text = card.getAttribute('data-name');
+        if (!q || text.includes(q)) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function toggleFaq(el) {
+      const parent = el.parentElement;
+      const isOpen = parent.classList.contains('active');
+      document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('active'));
+      if (!isOpen) {
+        parent.classList.add('active');
+      }
+    }
+
+    let currentSelectedHotel = '';
+    function openBookingModal(hotelName, rate) {
+      currentSelectedHotel = hotelName;
+      document.getElementById('modalHotelName').innerText = hotelName;
+      document.getElementById('modalHotelRate').innerText = rate;
+      document.getElementById('reservationForm').style.display = 'block';
+      document.getElementById('modalSuccessMsg').style.display = 'none';
+      document.getElementById('inquiryModal').classList.add('active');
+    }
+
+    function closeBookingModal() {
+      document.getElementById('inquiryModal').classList.remove('active');
+    }
+
+    function handleReservationSubmit(e) {
+      e.preventDefault();
+      try {
+        const stored = JSON.parse(localStorage.getItem('dpa_hotel_inquiries') || '[]');
+        stored.push({
+          hotel: currentSelectedHotel,
+          name: document.getElementById('resName').value,
+          email: document.getElementById('resEmail').value,
+          phone: document.getElementById('resPhone').value,
+          checkIn: document.getElementById('resCheckIn').value,
+          checkOut: document.getElementById('resCheckOut').value,
+          guests: document.getElementById('resGuests').value,
+          roomType: document.getElementById('resRoomType').value,
+          notes: document.getElementById('resNotes').value,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('dpa_hotel_inquiries', JSON.stringify(stored));
+      } catch (err) {
+        console.error(err);
+      }
+      document.getElementById('reservationForm').style.display = 'none';
+      document.getElementById('modalSuccessMsg').style.display = 'block';
+      setTimeout(() => {
+        closeBookingModal();
+      }, 2500);
+    }
+
+    function handleHotelPartnerSubmit(e) {
+      e.preventDefault();
+      try {
+        const stored = JSON.parse(localStorage.getItem('dpa_hotel_partners') || '[]');
+        stored.push({
+          hotelName: document.getElementById('formHotelName').value,
+          contactPerson: document.getElementById('formContactPerson').value,
+          email: document.getElementById('formEmail').value,
+          phone: document.getElementById('formPhone').value,
+          city: document.getElementById('formCity').value,
+          rooms: document.getElementById('formRooms').value,
+          category: document.getElementById('formCategory').value,
+          amenities: document.getElementById('formAmenities').value,
+          notes: document.getElementById('formNotes').value,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('dpa_hotel_partners', JSON.stringify(stored));
+      } catch (err) {
+        console.error(err);
+      }
+      document.getElementById('hotelPartnerForm').style.display = 'none';
+      document.getElementById('formSuccessMessage').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

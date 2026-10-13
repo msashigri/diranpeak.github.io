@@ -19,6 +19,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onSelectTour, onNavigate, on
       <Hero
         onSearch={onSearch}
         onExploreClick={() => onNavigate('tours', 'all')}
+        onSelectTour={onSelectTour}
       />
       <TrustStats />
       <FeaturedTours

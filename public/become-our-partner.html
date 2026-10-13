@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Become Our Partner | Diran Peak Adventure</title>
+  <meta name="description" content="Join Diran Peak Adventure's partner network in Pakistan. Unlock your greatest asset and partner your 4x4 vehicles, hotel, guide service, or travel agency with us.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary: #5191fa;
+      --color-primary-dark: #3875dc;
+      --color-navy: #1a2b48;
+      --color-navy-dark: #111d31;
+      --color-dark: #222222;
+      --color-slate: #5e6d77;
+      --color-border: #eaeef3;
+      --color-bg-light: #f7f8fa;
+      --color-emerald: #10b981;
+      --color-amber: #f59e0b;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --font-main: 'Poppins', system-ui, -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      color: var(--color-navy);
+      background-color: var(--color-bg-light);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* Top Utility Bar */
+    .topbar {
+      background: var(--color-navy);
+      color: #d1d4da;
+      font-size: 13px;
+      padding: 10px 0;
+      border-bottom: 1px solid #25395c;
+    }
+    .topbar-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .topbar-contact {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .topbar-contact a:hover {
+      color: #ffffff;
+    }
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .currency-lang-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+    }
+
+    /* Main Header Navigation */
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 84px;
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 21px;
+      color: var(--color-navy);
+      letter-spacing: -0.5px;
+    }
+    .brand-logo svg {
+      width: 32px;
+      height: 32px;
+      fill: var(--color-primary);
+    }
+    .brand-logo span.highlight {
+      color: var(--color-primary);
+    }
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .nav-menu a {
+      transition: color 0.2s;
+    }
+    .nav-menu a:hover,
+    .nav-menu a.active {
+      color: var(--color-primary);
+    }
+    .nav-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--color-primary);
+      color: #ffffff !important;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: var(--radius-sm);
+      transition: background 0.2s;
+    }
+    .nav-cta-btn:hover {
+      background: var(--color-primary-dark);
+    }
+
+    /* Breadcrumbs */
+    .breadcrumb-bar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--color-border);
+      padding: 12px 0;
+      font-size: 13px;
+      color: var(--color-slate);
+    }
+    .breadcrumb-bar a {
+      color: var(--color-slate);
+    }
+    .breadcrumb-bar a:hover {
+      color: var(--color-primary);
+    }
+    .breadcrumb-bar span.active {
+      color: var(--color-navy);
+      font-weight: 600;
+    }
+
+    /* Hero Section */
+    .partner-hero {
+      position: relative;
+      background: linear-gradient(rgba(26, 43, 72, 0.82), rgba(17, 29, 49, 0.92)), url('/images/hero_karakoram_k2_1790420138291.jpg') center/cover no-repeat;
+      color: #ffffff;
+      padding: 85px 0 75px;
+      text-align: center;
+      margin-bottom: 60px;
+    }
+    .partner-hero-content {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(255,255,255,0.18);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #ffffff;
+      margin-bottom: 16px;
+    }
+    .partner-hero h1 {
+      font-size: 42px;
+      font-weight: 800;
+      line-height: 1.25;
+      margin-bottom: 16px;
+    }
+    .partner-hero p {
+      font-size: 16px;
+      color: #e2e8f0;
+      line-height: 1.7;
+      margin-bottom: 30px;
+    }
+    .hero-btn-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .hero-btn-primary {
+      background: var(--color-primary);
+      color: #ffffff;
+      padding: 12px 28px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+    }
+    .hero-btn-primary:hover {
+      background: var(--color-primary-dark);
+    }
+    .hero-btn-secondary {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.4);
+      color: #ffffff;
+      padding: 12px 28px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      backdrop-filter: blur(8px);
+      transition: background 0.2s;
+    }
+    .hero-btn-secondary:hover {
+      background: rgba(255,255,255,0.25);
+    }
+
+    /* 3-Step Process Section */
+    .steps-section {
+      margin-bottom: 70px;
+    }
+    .section-header {
+      text-align: center;
+      max-width: 760px;
+      margin: 0 auto 40px;
+    }
+    .section-eyebrow {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-primary);
+      margin-bottom: 6px;
+      display: block;
+    }
+    .section-title {
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--color-navy);
+      line-height: 1.3;
+      margin-bottom: 12px;
+    }
+    .section-desc {
+      font-size: 14px;
+      color: var(--color-slate);
+      line-height: 1.6;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      position: relative;
+    }
+    .step-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 32px 26px;
+      text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      position: relative;
+    }
+    .step-number-badge {
+      width: 48px;
+      height: 48px;
+      background: var(--color-primary);
+      color: #ffffff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0 auto 18px;
+      box-shadow: 0 4px 12px rgba(81, 145, 250, 0.35);
+    }
+    .step-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 10px;
+    }
+    .step-text {
+      font-size: 13px;
+      color: var(--color-slate);
+      line-height: 1.6;
+    }
+
+    /* Partner Categories Grid */
+    .categories-section {
+      margin-bottom: 70px;
+    }
+    .categories-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .category-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .category-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0,0,0,0.07);
+    }
+    .cat-icon-wrap {
+      width: 52px;
+      height: 52px;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      margin-bottom: 18px;
+    }
+    .cat-icon-blue { background: rgba(81, 145, 250, 0.12); color: var(--color-primary); }
+    .cat-icon-green { background: rgba(16, 185, 129, 0.12); color: var(--color-emerald); }
+    .cat-icon-amber { background: rgba(245, 158, 11, 0.12); color: var(--color-amber); }
+    .cat-icon-purple { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
+
+    .cat-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 10px;
+    }
+    .cat-text {
+      font-size: 13px;
+      color: var(--color-slate);
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    .cat-features {
+      list-style: none;
+      font-size: 12px;
+      color: #475569;
+      margin-top: auto;
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cat-features li {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cat-cta-link {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-primary);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: gap 0.2s;
+    }
+    .cat-cta-link:hover {
+      gap: 8px;
+    }
+
+    /* Benefits Pillars */
+    .benefits-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 50px 40px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.02);
+      margin-bottom: 70px;
+    }
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .benefit-card {
+      background: #f8fafc;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+    }
+    .benefit-icon {
+      font-size: 26px;
+      margin-bottom: 12px;
+    }
+    .benefit-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 8px;
+    }
+    .benefit-text {
+      font-size: 13px;
+      color: var(--color-slate);
+      line-height: 1.6;
+    }
+
+    /* Testimonials Strip */
+    .testimonials-section {
+      margin-bottom: 70px;
+    }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .testi-card {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .testi-quote {
+      font-size: 14px;
+      font-style: italic;
+      color: #334155;
+      line-height: 1.7;
+      margin-bottom: 18px;
+    }
+    .testi-author {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .testi-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--color-primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .testi-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-navy);
+    }
+    .testi-role {
+      font-size: 12px;
+      color: var(--color-slate);
+    }
+
+    /* Onboarding Application Form */
+    .apply-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 50px 40px;
+      max-width: 800px;
+      margin: 0 auto 70px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--color-navy);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: inherit;
+      background: #f8fafc;
+      color: var(--color-navy);
+    }
+    .form-control:focus {
+      outline: none;
+      border-color: var(--color-primary);
+      background: #ffffff;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .btn-submit {
+      width: 100%;
+      background: var(--color-primary);
+      color: #ffffff;
+      padding: 14px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    .btn-submit:hover {
+      background: var(--color-primary-dark);
+    }
+
+    /* FAQ Section */
+    .faq-section {
+      background: #ffffff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      padding: 50px 40px;
+      margin-bottom: 70px;
+    }
+    .faq-list {
+      max-width: 840px;
+      margin: 0 auto;
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--color-border);
+      padding: 18px 0;
+    }
+    .faq-question {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--color-navy);
+    }
+    .faq-question:hover {
+      color: var(--color-primary);
+    }
+    .faq-answer {
+      font-size: 13px;
+      color: var(--color-slate);
+      line-height: 1.6;
+      margin-top: 10px;
+      padding-left: 12px;
+      border-left: 3px solid var(--color-primary);
+      display: none;
+    }
+    .faq-item.active .faq-answer {
+      display: block;
+    }
+    .faq-toggle-icon {
+      font-size: 18px;
+      font-weight: 400;
+      color: #94a3b8;
+    }
+
+    /* Footer */
+    .footer {
+      background: #111d31;
+      color: #cbd5e1;
+      padding: 60px 0 24px;
+      font-size: 13px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1.5fr;
+      gap: 36px;
+      margin-bottom: 40px;
+    }
+    .footer-col h4 {
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .footer-links {
+      list-style: none;
+    }
+    .footer-links li {
+      margin-bottom: 8px;
+    }
+    .footer-links a:hover {
+      color: var(--color-primary);
+    }
+    .footer-bottom {
+      border-top: 1px solid #1e2e4a;
+      padding-top: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+      color: #94a3b8;
+    }
+
+    @media (max-width: 900px) {
+      .steps-grid {
+        grid-template-columns: 1fr;
+      }
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    @media (max-width: 640px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+      .partner-hero h1 {
+        font-size: 30px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Utility Bar -->
+  <header class="topbar">
+    <div class="container topbar-content">
+      <div class="topbar-contact">
+        <span>📍 Main Bazar, Skardu, Gilgit-Baltistan &amp; Blue Area, Islamabad</span>
+        <a href="tel:+923445937107">📞 +92 344 5937107</a>
+        <a href="mailto:info@diranpeakadventure.com">✉️ info@diranpeakadventure.com</a>
+      </div>
+      <div class="topbar-actions">
+        <span class="currency-lang-pill">🌐 EN</span>
+        <span class="currency-lang-pill">💵 USD ($) / PKR</span>
+        <a href="/page/become-our-partner/" style="color:#5191fa; font-weight:600;">Become a Partner</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Main Header -->
+  <nav class="header">
+    <div class="container header-content">
+      <a href="/" class="brand-logo">
+        <svg viewBox="0 0 24 24"><path d="M14 6l-4.2 8.4 2.8 1.4 3.4-6.8 5 10H3l5-10 2 4 1.8-.9L8.4 6 1 20h22L14 6z"/></svg>
+        <span>Diran Peak <span class="highlight">Adventure</span></span>
+      </a>
+
+      <div class="nav-menu">
+        <a href="/">Home</a>
+        <a href="/#tours">Expeditions &amp; Treks</a>
+        <a href="/about-us.html">About Us</a>
+        <a href="/page/hotel/">Partners Hotels</a>
+        <a href="/page/car/">Partners Vehicles</a>
+        <a href="/page/become-our-partner/" class="active">Become Partner</a>
+        <a href="/#contact" class="nav-cta-btn">Book Expedition</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Breadcrumbs -->
+  <div class="breadcrumb-bar">
+    <div class="container">
+      <a href="/">Home</a> / <a href="/page/become-our-partner/">Partners Network</a> / <span class="active">Become Our Official Partner</span>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="partner-hero">
+    <div class="container partner-hero-content">
+      <span class="badge-pill">🤝 Join Pakistan’s Premier Adventure Community</span>
+      <h1>Unlock Your Greatest Asset &amp; Grow Your Tourism Business</h1>
+      <p>
+        Welcome paying international climbers, trekkers, and alpine travelers to your home, fleet, or lodge. Whether you own 4x4 off-road vehicles in Skardu, manage an alpine resort in Hunza, guide expeditions across Baltoro, or lead an overseas travel agency — partner with Diran Peak Adventure to secure seasonal contracts, global exposure, and guaranteed payments.
+      </p>
+
+      <div class="hero-btn-group">
+        <a href="#apply-form" class="hero-btn-primary">Start Partnership Application</a>
+        <a href="#partner-sectors" class="hero-btn-secondary">Explore Partner Sectors</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Container -->
+  <main class="container">
+
+    <!-- 3-Step Process: How It Works -->
+    <section class="steps-section">
+      <div class="section-header">
+        <span class="section-eyebrow">Seamless Onboarding</span>
+        <h2 class="section-title">How Partnership Works (3 Simple Steps)</h2>
+        <p class="section-desc">We make joining our licensed tourism network fast, transparent, and rewarding for local operators and global agencies.</p>
+      </div>
+
+      <div class="steps-grid">
+        <div class="step-card">
+          <div class="step-number-badge">1</div>
+          <h3 class="step-title">Online Registration</h3>
+          <p class="step-text">
+            Submit your vehicle details, hotel property information, guiding licenses, or B2B agency profile via our simple digital application form below.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number-badge">2</div>
+          <h3 class="step-title">Service Verification &amp; Tariffs</h3>
+          <p class="step-text">
+            Our Skardu field office inspects vehicle safety, reviews room standards, and agrees on fair, transparent seasonal tariff contracts with guaranteed advances.
+          </p>
+        </div>
+
+        <div class="step-card">
+          <div class="step-number-badge">3</div>
+          <h3 class="step-title">Receive Bookings &amp; Get Paid</h3>
+          <p class="step-text">
+            Host verified international mountaineers and cultural groups. Receive 50% advance deposits prior to departures and direct prompt bank settlements.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Partner Categories -->
+    <section class="categories-section" id="partner-sectors">
+      <div class="section-header">
+        <span class="section-eyebrow">Who Can Partner With Us</span>
+        <h2 class="section-title">Partnership Sectors We Support</h2>
+        <p class="section-desc">We collaborate across all tiers of mountain travel, expedition ground handling, and international tour sales.</p>
+      </div>
+
+      <div class="categories-grid">
+        <!-- Sector 1: 4x4 Fleet -->
+        <div class="category-card">
+          <div class="cat-icon-wrap cat-icon-blue">🚙</div>
+          <h3 class="cat-title">4x4 Vehicles &amp; Transport Fleets</h3>
+          <p class="cat-text">
+            Owners and fleet operators with Toyota Land Cruiser Prados, Hilux Revos, HiAce Grand Cabins, and Coaster buses for Karakoram Highway and Askole trailheads.
+          </p>
+          <ul class="cat-features">
+            <li>✓ Full season charter agreements</li>
+            <li>✓ Fuel advances provided before departure</li>
+            <li>✓ Respectful international passengers</li>
+          </ul>
+          <a href="/page/car/" class="cat-cta-link">View Vehicles Fleet &rarr;</a>
+        </div>
+
+        <!-- Sector 2: Hotels & Lodges -->
+        <div class="category-card">
+          <div class="cat-icon-wrap cat-icon-green">🏨</div>
+          <h3 class="cat-title">Hotels, Resorts &amp; Alpine Lodges</h3>
+          <p class="cat-text">
+            Transit hotels in Islamabad, scenic luxury resorts in Skardu and Hunza, heritage fort palaces, and rustic eco-cabins at Fairy Meadows or Deosai.
+          </p>
+          <ul class="cat-features">
+            <li>✓ High peak-season occupancy block bookings</li>
+            <li>✓ Direct 48-hour bank settlement</li>
+            <li>✓ Free digital listing in our global dossiers</li>
+          </ul>
+          <a href="/page/hotel/" class="cat-cta-link">Explore Partner Hotels &rarr;</a>
+        </div>
+
+        <!-- Sector 3: Mountain Guides & Porters -->
+        <div class="category-card">
+          <div class="cat-icon-wrap cat-icon-amber">🧗‍♂️</div>
+          <h3 class="cat-title">Climbing Guides &amp; Porters</h3>
+          <p class="cat-text">
+            Certified alpine mountain guides, High Altitude Porters (HAPs), base camp chef crews, and porter association union leaders across Gilgit-Baltistan.
+          </p>
+          <ul class="cat-features">
+            <li>✓ Fair high wages with full medical insurance</li>
+            <li>✓ High-altitude climbing gear kits provided</li>
+            <li>✓ Professional dignity and safety protocols</li>
+          </ul>
+          <a href="#apply-form" class="cat-cta-link">Register As Guide &rarr;</a>
+        </div>
+
+        <!-- Sector 4: B2B Travel Agencies -->
+        <div class="category-card">
+          <div class="cat-icon-wrap cat-icon-purple">🤝</div>
+          <h3 class="cat-title">International B2B Travel Outfitters</h3>
+          <p class="cat-text">
+            Overseas tour operators, mountaineering clubs, and travel agencies seeking an authorized, licensed ground handling and Visa LOI partner in Pakistan.
+          </p>
+          <ul class="cat-features">
+            <li>✓ Official Ministry of Tourism Visa LOI support</li>
+            <li>✓ Wholesale B2B net group rates</li>
+            <li>✓ White-label ground coordination</li>
+          </ul>
+          <a href="#apply-form" class="cat-cta-link">Inquire B2B Rates &rarr;</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why Partner With Us: 6 Core Pillars -->
+    <section class="benefits-section">
+      <div class="section-header">
+        <span class="section-eyebrow">The Diran Peak Adventure Advantage</span>
+        <h2 class="section-title">Why Partner with Diran Peak Adventure?</h2>
+        <p class="section-desc">We are committed to mutual growth, ethical community tourism, and long-term relationships.</p>
+      </div>
+
+      <div class="benefits-grid">
+        <div class="benefit-card">
+          <div class="benefit-icon">📈</div>
+          <h4 class="benefit-title">Guaranteed Peak Season Contracts</h4>
+          <p class="benefit-text">
+            With dozens of expeditions arriving between May and October, your vehicles, rooms, and guide days remain booked with steady revenue.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">💳</div>
+          <h4 class="benefit-title">Prompt 48h Settlements &amp; Advances</h4>
+          <p class="benefit-text">
+            Direct bank transfers, upfront fuel stipends before tour departure, and zero unexpected deductions or settlement delays.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">📜</div>
+          <h4 class="benefit-title">Licensed &amp; Government Accredited</h4>
+          <p class="benefit-text">
+            Fully registered under Department of Tourist Services (DTS License # 2041) and recognized by the Alpine Club of Pakistan.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">🛰️</div>
+          <h4 class="benefit-title">24/7 Road &amp; Safety Dispatch</h4>
+          <p class="benefit-text">
+            Our Skardu base tracks mountain weather, landslides on the Karakoram Highway, and satellite SOS channels in real time.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">🌍</div>
+          <h4 class="benefit-title">Global Marketing Reach</h4>
+          <p class="benefit-text">
+            We represent our partner hotels and transport fleets at international mountaineering expos in Europe, North America, and Asia.
+          </p>
+        </div>
+
+        <div class="benefit-card">
+          <div class="benefit-icon">🤝</div>
+          <h4 class="benefit-title">Fair Community Tourism</h4>
+          <p class="benefit-text">
+            We adhere to strict porter protection guidelines, ethical wages for drivers, and reinvestment into Baltistan school initiatives.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section class="testimonials-section">
+      <div class="section-header">
+        <span class="section-eyebrow">What Our Partners Say</span>
+        <h2 class="section-title">Trusted by Operators Across Pakistan</h2>
+      </div>
+
+      <div class="testimonials-grid">
+        <div class="testi-card">
+          <p class="testi-quote">
+            "We have partnered our 6 Toyota Hilux 4x4 jeeps with Diran Peak Adventure for three consecutive K2 seasons. They provide advance fuel money, clear instructions, and pay every rupee on time."
+          </p>
+          <div class="testi-author">
+            <div class="testi-avatar">AR</div>
+            <div>
+              <div class="testi-name">Ali Raza Balti</div>
+              <div class="testi-role">Karakoram 4x4 Fleet Operator, Skardu</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <p class="testi-quote">
+            "Their European and American climbing groups are wonderful guests. They respect our lodge traditions, and the Diran Peak Adventure operations desk coordinates room rosters with utmost professionalism."
+          </p>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#10b981;">KK</div>
+            <div>
+              <div class="testi-name">Karim Khan</div>
+              <div class="testi-role">General Manager, Eagle's Nest Hotel Hunza</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="testi-card">
+          <p class="testi-quote">
+            "As an alpine guide from Shimshal, I value their focus on mountain safety, insurance for our high-altitude porters, and emergency rescue preparedness on the Baltoro Glacier."
+          </p>
+          <div class="testi-author">
+            <div class="testi-avatar" style="background:#f59e0b;">MG</div>
+            <div>
+              <div class="testi-name">Master Ghulam</div>
+              <div class="testi-role">Lead Expedition Climbing Sirdar</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Application Form -->
+    <section class="apply-section" id="apply-form">
+      <div class="section-header" style="margin-bottom: 24px;">
+        <span class="section-eyebrow">Partner Onboarding Form</span>
+        <h2 class="section-title">Submit Your Partnership Application</h2>
+        <p class="section-desc">Fill in your business or individual details below. Our Skardu operations desk will review and contact you within 24 hours.</p>
+      </div>
+
+      <form id="partnerApplicationForm" onsubmit="handlePartnerSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Partnership Category *</label>
+          <select class="form-control" id="partCategory" required>
+            <option value="4x4 Vehicles & Transport Fleet">4x4 Vehicles &amp; Transport Fleet (Prado, Hilux, Coaster, Van)</option>
+            <option value="Hotels, Resorts & Lodges">Hotels, Resorts &amp; Alpine Lodges</option>
+            <option value="Mountain Guides & Porters">Mountain Guides &amp; Expedition Porters</option>
+            <option value="International Travel Agency (B2B)">International Travel Agency / Tour Operator (B2B)</option>
+            <option value="Climbing Gear & Equipment">Climbing Gear &amp; Equipment Outfitter</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Business / Entity / Owner Name *</label>
+          <input type="text" class="form-control" id="partBusinessName" required placeholder="e.g. Karakoram 4x4 Transport / Shigar Alpine Lodge">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Contact Person Name *</label>
+            <input type="text" class="form-control" id="partContactName" required placeholder="Full Name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" class="form-control" id="partEmail" required placeholder="partner@domain.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">WhatsApp / Phone Number *</label>
+            <input type="tel" class="form-control" id="partPhone" required placeholder="+92 344 1234567">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Operating City / Region *</label>
+            <input type="text" class="form-control" id="partLocation" required placeholder="e.g. Skardu, Gilgit, Hunza, Islamabad">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Capacity / Fleet Size / Room Count</label>
+          <input type="text" class="form-control" id="partCapacity" placeholder="e.g. 4x Hilux Revo 4x4s, OR 18 En-suite Rooms, OR 12 Certified Guides">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Service Details &amp; Proposed Tariffs *</label>
+          <textarea class="form-control" id="partDetails" rows="4" required placeholder="Describe your vehicle models, room amenities, guiding qualifications, target routes, and expected rates..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-submit">Submit Partnership Application</button>
+      </form>
+
+      <div id="partnerSuccessMsg" style="display:none; text-align:center; padding:30px 0;">
+        <div style="font-size:42px; margin-bottom:10px;">🎉</div>
+        <h3 style="font-size:20px; font-weight:700; color:var(--color-navy); margin-bottom:6px;">Application Received Successfully!</h3>
+        <p style="font-size:13px; color:var(--color-slate); max-width:520px; margin:0 auto;">
+          Thank you for applying to join the Diran Peak Adventure partner community. Our operations coordinator in Skardu will review your details and reach out via WhatsApp/email shortly.
+        </p>
+      </div>
+    </section>
+
+    <!-- Partner FAQs -->
+    <section class="faq-section">
+      <div class="section-header">
+        <span class="section-eyebrow">Clear &amp; Transparent</span>
+        <h2 class="section-title">Frequently Asked Questions</h2>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item active">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>What are the key criteria for transport partners?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            Vehicles traveling mountain routes must have functional 4-wheel drive, high ground clearance, regular maintenance logs, valid road taxes and fitness certificates, spare tires, jack tools, and experienced drivers familiar with mountain driving conditions.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>How and when do partners receive payments?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            For transport and hotels, we disburse a 50% advance before the tour begins. The remaining balance is paid within 48 hours of trip completion via direct bank wire transfer, JazzCash, or cash collection at our Skardu office.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>Can individual drivers with just one vehicle partner with us?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            Yes! We contract individual owner-operators as well as large transport fleets with multiple Land Cruisers, Hilux jeeps, and Coaster buses.
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-question" onclick="toggleFaq(this)">
+            <span>What support is provided for international B2B agencies?</span>
+            <span class="faq-toggle-icon">▼</span>
+          </div>
+          <div class="faq-answer">
+            We provide full ground handling including official government Letter of Invitation (LOI) for Pakistan mountaineering and trekking visas, military liaison officer coordination, domestic air booking, private charter vehicles, and licensed high-altitude sirdars.
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand-logo" style="color:#ffffff; margin-bottom:14px;">
+            <svg viewBox="0 0 24 24" style="fill:#5191fa;"><path d="M14 6l-4.2 8.4 2.8 1.4 3.4-6.8 5 10H3l5-10 2 4 1.8-.9L8.4 6 1 20h22L14 6z"/></svg>
+            <span>Diran Peak <span class="highlight">Adventure</span></span>
+          </div>
+          <p style="line-height:1.7; color:#94a3b8; margin-bottom:16px;">
+            Licensed government tour operator and expedition organizer (DTS License # 2041). Providing luxury hospitality, 4x4 mountain fleets, and peak expedition logistics throughout the Karakoram and Western Himalayas.
+          </p>
+          <p style="color:#cbd5e1;">📍 Main Bazar, Skardu, Gilgit-Baltistan</p>
+          <p style="color:#cbd5e1;">📞 +92 344 5937107 | ✉️ info@diranpeakadventure.com</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Expeditions &amp; Treks</h4>
+          <ul class="footer-links">
+            <li><a href="/#tours">K2 Base Camp &amp; Gondogoro La</a></li>
+            <li><a href="/#tours">Diran Peak &amp; Rakaposhi Base</a></li>
+            <li><a href="/#tours">Nanga Parbat Fairy Meadows</a></li>
+            <li><a href="/#tours">Baltoro Glacier Trek</a></li>
+            <li><a href="/#tours">Khunjerab &amp; Karakoram Highway</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Partner Network</h4>
+          <ul class="footer-links">
+            <li><a href="/page/hotel/">Partners Hotels</a></li>
+            <li><a href="/page/car/">Partners Vehicles (4x4)</a></li>
+            <li><a href="/page/become-our-partner/">Become Partner</a></li>
+            <li><a href="/about-us.html">About Our Company</a></li>
+            <li><a href="/#contact">Contact Skardu Desk</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Official Accreditation</h4>
+          <p style="color:#94a3b8; line-height:1.6; margin-bottom:12px;">
+            Department of Tourist Services (DTS) Government of Pakistan License # 2041. Member of Alpine Club of Pakistan.
+          </p>
+          <div style="background:rgba(255,255,255,0.06); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+            <div style="font-weight:700; color:#ffffff; font-size:12px;">24/7 Operations Desk</div>
+            <div style="color:#5191fa; font-weight:700; margin-top:2px;">+92 344 5937107</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <div>&copy; 2026 Diran Peak Adventure. All Rights Reserved.</div>
+        <div>Clone of chogoriadventure.com/page/become-our-partner/ · Replicated with HTML and CSS</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    function toggleFaq(el) {
+      const parent = el.parentElement;
+      const isOpen = parent.classList.contains('active');
+      document.querySelectorAll('.faq-item').forEach(item => item.classList.remove('active'));
+      if (!isOpen) {
+        parent.classList.add('active');
+      }
+    }
+
+    function handlePartnerSubmit(e) {
+      e.preventDefault();
+      try {
+        const stored = JSON.parse(localStorage.getItem('dpa_partner_applications') || '[]');
+        stored.push({
+          category: document.getElementById('partCategory').value,
+          businessName: document.getElementById('partBusinessName').value,
+          contactName: document.getElementById('partContactName').value,
+          email: document.getElementById('partEmail').value,
+          phone: document.getElementById('partPhone').value,
+          location: document.getElementById('partLocation').value,
+          capacity: document.getElementById('partCapacity').value,
+          details: document.getElementById('partDetails').value,
+          timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('dpa_partner_applications', JSON.stringify(stored));
+      } catch (err) {
+        console.error(err);
+      }
+      document.getElementById('partnerApplicationForm').style.display = 'none';
+      document.getElementById('partnerSuccessMsg').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

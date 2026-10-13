@@ -4,13 +4,25 @@ import 'leaflet/dist/leaflet.css';
 import { RouteWaypoint, TrekkingRoute, getRouteForTour } from '../data/trekkingRoutes';
 import {
   Compass, Mountain, Layers, Maximize2, Minimize2, MapPin,
-  TrendingUp, Flag, Award, Eye, Download, Navigation, Shield
+  TrendingUp, Flag, Award, Eye, Download, Navigation, Shield,
+  Calendar, ChevronRight
 } from 'lucide-react';
 
 interface InteractiveRouteMapProps {
   tourId: string;
   tourSlug?: string;
   tourTitle?: string;
+  tourLocation?: string;
+  maxAltitude?: string;
+  itinerary?: Array<{
+    day: number;
+    title: string;
+    description: string;
+    altitude?: string;
+    duration?: string;
+    accommodation?: string;
+  }>;
+  tour?: any;
 }
 
 type TileLayerType = 'topo' | 'osm' | 'satellite';
@@ -18,19 +30,40 @@ type TileLayerType = 'topo' | 'osm' | 'satellite';
 export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
   tourId,
   tourSlug,
-  tourTitle
+  tourTitle,
+  tourLocation,
+  maxAltitude,
+  itinerary,
+  tour
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const currentTileLayerRef = useRef<L.TileLayer | null>(null);
 
-  const routeData: TrekkingRoute = getRouteForTour(tourId, tourSlug);
+  const routeData: TrekkingRoute = useMemo(() => {
+    return getRouteForTour(
+      tourId,
+      tourSlug,
+      tour || { id: tourId, slug: tourSlug, title: tourTitle, location: tourLocation, maxAltitude, itinerary }
+    );
+  }, [tourId, tourSlug, tourTitle, tourLocation, maxAltitude, itinerary, tour]);
 
   const [activeLayer, setActiveLayer] = useState<TileLayerType>('topo');
-  const [selectedWaypoint, setSelectedWaypoint] = useState<RouteWaypoint | null>(routeData.waypoints[routeData.waypoints.length - 1] || null);
+  const [selectedWaypoint, setSelectedWaypoint] = useState<RouteWaypoint | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showElevationProfile, setShowElevationProfile] = useState(true);
+
+  // Sync selected waypoint when tour or routeData changes
+  useEffect(() => {
+    if (routeData.waypoints && routeData.waypoints.length > 0) {
+      // Default to high point or final camp
+      const highPoint = [...routeData.waypoints].sort((a, b) => b.altitude - a.altitude)[0];
+      setSelectedWaypoint(highPoint || routeData.waypoints[routeData.waypoints.length - 1] || routeData.waypoints[0]);
+    } else {
+      setSelectedWaypoint(null);
+    }
+  }, [routeData]);
 
   // Tile layer providers
   const tileProviders = {
@@ -69,11 +102,14 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
       mapInstanceRef.current = null;
     }
 
+    const midWaypoint = routeData.waypoints[Math.floor(routeData.waypoints.length / 2)] || routeData.waypoints[0];
+    const initialCenter: [number, number] = midWaypoint
+      ? [midWaypoint.lat, midWaypoint.lng]
+      : [35.7333, 76.5167];
+
     // Create map instance
     const map = L.map(mapContainerRef.current, {
-      center: routeData.waypoints[Math.floor(routeData.waypoints.length / 2)]
-        ? [routeData.waypoints[Math.floor(routeData.waypoints.length / 2)].lat, routeData.waypoints[Math.floor(routeData.waypoints.length / 2)].lng]
-        : [35.7333, 76.5167],
+      center: initialCenter,
       zoom: 9,
       zoomControl: true,
       scrollWheelZoom: false
@@ -94,45 +130,42 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
     const layerGroup = L.layerGroup().addTo(map);
     layerGroupRef.current = layerGroup;
 
-    // Draw route path polyline
-    const polyline = L.polyline(routeData.pathCoordinates, {
-      color: '#5191fa',
-      weight: 4,
-      opacity: 0.9,
-      dashArray: '8, 8',
-      lineCap: 'round',
-      lineJoin: 'round'
-    }).addTo(layerGroup);
+    if (routeData.pathCoordinates && routeData.pathCoordinates.length > 0) {
+      // Add casing line for shadow & contrast
+      L.polyline(routeData.pathCoordinates, {
+        color: '#1a2b48',
+        weight: 7,
+        opacity: 0.4,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(layerGroup);
 
-    // Add casing line for shadow & contrast
-    L.polyline(routeData.pathCoordinates, {
-      color: '#1a2b48',
-      weight: 7,
-      opacity: 0.4,
-      lineCap: 'round',
-      lineJoin: 'round'
-    }).addTo(layerGroup);
+      // Draw route path polyline
+      const polyline = L.polyline(routeData.pathCoordinates, {
+        color: '#5191fa',
+        weight: 4,
+        opacity: 0.9,
+        dashArray: '8, 8',
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(layerGroup);
+
+      // Fit map bounds safely
+      try {
+        const bounds = polyline.getBounds();
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, { padding: [40, 40] });
+        }
+      } catch {
+        // Safe fallback
+      }
+    }
 
     // Add Waypoint markers
     routeData.waypoints.forEach((wp, index) => {
-      // Create custom HTML icon
       const isStart = index === 0;
       const isFinish = index === routeData.waypoints.length - 1;
       const isBasecamp = wp.type === 'basecamp' || wp.type === 'summit' || wp.type === 'pass';
-
-      let bgClass = 'bg-[#1a2b48]';
-      let borderClass = 'border-white';
-      let symbol = `${wp.altitude}m`;
-
-      if (isStart) {
-        bgClass = 'bg-emerald-600';
-        symbol = 'START';
-      } else if (isFinish || isBasecamp) {
-        bgClass = 'bg-[#fa5636] animate-pulse';
-        symbol = wp.type === 'summit' ? '▲ PEAK' : '▲ CAMP';
-      } else if (wp.type === 'glacier') {
-        bgClass = 'bg-[#5191fa]';
-      }
 
       const customIcon = L.divIcon({
         className: 'custom-wp-pin',
@@ -153,7 +186,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
             transform: translate(-50%, -50%);
             cursor: pointer;
           ">
-            <span>${wp.name.split(' ')[0]}</span>
+            <span>${wp.dayNumber ? `D${wp.dayNumber}: ` : ''}${wp.name.split(' ')[0]}</span>
             <span style="opacity: 0.85; margin-left: 3px; font-size: 8px;">(${wp.altitude}m)</span>
           </div>
         `,
@@ -165,9 +198,9 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
 
       // Popup content
       const popupContent = `
-        <div style="font-family: 'Poppins', sans-serif; padding: 4px; max-width: 240px; color: #1a2b48;">
+        <div style="font-family: 'Poppins', sans-serif; padding: 4px; max-width: 250px; color: #1a2b48;">
           <div style="font-size: 10px; text-transform: uppercase; font-weight: 700; color: #5191fa; letter-spacing: 0.5px;">
-            ${wp.dayNumber ? `Day ${wp.dayNumber} · ` : ''}${wp.type.toUpperCase()}
+            ${wp.dayNumber ? `Day ${wp.dayNumber} Expedition Stage · ` : ''}${wp.type.toUpperCase()}
           </div>
           <div style="font-size: 14px; font-weight: 700; margin: 2px 0 4px 0; color: #1a2b48;">
             ${wp.name}
@@ -183,7 +216,6 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
       `;
 
       marker.bindPopup(popupContent);
-
       marker.on('click', () => {
         setSelectedWaypoint(wp);
       });
@@ -191,14 +223,34 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
       marker.addTo(layerGroup);
     });
 
-    // Fit map bounds to show entire route with padding
-    map.fitBounds(polyline.getBounds(), { padding: [40, 40] });
+    // Invalidate size after mount to guarantee tile rendering across all screen sizes
+    const resizeTimer1 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 150);
+
+    const resizeTimer2 = setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 450);
+
+    const handleWindowResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('resize', handleWindowResize);
 
     return () => {
+      clearTimeout(resizeTimer1);
+      clearTimeout(resizeTimer2);
+      window.removeEventListener('resize', handleWindowResize);
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [tourId, tourSlug]);
+  }, [tourId, tourSlug, routeData]);
 
   // Handle Layer Switch
   const handleLayerChange = (layer: TileLayerType) => {
@@ -228,9 +280,15 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
 
   // Reset to full route bounds
   const handleResetBounds = () => {
-    if (!mapInstanceRef.current) return;
-    const bounds = L.latLngBounds(routeData.pathCoordinates);
-    mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
+    if (!mapInstanceRef.current || !routeData.pathCoordinates.length) return;
+    try {
+      const bounds = L.latLngBounds(routeData.pathCoordinates);
+      if (bounds.isValid()) {
+        mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
+      }
+    } catch {
+      // ignore
+    }
   };
 
   // Download simulated GPX file
@@ -253,7 +311,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${tourId}-karakoram-route.gpx`;
+    a.download = `${tourSlug || tourId || 'expedition'}-route.gpx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -261,87 +319,82 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-[#eaeef3] overflow-hidden shadow-xs transition-all relative z-10 isolate ${
-      isFullscreen ? 'fixed inset-0 z-[2000] rounded-none' : 'my-8'
+    <div className={`bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden transition-all ${
+      isFullscreen ? 'fixed inset-0 z-50 rounded-none h-screen' : 'relative my-8'
     }`}>
       {/* Top Header Bar */}
-      <div className="p-4 sm:p-5 bg-white border-b border-[#eaeef3] flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-[#5191fa] uppercase tracking-wider mb-1">
-            <Compass className="w-4 h-4 text-[#5191fa]" />
-            <span>Interactive GPS Expedition Route &amp; Topography</span>
+      <div className="p-4 sm:p-5 bg-white border-b border-[#eaeef3] flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#001f3f] text-[#5191fa] flex items-center justify-center shrink-0 shadow-sm">
+            <Navigation className="w-5 h-5 text-amber-400" />
           </div>
-          <h3 className="text-xl sm:text-2xl font-bold text-[#1a2b48]">
-            {routeData.title}
-          </h3>
-          <p className="text-xs text-[#5e6d77] mt-0.5">
-            Explore campsite coordinates, high passes, and glacial waypoints mapped by our senior Balti guides.
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
+                Live GPS Expedition Topography
+              </span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <Shield className="w-3 h-3 text-emerald-600" />
+                <span>Tailored to Itinerary ({routeData.waypoints.length} Stages)</span>
+              </span>
+            </div>
+            <h3 className="font-heading text-lg font-bold text-[#1a2b48] mt-0.5">
+              {routeData.title}
+            </h3>
+          </div>
         </div>
 
-        {/* Map Control Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Layer switcher */}
-          <div className="inline-flex rounded-lg border border-[#dfdfdf] p-0.5 bg-slate-50 text-xs">
+        {/* Action Controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Layer Selector */}
+          <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200 text-xs font-semibold">
             <button
               onClick={() => handleLayerChange('topo')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                activeLayer === 'topo'
-                  ? 'bg-[#1a2b48] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                activeLayer === 'topo' ? 'bg-white text-[#1a2b48] shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
-              title="Topographic contours & terrain"
             >
-              🏔️ Topo Terrain
-            </button>
-            <button
-              onClick={() => handleLayerChange('osm')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                activeLayer === 'osm'
-                  ? 'bg-[#1a2b48] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Standard street and trail map"
-            >
-              🗺️ Standard
+              Topography
             </button>
             <button
               onClick={() => handleLayerChange('satellite')}
-              className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer ${
-                activeLayer === 'satellite'
-                  ? 'bg-[#1a2b48] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                activeLayer === 'satellite' ? 'bg-white text-[#1a2b48] shadow-xs' : 'text-slate-600 hover:text-slate-900'
               }`}
-              title="Satellite imagery of glaciers & peaks"
             >
-              🛰️ Satellite
+              Satellite
+            </button>
+            <button
+              onClick={() => handleLayerChange('osm')}
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                activeLayer === 'osm' ? 'bg-white text-[#1a2b48] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Streets
             </button>
           </div>
 
-          {/* Reset bounds */}
           <button
             onClick={handleResetBounds}
-            className="p-2 border border-[#dfdfdf] hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
-            title="Reset map view to whole route"
+            className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Reset map view to fit entire route"
           >
-            <Navigation className="w-3.5 h-3.5 text-[#5191fa]" />
+            <Eye className="w-3.5 h-3.5 text-slate-500" />
             <span className="hidden sm:inline">Fit Route</span>
           </button>
 
-          {/* Download GPX */}
           <button
             onClick={handleDownloadGpx}
-            className="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1"
-            title="Download GPX route for Garmin / handheld GPS"
+            className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors cursor-pointer"
+            title="Download GPS Track GPX file"
           >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">GPX Track</span>
+            <Download className="w-3.5 h-3.5 text-slate-500" />
+            <span className="hidden sm:inline">GPX</span>
           </button>
 
-          {/* Fullscreen toggle */}
           <button
             onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2 border border-[#dfdfdf] hover:bg-slate-50 text-slate-700 rounded-lg text-xs transition-colors cursor-pointer"
+            className="p-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200 transition-colors cursor-pointer"
             title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen Map'}
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -386,8 +439,8 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
             <Layers className="w-4 h-4" />
           </div>
           <div>
-            <div className="text-[10px] uppercase font-bold text-slate-400">Glacier Terrain</div>
-            <div className="text-sm font-bold text-[#1a2b48]">{routeData.daysOnGlacier} Days on Ice</div>
+            <div className="text-[10px] uppercase font-bold text-slate-400">Itinerary Days</div>
+            <div className="text-sm font-bold text-[#1a2b48]">{routeData.waypoints.length} Stages</div>
           </div>
         </div>
       </div>
@@ -397,12 +450,12 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
         {/* Leaflet Canvas */}
         <div
           ref={mapContainerRef}
-          className={`w-full bg-slate-100 ${isFullscreen ? 'h-[calc(100vh-240px)]' : 'h-[440px] sm:h-[500px]'}`}
+          className={`w-full bg-slate-100 ${isFullscreen ? 'h-[calc(100vh-250px)]' : 'h-[440px] sm:h-[500px]'}`}
         />
 
         {/* Selected Waypoint Overlay Card */}
         {selectedWaypoint && (
-          <div className="absolute top-4 left-4 z-20 max-w-xs sm:max-w-sm bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-xl border border-slate-200 animate-in fade-in slide-in-from-left duration-200">
+          <div className="absolute top-4 left-4 z-20 max-w-xs sm:max-w-sm bg-white/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-slate-200 animate-in fade-in slide-in-from-left duration-200">
             <div className="flex items-start justify-between gap-2">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
@@ -422,7 +475,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 leading-relaxed mt-2">
+            <p className="text-xs text-slate-600 leading-relaxed mt-2 line-clamp-3">
               {selectedWaypoint.description}
             </p>
 
@@ -452,7 +505,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
         <div className="flex items-center justify-between mb-3">
           <div className="text-xs font-bold uppercase text-[#1a2b48] tracking-wider flex items-center gap-1.5">
             <Flag className="w-3.5 h-3.5 text-[#5191fa]" />
-            <span>Click Waypoint to Pan Map</span>
+            <span>Day-by-Day Expedition Stages (Click to Pan)</span>
           </div>
           <button
             onClick={() => setShowElevationProfile(!showElevationProfile)}
@@ -480,7 +533,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
                   <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
                     isSelected ? 'bg-[#5191fa] text-white' : 'bg-slate-200 text-slate-700'
                   }`}>
-                    {index + 1}
+                    {wp.dayNumber || (index + 1)}
                   </span>
                   <span className="font-semibold text-xs whitespace-nowrap">{wp.name}</span>
                 </div>
@@ -495,11 +548,11 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
         </div>
 
         {/* Dynamic Elevation Chart SVG */}
-        {showElevationProfile && (
+        {showElevationProfile && routeData.waypoints.length > 0 && (
           <div className="mt-4 pt-4 border-t border-slate-100">
             <div className="text-[11px] font-semibold text-slate-500 mb-2 flex items-center justify-between">
-              <span>Trail Elevation Profile (Skardu to High Camps)</span>
-              <span className="text-[10px] text-slate-400">Hover nodes to view altitude</span>
+              <span>Trail Elevation Profile ({routeData.waypoints[0]?.name} to High Camps)</span>
+              <span className="text-[10px] text-slate-400">Click node to inspect stage altitude</span>
             </div>
 
             <div className="relative h-24 w-full bg-slate-50 rounded-xl p-2 border border-slate-200/80">
@@ -513,14 +566,18 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
 
                 {/* Draw gradient area */}
                 {(() => {
+                  const totalSteps = Math.max(routeData.waypoints.length - 1, 1);
+                  const minAlt = Math.min(...routeData.waypoints.map(w => w.altitude), 500);
+                  const maxAlt = Math.max(routeData.maxAltitudeM + 200, minAlt + 1000);
+
                   const points = routeData.waypoints.map((wp, i) => {
-                    const x = (i / (routeData.waypoints.length - 1)) * 760 + 20;
-                    // Scale from 1000m to 6000m (or route max altitude)
-                    const minAlt = 1000;
-                    const maxAlt = Math.max(routeData.maxAltitudeM + 300, 6000);
-                    const y = 90 - ((wp.altitude - minAlt) / (maxAlt - minAlt)) * 80;
-                    return { x, y, wp };
+                    const x = (i / totalSteps) * 760 + 20;
+                    const altSpan = Math.max(maxAlt - minAlt, 100);
+                    const y = 90 - ((wp.altitude - minAlt) / altSpan) * 80;
+                    return { x: isNaN(x) ? 20 : x, y: isNaN(y) ? 50 : y, wp };
                   });
+
+                  if (points.length === 0) return null;
 
                   const pathD = `M ${points[0].x} 95 ` +
                     points.map(p => `L ${p.x} ${p.y}`).join(' ') +

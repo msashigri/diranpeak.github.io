@@ -413,12 +413,12 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
     setPasswordSuccessResult(null);
     setPasswordErrorResult(null);
 
-    const res = await adminResetUserPassword(passwordModalUser.email, directPassword);
+    const res = await adminResetUserPassword(passwordModalUser.email, directPassword, passwordModalUser.id);
     setResettingPassword(false);
 
     if (res.success) {
       setPasswordSuccessResult({
-        message: res.message || 'Password successfully updated in Firestore.',
+        message: res.message || 'Password successfully updated in Firestore and account registry.',
         tempPass: res.tempPassword
       });
       // Update local state if user document had temp password
@@ -2242,7 +2242,9 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                   <div className="flex items-center gap-2">
                     <KeyRound className="w-5 h-5 text-amber-600" />
                     <h3 className="font-heading font-bold text-base text-slate-900">
-                      Reset Traveler Password
+                      {passwordModalUser.role === 'admin' || passwordModalUser.id === ADMIN_USER_ID
+                        ? 'Reset Master Admin Password'
+                        : 'Reset Traveler Password'}
                     </h3>
                   </div>
                   <button
@@ -2253,8 +2255,17 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                   </button>
                 </div>
 
-                <div className="mb-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-600">
-                  <div><strong>Traveler:</strong> {passwordModalUser.firstName} {passwordModalUser.lastName}</div>
+                <div className="mb-4 p-3 bg-slate-50 rounded-xl text-xs text-slate-600 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <strong>Account:</strong> {passwordModalUser.firstName} {passwordModalUser.lastName}
+                    </div>
+                    {(passwordModalUser.role === 'admin' || passwordModalUser.id === ADMIN_USER_ID) && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800">
+                        Admin Account
+                      </span>
+                    )}
+                  </div>
                   <div><strong>Email:</strong> <span className="font-semibold text-slate-800">{passwordModalUser.email}</span></div>
                 </div>
 

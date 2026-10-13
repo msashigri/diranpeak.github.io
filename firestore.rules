@@ -27,7 +27,7 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         request.auth.uid == '83oYhWqa5ONqFdaJUVs26BnhEZl1' ||
-        request.auth.token.email == 'msa78677@gmail.com'
+        request.auth.token.email in ['msa78677@gmail.com', 'admin@diranpeak.com', 'admin@diranpeakadventure.com']
       );
     }
 

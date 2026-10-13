@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Tour } from '../data/toursData';
 import { useAuth } from '../context/AuthContext';
 import { InteractiveRouteMap } from '../components/InteractiveRouteMap';
+import { WeatherWidget } from '../components/WeatherWidget';
 import {
   MapPin, Clock, Calendar, Users, Mountain, ShieldCheck, Check, X,
   ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Star, Phone, MessageSquare, AlertCircle, Share2, Heart, Compass
@@ -351,12 +352,27 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
               </ul>
             </div>
 
+            {/* Live Alpine Expedition Weather Widget */}
+            <WeatherWidget
+              tourId={tour.id}
+              tourSlug={tour.slug}
+              tourTitle={tour.title}
+              tourLocation={tour.location}
+              maxAltitude={tour.maxAltitude}
+              itinerary={tour.itinerary}
+              tour={tour}
+            />
+
             {/* Interactive Leaflet Expedition & Trekking Route Map */}
             <div id="route-map-section" className="relative z-10 isolate">
               <InteractiveRouteMap
                 tourId={tour.id}
                 tourSlug={tour.slug}
                 tourTitle={tour.title}
+                tourLocation={tour.location}
+                maxAltitude={tour.maxAltitude}
+                itinerary={tour.itinerary}
+                tour={tour}
               />
             </div>
 

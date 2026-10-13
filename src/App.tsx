@@ -58,10 +58,26 @@ export default function App() {
     } else if (route === 'legal') {
       setLegalTab(param || 'terms');
       setCurrentRoute('legal');
-    } else if (route === 'partner' || route === 'become-our-partner' || route === 'car' || route === 'hotel') {
-      if (route === 'car' || param === 'vehicles' || param === 'car') setPartnerCategory('vehicles');
-      else if (route === 'hotel' || param === 'hotels' || param === 'hotel') setPartnerCategory('hotels');
-      else setPartnerCategory(param || 'all');
+    } else if (
+      route === 'partner' ||
+      route === 'become-our-partner' ||
+      route === 'become-partner' ||
+      route === 'page/become-our-partner' ||
+      route === 'car' ||
+      route === 'page/car' ||
+      route === 'partner-vehicles' ||
+      route === 'partners-vehicles' ||
+      route === 'hotel' ||
+      route === 'page/hotel' ||
+      route === 'partners-hotels'
+    ) {
+      if (route === 'car' || route === 'page/car' || route === 'partner-vehicles' || route === 'partners-vehicles' || param === 'vehicles' || param === 'car') {
+        setPartnerCategory('vehicles');
+      } else if (route === 'hotel' || route === 'page/hotel' || route === 'partners-hotels' || param === 'hotels' || param === 'hotel') {
+        setPartnerCategory('hotels');
+      } else {
+        setPartnerCategory(param || 'all');
+      }
       setCurrentRoute('partner');
     } else if (route === 'dashboard' || route === 'profile') {
       setDashboardTab(param || (route === 'profile' ? 'profile' : 'bookings'));

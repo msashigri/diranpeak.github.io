@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Heart } from 'lucide-react';
+import { MapPin, Heart, ArrowRight } from 'lucide-react';
 import { Tour } from '../data/toursData';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,7 +24,7 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
   return (
     <div
       onClick={() => onSelect(tour)}
-      className="item-tour bg-white rounded-[3px] border border-[#dfdfdf] overflow-hidden pb-4 relative transition-all duration-300 hover:shadow-lg cursor-pointer flex flex-col justify-between"
+      className="item-tour bg-white rounded-[3px] border border-[#dfdfdf] overflow-hidden pb-4 relative transition-all duration-300 hover:shadow-lg cursor-pointer flex flex-col justify-between group"
     >
       {/* Thumbnail Area - height 180px */}
       <div className="relative h-[180px] bg-slate-200 overflow-hidden">
@@ -32,7 +32,7 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
           src={tour.image}
           alt={tour.title}
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
 
         {/* Diagonal Sale Badge - exact BookingCore style */}
@@ -104,15 +104,22 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
           </div>
 
           {/* Tour Title */}
-          <h3 className="text-[15px] font-medium text-[#1a2b48] hover:text-[#5191fa] transition-colors px-4 mb-2 leading-snug line-clamp-2">
+          <h3 className="text-[15px] font-semibold text-[#1a2b48] group-hover:text-[#5191fa] transition-colors px-4 mb-2 leading-snug line-clamp-2">
             {tour.title}
           </h3>
+
+          {/* Brief Tour Description Snippet */}
+          {tour.overview && (
+            <p className="text-xs text-[#5e6d77] px-4 mb-2 line-clamp-2 leading-relaxed">
+              {tour.overview}
+            </p>
+          )}
         </div>
 
-        {/* Bottom Info: Duration & Price (Ratings reset without any rating) */}
+        {/* Bottom Info: Duration, Expedition Type, Price & CTA */}
         <div className="px-4 pt-3 border-t border-[#f0f0f0] mt-2">
           {/* Duration & Expedition Type */}
-          <div className="flex items-center justify-between text-xs text-[#5e6d77] mb-2">
+          <div className="flex items-center justify-between text-xs text-[#5e6d77] mb-2.5">
             <span className="text-[11px] font-semibold tracking-wider uppercase text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
               {tour.category || 'Expedition'}
             </span>
@@ -122,19 +129,35 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
             </span>
           </div>
 
-          {/* Price */}
-          <div className="flex items-baseline justify-between pt-1">
-            <span className="text-[11px] text-[#5e6d77]">From</span>
-            <div className="flex items-baseline gap-1.5">
-              {tour.originalPrice && (
-                <span className="text-xs text-slate-400 line-through">
-                  {formatPrice(tour.originalPrice)}
+          {/* Price & Call-to-Action Button */}
+          <div className="flex items-center justify-between pt-1">
+            <div>
+              <span className="text-[11px] text-[#5e6d77] block -mb-0.5">From</span>
+              <div className="flex items-baseline gap-1.5">
+                {tour.originalPrice && (
+                  <span className="text-xs text-slate-400 line-through">
+                    {formatPrice(tour.originalPrice)}
+                  </span>
+                )}
+                <span className="text-base font-bold text-[#1a2b48]">
+                  {formatPrice(tour.price)}
                 </span>
-              )}
-              <span className="text-base font-bold text-[#1a2b48]">
-                {formatPrice(tour.price)}
-              </span>
+              </div>
             </div>
+
+            {/* Call-to-Action Button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelect(tour);
+              }}
+              className="px-3.5 py-1.5 bg-[#5191fa] hover:bg-[#3875dc] text-white text-xs font-semibold rounded-md flex items-center gap-1.5 shadow-xs transition-all hover:shadow cursor-pointer"
+              title={`Explore ${tour.title}`}
+            >
+              <span>Explore Tour</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </div>

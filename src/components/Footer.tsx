@@ -199,19 +199,19 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </div>
                 <div className="sub flex flex-col space-y-2 text-sm text-[#5e6d77]">
                   <button
-                    onClick={() => onNavigate('partner')}
+                    onClick={() => onNavigate('partner', 'vehicles')}
                     className="text-left hover:text-[#5191fa] transition-colors cursor-pointer"
                   >
                     Partners Vehicles
                   </button>
                   <button
-                    onClick={() => onNavigate('partner')}
+                    onClick={() => onNavigate('partner', 'hotels')}
                     className="text-left hover:text-[#5191fa] transition-colors cursor-pointer"
                   >
                     Partners Hotels
                   </button>
                   <button
-                    onClick={() => onNavigate('partner')}
+                    onClick={() => onNavigate('partner', 'all')}
                     className="text-left hover:text-[#5191fa] transition-colors cursor-pointer"
                   >
                     Become Partner
