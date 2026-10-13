@@ -663,7 +663,7 @@ export const TREKKING_ROUTES: Record<string, TrekkingRoute> = {
       },
       {
         id: 'k2-summit',
-        name: 'K2 Summit (Chogori)',
+        name: 'K2 Summit (8,611m)',
         altitude: 8611,
         lat: 35.8814,
         lng: 76.5133,

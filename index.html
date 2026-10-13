@@ -60,6 +60,21 @@
   </head>
   <body class="bg-[#f7f8fa] text-[#1a2b48] antialiased selection:bg-[#5191fa] selection:text-white">
     <div id="root"></div>
+    <div id="google_translate_element" style="position: absolute; left: -9999px; top: -9999px; opacity: 0; pointer-events: none; width: 0; height: 0; overflow: hidden;"></div>
+    <script type="text/javascript">
+      function googleTranslateElementInit() {
+        try {
+          if (window.google && window.google.translate) {
+            new window.google.translate.TranslateElement({
+              pageLanguage: 'en',
+              includedLanguages: 'en,ur,ar,fr,de,es,it,zh-CN,ru,ja,tr,nl',
+              autoDisplay: false
+            }, 'google_translate_element');
+          }
+        } catch (e) {}
+      }
+    </script>
+    <script type="text/javascript" src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async defer></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

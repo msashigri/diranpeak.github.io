@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Phone, Mail, Globe, ChevronDown, CalendarCheck, LogOut, ShieldCheck, Check, Heart, Facebook, Instagram } from 'lucide-react';
+import { Phone, Mail, Globe, ChevronDown, CalendarCheck, LogOut, ShieldCheck, Check, Heart, Facebook, Instagram, Edit3 } from 'lucide-react';
 import { useAuth, Currency } from '../context/AuthContext';
 import { SUPPORTED_LANGUAGES, getLanguageByCodeOrName } from '../utils/translator';
 import { PWAInstallButton } from './PWAInstallButton';
 
 interface TopbarProps {
-  onNavigate: (route: string) => void;
+  onNavigate: (route: string, param?: string) => void;
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
@@ -20,7 +20,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
   const currentLang = getLanguageByCodeOrName(language || languageCode || 'English');
 
   return (
-    <div className="bg-[#1a2b48] text-white text-[13px] py-2.5 border-b border-[#25395c] font-normal">
+    <div className="bg-[#1a2b48] text-white text-[13px] py-2.5 border-b border-[#25395c] font-normal relative z-[1010]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-wrap items-center justify-between gap-y-2">
         {/* Left: Social Media Icons (Facebook, Instagram, X) & Contact Info */}
         <div className="flex items-center space-x-3 sm:space-x-4 text-[#d1d4da]">
@@ -194,7 +194,17 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
               {showUserDropdown && (
-                <div className="absolute right-0 top-full mt-1 w-44 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-100 py-1.5 z-50">
+                <div className="absolute right-0 top-full mt-1 w-48 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-100 py-1.5 z-[1100]">
+                  <button
+                    onClick={() => {
+                      setShowUserDropdown(false);
+                      onNavigate('dashboard', 'profile');
+                    }}
+                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-[#5191fa] font-semibold cursor-pointer border-b border-slate-100"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#5191fa]" />
+                    <span>Edit Profile</span>
+                  </button>
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);

@@ -31,13 +31,17 @@ export default function App() {
   const [searchDuration, setSearchDuration] = useState<string>('all');
   const [legalTab, setLegalTab] = useState<string>('terms');
   const [partnerCategory, setPartnerCategory] = useState<string>('all');
+  const [dashboardTab, setDashboardTab] = useState<string>('bookings');
 
   // Scroll to top on route change & trigger translation
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => {
-      triggerTranslationUpdate();
-    }, 50);
+    const timer1 = setTimeout(() => triggerTranslationUpdate(), 50);
+    const timer2 = setTimeout(() => triggerTranslationUpdate(), 300);
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
   }, [currentRoute, selectedTour]);
 
   const handleNavigate = (route: string, param?: string) => {
@@ -59,6 +63,9 @@ export default function App() {
       else if (route === 'hotel' || param === 'hotels' || param === 'hotel') setPartnerCategory('hotels');
       else setPartnerCategory(param || 'all');
       setCurrentRoute('partner');
+    } else if (route === 'dashboard' || route === 'profile') {
+      setDashboardTab(param || (route === 'profile' ? 'profile' : 'bookings'));
+      setCurrentRoute('dashboard');
     } else {
       setCurrentRoute(route);
     }
@@ -129,7 +136,7 @@ export default function App() {
           )}
 
           {currentRoute === 'dashboard' && (
-            <UserDashboardPage onNavigate={handleNavigate} />
+            <UserDashboardPage initialTab={dashboardTab} onNavigate={handleNavigate} />
           )}
 
           {currentRoute === 'admin' && (

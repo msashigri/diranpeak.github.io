@@ -39,7 +39,7 @@ export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onVi
           ))}
         </div>
 
-        {/* Real Chogori "All Trekkings" Button matching .trekking-btn */}
+        {/* Real Diran Peak "All Trekkings" Button matching .trekking-btn */}
         <div className="text-center mt-8">
           <button
             onClick={() => onViewAll('trekking')}
@@ -75,7 +75,7 @@ export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onVi
             ))}
           </div>
 
-          {/* Real Chogori "All Expeditions" Button */}
+          {/* Real Diran Peak "All Expeditions" Button */}
           <div className="text-center mt-8">
             <button
               onClick={() => onViewAll('expedition')}

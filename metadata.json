@@ -1,6 +1,6 @@
 {
-  "name": "Chogori Adventure | Best Tour & Trekking Company in Pakistan",
-  "description": "Authentic clone of Chogori Adventure featuring K2 Base Camp trekking, 8000m Karakoram climbing expeditions, cultural tours, full booking system, and member login & registration.",
+  "name": "Diran Peak Adventure | Best Tour & Trekking Company in Pakistan",
+  "description": "Authentic Diran Peak Adventure platform featuring K2 Base Camp trekking, 8000m Karakoram climbing expeditions, cultural tours, full booking system, and member login & registration.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

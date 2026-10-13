@@ -25,7 +25,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.uid == '83oYhWqa5ONqFdaJUVs26BnhEZl1';
+      return isSignedIn() && (
+        request.auth.uid == '83oYhWqa5ONqFdaJUVs26BnhEZl1' ||
+        request.auth.token.email == 'msa78677@gmail.com'
+      );
     }
 
     function isValidUser(data) {

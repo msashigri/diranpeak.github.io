@@ -4,6 +4,176 @@
  */
 
 export const DICTIONARY: Record<string, Record<string, string>> = {
+  // --- The 8 Core Expedition & Trekking Packages ---
+  'K2 Base Camp Trek': {
+    ur: 'کے ٹو بیس کیمپ ٹریک',
+    ar: 'رحلة مخيم قاعدة كيه 2',
+    fr: 'Trek du camp de base du K2',
+    de: 'K2-Basislager-Trek',
+    es: 'Trek al campamento base del K2',
+    it: 'Trekking al campo base del K2',
+    'zh-CN': 'K2大本营徒步',
+    ru: 'Трек к базовому лагерю К2',
+    ja: 'K2ベースキャンプトレック',
+    tr: 'K2 Ana Kamp Yürüyüşü',
+    nl: 'K2 Basiskamp Trek'
+  },
+  'K2 Gondogoro La Trek': {
+    ur: 'کے ٹو گونڈوگورو لا ٹریک',
+    ar: 'رحلة كيه 2 وممر غوندوغورو لا',
+    fr: 'Trek K2 et Gondogoro La',
+    de: 'K2 Gondogoro La Trek',
+    es: 'Trek K2 y Gondogoro La',
+    it: 'Trek K2 e Gondogoro La',
+    'zh-CN': 'K2贡多戈罗山口徒步',
+    ru: 'Трек К2 и перевал Гондогоро Ла',
+    ja: 'K2＆ゴンドゴロ・ラ・トレック',
+    tr: 'K2 Gondogoro La Doğa Yürüyüşü',
+    nl: 'K2 Gondogoro La Trek'
+  },
+  'K2 Climbing Expedition (8611m)': {
+    ur: 'کے ٹو کوہ پیمائی مہم (8611 میٹر)',
+    ar: 'بعثة تسلق قمة كيه 2 (8611م)',
+    fr: 'Expédition d\'ascension du K2 (8 611 m)',
+    de: 'K2-Bergexpedition (8611 m)',
+    es: 'Expedición de escalada al K2 (8.611 m)',
+    it: 'Spedizione alpinistica K2 (8.611 m)',
+    'zh-CN': 'K2攀登探险 (8611米)',
+    ru: 'Альпинистская экспедиция на К2 (8611 м)',
+    ja: 'K2登山遠征 (8,611m)',
+    tr: 'K2 Tırmanış Seferi (8611m)',
+    nl: 'K2 Klimexpeditie (8611m)'
+  },
+  'Nanga Parbat & Rakaposhi Base Camp Trek': {
+    ur: 'نانگا پربت اور راکاپوشی بیس کیمپ ٹریک',
+    ar: 'رحلة مخيمي نانغا باربات وراكابوشي',
+    fr: 'Trek des camps de base du Nanga Parbat & Rakaposhi',
+    de: 'Nanga Parbat & Rakaposhi Basislager-Trek',
+    es: 'Trek campos base Nanga Parbat y Rakaposhi',
+    it: 'Trek campi base Nanga Parbat e Rakaposhi',
+    'zh-CN': '南迦帕尔巴特与拉卡波希大本营徒步',
+    ru: 'Трек к базовым лагерям Нанга Парбат и Ракапоши',
+    ja: 'ナンガ・パルバット＆ラカポシ・ベースキャンプトレック',
+    tr: 'Nanga Parbat & Rakaposhi Ana Kamp Yürüyüşü',
+    nl: 'Nanga Parbat & Rakaposhi Basiskamp Trek'
+  },
+  'Spantik Peak Expedition "Golden Peak" (7027m)': {
+    ur: 'سپانتک چوٹی مہم "گولڈن پیک" (7027 میٹر)',
+    ar: 'بعثة قمة سبانتيك "القمة الذهبية" (7027م)',
+    fr: 'Expédition pic Spantik « Golden Peak » (7 027 m)',
+    de: 'Spantik Peak Expedition „Golden Peak“ (7027 m)',
+    es: 'Expedición Pico Spantik «Pico Dorado» (7.027 m)',
+    it: 'Spedizione Spantik Peak «Golden Peak» (7.027 m)',
+    'zh-CN': '斯潘蒂克峰“金峰”攀登探险 (7027米)',
+    ru: 'Экспедиция на пик Спантик «Золотой пик» (7027 м)',
+    ja: 'スパンティーク峰「ゴールデンピーク」遠征 (7,027m)',
+    tr: 'Spantik Zirvesi "Altın Zirve" Seferi (7027m)',
+    nl: 'Spantik Peak Expeditie "Golden Peak" (7027m)'
+  },
+  'Broad Peak Expedition (8047m)': {
+    ur: 'براڈ پیک کوہ پیمائی مہم (8047 میٹر)',
+    ar: 'بعثة برود بيك (8047م)',
+    fr: 'Expédition Broad Peak (8 047 m)',
+    de: 'Broad Peak Expedition (8047 m)',
+    es: 'Expedición Broad Peak (8.047 m)',
+    it: 'Spedizione Broad Peak (8.047 m)',
+    'zh-CN': '布洛阿特峰探险 (8047米)',
+    ru: 'Экспедиция на Броуд-Пик (8047 м)',
+    ja: 'ブロード・ピーク遠征 (8,047m)',
+    tr: 'Broad Peak Tırmanış Seferi (8047m)',
+    nl: 'Broad Peak Expeditie (8047m)'
+  },
+  'Khosar Gang Peak Expedition (6040 m)': {
+    ur: 'خوسر گنگ پیک مہم (6040 میٹر)',
+    ar: 'بعثة قمة خوسار غانغ (6040م)',
+    fr: 'Expédition Pic Khosar Gang (6 040 m)',
+    de: 'Khosar Gang Peak Expedition (6040 m)',
+    es: 'Expedición Pico Khosar Gang (6.040 m)',
+    it: 'Spedizione Khosar Gang Peak (6.040 m)',
+    'zh-CN': '科萨尔冈峰探险 (6040米)',
+    ru: 'Экспедиция на пик Хосар Ганг (6040 м)',
+    ja: 'ホサール・ガン峰遠征 (6,040m)',
+    tr: 'Khosar Gang Zirve Seferi (6040m)',
+    nl: 'Khosar Gang Piek Expeditie (6040m)'
+  },
+  'Cultural Heritage: Lahore, Multan, Peshawar & Swat': {
+    ur: 'ثقافتی ورثہ: لاہور، ملتان، پشاور اور سوات',
+    ar: 'التراث الثقافي: لاهور، ملتان، بيشاور وسوات',
+    fr: 'Patrimoine culturel : Lahore, Multan, Peshawar et Swat',
+    de: 'Kulturerbe: Lahore, Multan, Peshawar & Swat',
+    es: 'Patrimonio cultural: Lahore, Multán, Peshawar y Swat',
+    it: 'Patrimonio culturale: Lahore, Multan, Peshawar e Swat',
+    'zh-CN': '文化遗产：拉合尔、木尔坦、白沙瓦与斯瓦特',
+    ru: 'Культурное наследие: Лахор, Мултан, Пешавар и Сват',
+    ja: '文化遺産ツアー：ラホール、ムルタン、ペシャワール＆スワット',
+    tr: 'Kültürel Miras: Lahor, Multan, Peşaver ve Swat',
+    nl: 'Cultureel Erfgoed: Lahore, Multan, Peshawar & Swat'
+  },
+  'Edit Profile': {
+    ur: 'پروفائل میں ترمیم کریں',
+    ar: 'تعديل الملف الشخصي',
+    fr: 'Modifier le profil',
+    de: 'Profil bearbeiten',
+    es: 'Editar perfil',
+    it: 'Modifica profilo',
+    'zh-CN': '编辑个人资料',
+    ru: 'Редактировать профиль',
+    ja: 'プロフィール編集',
+    tr: 'Profili Düzenle',
+    nl: 'Profiel bewerken'
+  },
+  'Choose Departure Date': {
+    ur: 'روانگی کی تاریخ منتخب کریں',
+    ar: 'اختر تاريخ المغادرة',
+    fr: 'Choisir la date de départ',
+    de: 'Abreisedatum wählen',
+    es: 'Elegir fecha de salida',
+    it: 'Scegli la data di partenza',
+    'zh-CN': '选择出发日期',
+    ru: 'Выберите дату отправления',
+    ja: '出発日を選択',
+    tr: 'Kalkış Tarihini Seçin',
+    nl: 'Kies vertrekdatum'
+  },
+  'Today': {
+    ur: 'آج',
+    ar: 'اليوم',
+    fr: 'Aujourd\'hui',
+    de: 'Heute',
+    es: 'Hoy',
+    it: 'Oggi',
+    'zh-CN': '今天',
+    ru: 'Сегодня',
+    ja: '今日',
+    tr: 'Bugün',
+    nl: 'Vandaag'
+  },
+  'Next Week': {
+    ur: 'اگلے ہفتے',
+    ar: 'الأسبوع القادم',
+    fr: 'Semaine prochaine',
+    de: 'Nächste Woche',
+    es: 'La próxima semana',
+    it: 'La prossima settimana',
+    'zh-CN': '下周',
+    ru: 'Следующая неделя',
+    ja: '来週',
+    tr: 'Gelecek Hafta',
+    nl: 'Volgende week'
+  },
+  'Next Month': {
+    ur: 'اگلے ماہ',
+    ar: 'الشهر القادم',
+    fr: 'Mois prochain',
+    de: 'Nächster Monat',
+    es: 'El próximo mes',
+    it: 'Il mese prossimo',
+    'zh-CN': '下月',
+    ru: 'Следующий месяц',
+    ja: '来月',
+    tr: 'Gelecek Ay',
+    nl: 'Volgende maand'
+  },
   // --- Header, Navigation & Brand ---
   'Home': {
     ur: 'صفحہ اول',
@@ -1601,6 +1771,12 @@ export const DICTIONARY: Record<string, Record<string, string>> = {
 // Sorted dictionary keys by descending length for greedy multi-word replacement
 const sortedKeys = Object.keys(DICTIONARY).sort((a, b) => b.length - a.length);
 
+// Lowercase key lookup for case-insensitive matches
+const lowerKeyMap: Record<string, string> = {};
+for (const k of Object.keys(DICTIONARY)) {
+  lowerKeyMap[k.toLowerCase()] = k;
+}
+
 /**
  * Helper to translate a string segment using exact match or greedy phrase replacement
  */
@@ -1612,6 +1788,15 @@ export const translateString = (text: string, langCode: string): string => {
   // 1. Exact match (fast path)
   if (DICTIONARY[trimmed] && DICTIONARY[trimmed][langCode]) {
     return text.replace(trimmed, DICTIONARY[trimmed][langCode]);
+  }
+
+  // 1b. Case-insensitive exact match
+  const lowerTrimmed = trimmed.toLowerCase();
+  if (lowerKeyMap[lowerTrimmed]) {
+    const originalKey = lowerKeyMap[lowerTrimmed];
+    if (DICTIONARY[originalKey] && DICTIONARY[originalKey][langCode]) {
+      return text.replace(trimmed, DICTIONARY[originalKey][langCode]);
+    }
   }
 
   // 2. Greedy phrase replacement inside longer texts
@@ -1636,7 +1821,7 @@ const originalTextMap = new WeakMap<Node, string>();
 const originalPlaceholderMap = new WeakMap<Element, string>();
 const originalOptionTextMap = new WeakMap<HTMLOptionElement, string>();
 
-let isTranslating = false;
+export let isTranslating = false;
 
 /**
  * Traverses DOM and translates all text nodes, options, inputs, and placeholders into target language.

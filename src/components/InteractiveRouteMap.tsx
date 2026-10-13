@@ -261,8 +261,8 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-xl border border-[#eaeef3] overflow-hidden shadow-xs transition-all ${
-      isFullscreen ? 'fixed inset-0 z-50 rounded-none' : 'my-8'
+    <div className={`bg-white rounded-xl border border-[#eaeef3] overflow-hidden shadow-xs transition-all relative z-10 isolate ${
+      isFullscreen ? 'fixed inset-0 z-[2000] rounded-none' : 'my-8'
     }`}>
       {/* Top Header Bar */}
       <div className="p-4 sm:p-5 bg-white border-b border-[#eaeef3] flex flex-col md:flex-row md:items-center justify-between gap-4">

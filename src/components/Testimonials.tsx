@@ -77,7 +77,7 @@ export const Testimonials: React.FC = () => {
           </div>
 
           <a
-            href="https://www.google.com/maps/place/Chogori+Adventure+Pakistan/@33.6569451,73.1584339,15z"
+            href="https://www.google.com/maps/place/Diran+Peak+Adventure+Pakistan/@33.6569451,73.1584339,15z"
             target="_blank"
             rel="noreferrer"
             className="px-6 py-3 bg-[#5191fa] hover:bg-[#3875dc] text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer shadow-md"

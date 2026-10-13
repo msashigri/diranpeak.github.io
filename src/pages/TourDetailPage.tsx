@@ -48,14 +48,17 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
     }
   };
 
-  // Interactive Departure Calendar State
+  // Interactive Departure Calendar State (Supports Current Date & Coming Dates)
+  const todayMidnight = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
+
   const defaultDepartureDate = (() => {
     const today = new Date();
-    const season2027 = new Date(2027, 5, 15); // June 15, 2027
-    if (today < season2027) return season2027;
-    const next = new Date(today);
-    next.setDate(next.getDate() + 14);
-    return next;
+    today.setHours(0, 0, 0, 0);
+    return today;
   })();
 
   const [selectedDepartureDate, setSelectedDepartureDate] = useState<Date>(defaultDepartureDate);
@@ -82,7 +85,13 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
     year: 'numeric'
   });
 
+  const canGoPrevMonth = (() => {
+    const prevMonthEnd = new Date(calendarViewDate.getFullYear(), calendarViewDate.getMonth(), 0);
+    return prevMonthEnd >= todayMidnight;
+  })();
+
   const handlePrevMonth = () => {
+    if (!canGoPrevMonth) return;
     setCalendarViewDate(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
   };
 
@@ -95,8 +104,6 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
   const firstDayOfWeek = new Date(calendarYear, calendarMonth, 1).getDay();
   const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
   const calendarMonthName = calendarViewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  const todayMidnight = new Date();
-  todayMidnight.setHours(0, 0, 0, 0);
 
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
@@ -345,7 +352,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
             </div>
 
             {/* Interactive Leaflet Expedition & Trekking Route Map */}
-            <div id="route-map-section">
+            <div id="route-map-section" className="relative z-10 isolate">
               <InteractiveRouteMap
                 tourId={tour.id}
                 tourSlug={tour.slug}
@@ -459,6 +466,220 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                       </li>
                     ))}
                   </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Diran Peak Adventure Authentic Tiered Group Pricing Table */}
+            <div className="bg-white rounded-2xl p-6 sm:p-8 shadow-sm border border-slate-200/80">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                <div>
+                  <h2 className="font-heading text-xl font-bold text-[#1a2b48] flex items-center gap-2">
+                    <span className="w-2.5 h-6 rounded-full bg-[#5191fa]" />
+                    <span>Tiered Group Pricing &amp; Expedition Costs</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Transparent rates per person based on group size with all mountain permits, domestic flights, and base camp services included.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 self-start sm:self-auto">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>No Hidden Fees · Guaranteed Departures</span>
+                </div>
+              </div>
+
+              {/* Responsive Pricing Table */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50/80 text-[11px] font-bold uppercase tracking-wider text-slate-600">
+                      <th className="py-3 px-4 rounded-l-xl">Group Size</th>
+                      <th className="py-3 px-4">Rate Per Person</th>
+                      <th className="py-3 px-4">Savings Tier</th>
+                      <th className="py-3 px-4">Service Level Included</th>
+                      <th className="py-3 px-4 text-right rounded-r-xl">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 font-normal">
+                    <tr className="hover:bg-blue-50/40 transition-colors">
+                      <td className="py-3.5 px-4 font-semibold text-slate-900">
+                        1 - 2 Persons
+                        <span className="block text-[10px] text-slate-400 font-normal">Private VIP Expedition</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-[#1a2b48] text-sm">
+                        {formatPrice(tour.price + 350)}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
+                          Standard
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 text-[11px]">
+                        Dedicated Balti Guide, Private Jeep, Full Board
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdults(2);
+                            const el = document.getElementById('booking-card-widget');
+                            el?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="px-3 py-1.5 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-xs"
+                        >
+                          Select 2p
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr className="bg-blue-50/30 hover:bg-blue-50/60 transition-colors border-y-2 border-blue-100">
+                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                        3 - 5 Persons
+                        <span className="inline-block ml-1.5 px-1.5 py-0.5 text-[9px] font-black uppercase bg-[#fa5636] text-white rounded">
+                          Most Popular
+                        </span>
+                        <span className="block text-[10px] text-slate-400 font-normal">Small Group Team</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-[#5191fa] text-base">
+                        {formatPrice(tour.price)}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-100 text-[#5191fa]">
+                          Base Rate
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-700 text-[11px]">
+                        Lead Mountain Guide, Cook, inReach SOS Tracker
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdults(4);
+                            const el = document.getElementById('booking-card-widget');
+                            el?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="px-3 py-1.5 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-xs"
+                        >
+                          Select 4p
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-blue-50/40 transition-colors">
+                      <td className="py-3.5 px-4 font-semibold text-slate-900">
+                        6 - 9 Persons
+                        <span className="block text-[10px] text-slate-400 font-normal">Alpine Club Group</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-emerald-700 text-sm">
+                        {formatPrice(Math.max(600, tour.price - 200))}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                          Save $200 / person
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 text-[11px]">
+                        Two High-Altitude Guides, Kitchen Crew, Dining Tent
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdults(6);
+                            const el = document.getElementById('booking-card-widget');
+                            el?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-xs"
+                        >
+                          Select 6p
+                        </button>
+                      </td>
+                    </tr>
+
+                    <tr className="hover:bg-blue-50/40 transition-colors">
+                      <td className="py-3.5 px-4 font-semibold text-slate-900">
+                        10+ Persons
+                        <span className="block text-[10px] text-slate-400 font-normal">Full Expedition Charter</span>
+                      </td>
+                      <td className="py-3.5 px-4 font-extrabold text-emerald-700 text-sm">
+                        {formatPrice(Math.max(500, tour.price - 350))}
+                      </td>
+                      <td className="py-3.5 px-4">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800">
+                          Save $350 / person
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 text-[11px]">
+                        Full Camp Setup, Doctor Kit, Satellite Phone
+                      </td>
+                      <td className="py-3.5 px-4 text-right">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAdults(10);
+                            const el = document.getElementById('booking-card-widget');
+                            el?.scrollIntoView({ behavior: 'smooth' });
+                          }}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold rounded-lg cursor-pointer transition-colors shadow-xs"
+                        >
+                          Select 10p
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pricing Notes & Supplements */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-100 text-xs text-slate-600">
+                <div className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-800">Single Supplement:</strong> $250 for private tent throughout trek and single hotel room in Islamabad &amp; Skardu.
+                  </div>
+                </div>
+                <div className="flex items-start gap-2.5">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="text-slate-800">Payment Terms:</strong> 15% deposit to confirm your expedition permit; remaining balance payable on arrival in Islamabad.
+                  </div>
+                </div>
+              </div>
+
+              {/* Call-to-Action (CTA) Banner matching Diran Peak Adventure */}
+              <div className="mt-8 p-6 bg-gradient-to-r from-[#1a2b48] to-[#253d66] rounded-2xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-md">
+                <div>
+                  <span className="px-2.5 py-1 rounded text-[10px] font-extrabold uppercase tracking-wider bg-amber-400 text-slate-950 inline-block mb-2">
+                    Summit Ready · Season 2027
+                  </span>
+                  <h3 className="font-heading font-extrabold text-xl text-white">
+                    Ready to Embark on {tour.title}?
+                  </h3>
+                  <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+                    Reserve your confirmed departure date online or speak with our Balti expedition coordinators for customized logistics and corporate bookings.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const el = document.getElementById('booking-card-widget');
+                      el?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className="px-6 py-3 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer hover:shadow-lg"
+                  >
+                    Book This Departure Now
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('contact')}
+                    className="px-5 py-3 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  >
+                    Custom Group Inquiry
+                  </button>
                 </div>
               </div>
             </div>
@@ -707,7 +928,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
 
           {/* RIGHT COLUMN: Sticky Booking & Enquiry Box */}
           <div className="lg:col-span-1">
-            <div className="sticky top-28 bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <div id="booking-card-widget" className="sticky top-28 bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
               {/* Header Price Banner */}
               <div className="pb-4 mb-4 border-b border-slate-100 flex items-baseline justify-between">
                 <div>
@@ -794,8 +1015,13 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                       <div className="flex items-center justify-between mb-2 pb-2 border-b border-slate-200">
                         <button
                           type="button"
+                          disabled={!canGoPrevMonth}
                           onClick={handlePrevMonth}
-                          className="p-1.5 text-slate-600 hover:text-[#5191fa] hover:bg-slate-200/70 rounded-lg transition-colors cursor-pointer"
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            canGoPrevMonth
+                              ? 'text-slate-600 hover:text-[#5191fa] hover:bg-slate-200/70 cursor-pointer'
+                              : 'text-slate-300 cursor-not-allowed opacity-40'
+                          }`}
                           title="Previous Month"
                         >
                           <ChevronLeft className="w-4 h-4" />
@@ -822,7 +1048,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                         ))}
                       </div>
 
-                      {/* Days Grid */}
+                      {/* Days Grid (Today & Coming Dates) */}
                       <div className="grid grid-cols-7 gap-1 text-center">
                         {Array.from({ length: firstDayOfWeek }).map((_, idx) => (
                           <div key={`empty-${idx}`} className="h-7 w-7" />
@@ -835,6 +1061,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                             selectedDepartureDate.getMonth() === calendarMonth &&
                             selectedDepartureDate.getDate() === day;
                           const isPast = cellDate < todayMidnight;
+                          const isToday = cellDate.getTime() === todayMidnight.getTime();
 
                           return (
                             <button
@@ -842,48 +1069,122 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                               type="button"
                               disabled={isPast}
                               onClick={() => setSelectedDepartureDate(cellDate)}
-                              className={`h-7 w-7 mx-auto rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer ${
+                              title={isToday ? 'Today (Current Date)' : undefined}
+                              className={`h-7 w-7 mx-auto rounded-lg text-xs font-semibold flex items-center justify-center transition-all cursor-pointer relative ${
                                 isSelected
                                   ? 'bg-[#5191fa] text-white font-extrabold ring-2 ring-blue-300 shadow-md scale-105'
                                   : isPast
                                   ? 'text-slate-300 cursor-not-allowed line-through text-[10px]'
+                                  : isToday
+                                  ? 'border-2 border-[#5191fa] text-[#5191fa] font-bold bg-blue-50/50 hover:bg-blue-100'
                                   : 'text-slate-700 hover:bg-blue-100/70 hover:text-[#5191fa]'
                               }`}
                             >
                               {day}
+                              {isToday && !isSelected && (
+                                <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-[#5191fa]" />
+                              )}
                             </button>
                           );
                         })}
                       </div>
 
-                      {/* Quick Season Hop */}
-                      <div className="mt-2.5 pt-2 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-500">
-                        <span className="font-medium">Quick Jump:</span>
-                        <div className="flex gap-1">
-                          {[
-                            { label: 'May', month: 4, year: 2027 },
-                            { label: 'Jun', month: 5, year: 2027 },
-                            { label: 'Jul', month: 6, year: 2027 },
-                            { label: 'Aug', month: 7, year: 2027 },
-                            { label: 'Sep', month: 8, year: 2027 }
-                          ].map((s) => (
-                            <button
-                              key={s.label}
-                              type="button"
-                              onClick={() => {
-                                setCalendarViewDate(new Date(s.year, s.month, 1));
-                                setSelectedDepartureDate(new Date(s.year, s.month, 10));
-                              }}
-                              className={`px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-colors ${
-                                calendarMonth === s.month && calendarYear === s.year
-                                  ? 'bg-[#5191fa] text-white shadow-xs'
-                                  : 'bg-white text-slate-600 hover:bg-slate-200/80 border border-slate-200'
-                              }`}
-                            >
-                              {s.label}
-                            </button>
-                          ))}
+                      {/* Quick Date Jump (Current & Coming Dates) */}
+                      <div className="mt-2.5 pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-1.5 text-[10px] text-slate-500">
+                        <span className="font-semibold text-slate-600">Quick Select:</span>
+                        <div className="flex flex-wrap gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const now = new Date();
+                              now.setHours(0, 0, 0, 0);
+                              setCalendarViewDate(new Date(now.getFullYear(), now.getMonth(), 1));
+                              setSelectedDepartureDate(now);
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors"
+                          >
+                            Today (Current)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const tomorrow = new Date();
+                              tomorrow.setDate(tomorrow.getDate() + 1);
+                              tomorrow.setHours(0, 0, 0, 0);
+                              setCalendarViewDate(new Date(tomorrow.getFullYear(), tomorrow.getMonth(), 1));
+                              setSelectedDepartureDate(tomorrow);
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer transition-colors"
+                          >
+                            Tomorrow
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const d = new Date();
+                              d.setDate(d.getDate() + 7);
+                              d.setHours(0, 0, 0, 0);
+                              setCalendarViewDate(new Date(d.getFullYear(), d.getMonth(), 1));
+                              setSelectedDepartureDate(d);
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 cursor-pointer transition-colors"
+                          >
+                            Next Week
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const d = new Date();
+                              const nextM = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+                              setCalendarViewDate(nextM);
+                              setSelectedDepartureDate(new Date(nextM.getFullYear(), nextM.getMonth(), 1));
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 cursor-pointer transition-colors"
+                          >
+                            Next Month
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCalendarViewDate(new Date(2027, 5, 1));
+                              setSelectedDepartureDate(new Date(2027, 5, 15));
+                            }}
+                            className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#5191fa] border border-blue-200 hover:bg-blue-100 cursor-pointer transition-colors"
+                          >
+                            Summer 2027
+                          </button>
                         </div>
+                      </div>
+
+                      {/* Direct Date Input for Custom Coming Date */}
+                      <div className="mt-2 pt-2 border-t border-slate-200 flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500 font-medium">Pick Any Date:</span>
+                        <input
+                          type="date"
+                          min={(() => {
+                            const y = todayMidnight.getFullYear();
+                            const m = String(todayMidnight.getMonth() + 1).padStart(2, '0');
+                            const d = String(todayMidnight.getDate()).padStart(2, '0');
+                            return `${y}-${m}-${d}`;
+                          })()}
+                          value={(() => {
+                            const y = selectedDepartureDate.getFullYear();
+                            const m = String(selectedDepartureDate.getMonth() + 1).padStart(2, '0');
+                            const d = String(selectedDepartureDate.getDate()).padStart(2, '0');
+                            return `${y}-${m}-${d}`;
+                          })()}
+                          onChange={(e) => {
+                            if (!e.target.value) return;
+                            const [y, m, d] = e.target.value.split('-').map(Number);
+                            const newD = new Date(y, m - 1, d);
+                            newD.setHours(0, 0, 0, 0);
+                            if (newD >= todayMidnight) {
+                              setSelectedDepartureDate(newD);
+                              setCalendarViewDate(new Date(y, m - 1, 1));
+                            }
+                          }}
+                          className="px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-800 text-xs font-semibold focus:outline-none focus:border-[#5191fa] cursor-pointer"
+                        />
                       </div>
                     </div>
 

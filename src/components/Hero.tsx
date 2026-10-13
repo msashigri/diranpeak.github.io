@@ -21,7 +21,7 @@ export const Hero: React.FC<HeroProps> = ({ onSearch }) => {
       <div
         className="relative min-h-[500px] lg:min-h-[560px] flex items-center justify-center bg-cover bg-center"
         style={{
-          backgroundImage: "url('https://chogoriadventure.com/uploads/0000/6/2025/01/17/gondogoro-la-pass.jpeg')",
+          backgroundImage: "url('/images/hero_karakoram_k2_1790420138291.jpg')",
           backgroundColor: '#1a2b48'
         }}
       >
@@ -58,7 +58,7 @@ export const Hero: React.FC<HeroProps> = ({ onSearch }) => {
             Trekking | Tour | Expedition
           </h2>
 
-          {/* Exact Search Form from chogoriadventure.com */}
+          {/* Exact Search Form for Diran Peak Adventure */}
           <div className="max-w-2xl mx-auto">
             <form
               onSubmit={handleSearchSubmit}

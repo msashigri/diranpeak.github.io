@@ -360,7 +360,7 @@ app.post('/api/auth/forgot-password', (req: Request, res: Response) => {
 app.get('/api/auth/demo-credentials', (_req: Request, res: Response) => {
   return res.json({
     traveler: {
-      email: 'traveler@chogoriadventure.com',
+      email: 'traveler@diranpeakadventure.com',
       password: 'password123',
       description: 'Standard traveler demo account'
     },
@@ -403,7 +403,7 @@ async function startServer() {
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 Chogori Adventure Full-Stack Server running at http://localhost:${PORT}`);
+    console.log(`🚀 Diran Peak Adventure Full-Stack Server running at http://localhost:${PORT}`);
   });
 }
 

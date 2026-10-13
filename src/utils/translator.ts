@@ -39,6 +39,23 @@ let currentActiveLang = 'en';
 let observer: MutationObserver | null = null;
 let updateTimer: ReturnType<typeof setTimeout> | null = null;
 
+export const pauseTranslationObserver = (): void => {
+  if (observer) {
+    observer.disconnect();
+  }
+};
+
+export const resumeTranslationObserver = (): void => {
+  if (typeof window === 'undefined') return;
+  const root = document.getElementById('root');
+  if (!root) return;
+  if (!observer) {
+    setupObserver();
+  } else {
+    observer.observe(root, { childList: true, subtree: true });
+  }
+};
+
 const setupObserver = () => {
   if (typeof window === 'undefined' || observer) return;
   const root = document.getElementById('root');
@@ -49,17 +66,55 @@ const setupObserver = () => {
       if (updateTimer) clearTimeout(updateTimer);
       updateTimer = setTimeout(() => {
         applyDomTranslation(currentActiveLang);
-      }, 30);
+      }, 50);
     }
   });
 
-  observer.observe(root, { childList: true, subtree: true, characterData: true });
+  // Observe childList and subtree only (avoid characterData to prevent infinite loop)
+  observer.observe(root, { childList: true, subtree: true });
 };
 
 export const triggerTranslationUpdate = (): void => {
   if (typeof window === 'undefined') return;
   if (currentActiveLang && currentActiveLang !== 'en') {
     applyDomTranslation(currentActiveLang);
+    syncGoogleTranslate(currentActiveLang);
+  }
+};
+
+const syncGoogleTranslate = (langCode: string): void => {
+  if (typeof document === 'undefined') return;
+  try {
+    const domain = window.location.hostname;
+    if (langCode === 'en') {
+      document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${domain};`;
+      if (domain && domain !== 'localhost') {
+        document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.${domain};`;
+      }
+      document.cookie = 'googtrans=/en/en; path=/;';
+    } else {
+      document.cookie = `googtrans=/en/${langCode}; path=/;`;
+      if (domain && domain !== 'localhost') {
+        document.cookie = `googtrans=/en/${langCode}; path=/; domain=.${domain};`;
+      }
+    }
+
+    // Trigger Google Translate dropdown element with retry attempts
+    const tryTriggerCombo = (attempt = 0) => {
+      const select = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+      if (select) {
+        if (select.value !== langCode) {
+          select.value = langCode;
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+      } else if (attempt < 8) {
+        setTimeout(() => tryTriggerCombo(attempt + 1), 250);
+      }
+    };
+    tryTriggerCombo();
+  } catch {
+    // ignore
   }
 };
 
@@ -75,7 +130,8 @@ export const initLanguageTranslator = (): void => {
       setupObserver();
       setTimeout(() => {
         applyDomTranslation(savedCode);
-      }, 20);
+        syncGoogleTranslate(savedCode);
+      }, 100);
     }
   } catch {
     // ignore
@@ -90,11 +146,15 @@ export const translateWholeWebsite = (targetLanguage: string): LanguageItem => {
   const langCode = lang.code;
   currentActiveLang = langCode;
 
-  // 1. Update HTML language without altering layout, alignment, or formatting
+  // 1. Update HTML language and dir attributes
   if (typeof document !== 'undefined') {
     document.documentElement.lang = langCode;
-    document.documentElement.dir = 'ltr';
-    document.body.classList.remove('rtl-mode');
+    document.documentElement.dir = lang.dir;
+    if (lang.dir === 'rtl') {
+      document.body.classList.add('rtl-mode');
+    } else {
+      document.body.classList.remove('rtl-mode');
+    }
   }
 
   // 2. Persist in localStorage
@@ -105,10 +165,11 @@ export const translateWholeWebsite = (targetLanguage: string): LanguageItem => {
     // ignore
   }
 
-  // 3. Immediately apply client-side DOM translation
+  // 3. Immediately apply client-side DOM translation & Google Translate sync
   try {
     setupObserver();
     applyDomTranslation(langCode);
+    syncGoogleTranslate(langCode);
   } catch {
     // ignore
   }

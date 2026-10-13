@@ -51,6 +51,7 @@ export interface User {
   bio?: string;
   createdAt?: string;
   favorites?: string[];
+  role?: 'customer' | 'admin' | 'guide';
   tempPassword?: string;
 }
 
@@ -258,7 +259,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
-      const saved = localStorage.getItem('chogori_user');
+      const saved = localStorage.getItem('dpa_user');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
@@ -267,7 +268,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [adminSettings, setAdminSettings] = useState<AdminSettings>(() => {
     try {
-      const saved = localStorage.getItem('dpa_admin_settings') || localStorage.getItem('chogori_admin_settings');
+      const saved = localStorage.getItem('dpa_admin_settings');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.notificationPhone === '+923445925993' || parsed.notificationPhone === '+92 344 5925993') {
@@ -313,7 +314,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [contactInquiries, setContactInquiries] = useState<ContactInquiry[]>(() => {
     try {
-      const saved = localStorage.getItem('chogori_inquiries');
+      const saved = localStorage.getItem('dpa_inquiries');
       if (saved) return JSON.parse(saved);
     } catch {
       // fallback
@@ -431,7 +432,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Save changes locally
   useEffect(() => {
     try {
-      localStorage.setItem('chogori_bookings', JSON.stringify(bookings));
+      localStorage.setItem('dpa_bookings', JSON.stringify(bookings));
     } catch {
       // ignore
     }
@@ -439,7 +440,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      localStorage.setItem('chogori_inquiries', JSON.stringify(contactInquiries));
+      localStorage.setItem('dpa_inquiries', JSON.stringify(contactInquiries));
     } catch {
       // ignore
     }
@@ -447,7 +448,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      localStorage.setItem('chogori_partner_requests', JSON.stringify(partnerRequests));
+      localStorage.setItem('dpa_partner_requests', JSON.stringify(partnerRequests));
     } catch {
       // ignore
     }
@@ -455,7 +456,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     try {
-      localStorage.setItem('chogori_subscribers', JSON.stringify(newsletterSubscribers));
+      localStorage.setItem('dpa_subscribers', JSON.stringify(newsletterSubscribers));
     } catch {
       // ignore
     }
@@ -518,7 +519,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setFavorites(data.favorites);
               localStorage.setItem('dpa_user_favorites', JSON.stringify(data.favorites));
             }
-            localStorage.setItem('chogori_user', JSON.stringify(profileUser));
+            localStorage.setItem('dpa_user', JSON.stringify(profileUser));
           } else {
             const nameParts = (fbUser.displayName || 'Traveler Explorer').split(' ');
             const fallbackUser: User = {
@@ -531,7 +532,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               joinedDate: 'March 2027'
             };
             setUser(fallbackUser);
-            localStorage.setItem('chogori_user', JSON.stringify(fallbackUser));
+            localStorage.setItem('dpa_user', JSON.stringify(fallbackUser));
 
             // Persist document to Firestore so directory listing has it
             try {
@@ -554,7 +555,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } else {
         // If not logged in to Firebase, preserve local user if present or clear
-        const saved = localStorage.getItem('chogori_user');
+        const saved = localStorage.getItem('dpa_user');
         if (!saved) {
           setUser(null);
         }
@@ -564,19 +565,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
+  // Helper to determine if current user has admin privileges
+  const isCurrentAdmin = Boolean(
+    (user && (user.id === ADMIN_USER_ID || user.email?.toLowerCase() === 'msa78677@gmail.com' || user.role === 'admin')) ||
+    (auth.currentUser && (auth.currentUser.uid === ADMIN_USER_ID || auth.currentUser.email?.toLowerCase() === 'msa78677@gmail.com'))
+  );
+
   // Real-time Firestore Bookings synchronization
   useEffect(() => {
-    if (!user) {
+    if (!user && !auth.currentUser) {
       setBookings([]);
       return;
     }
 
     try {
-      const isCurrentAdmin = user.id === ADMIN_USER_ID || auth.currentUser?.uid === ADMIN_USER_ID;
+      const currentUid = user?.id || auth.currentUser?.uid;
       const bookingsCol = collection(db, 'bookings');
       const q = isCurrentAdmin
         ? bookingsCol
-        : query(bookingsCol, where('userId', '==', user.id));
+        : (currentUid ? query(bookingsCol, where('userId', '==', currentUid)) : null);
+
+      if (!q) return;
 
       const unsubscribe = onSnapshot(
         q,
@@ -593,14 +602,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // offline fallback
     }
-  }, [user?.id]);
+  }, [user?.id, user?.email, isCurrentAdmin]);
 
-  // Real-time Firestore Inquiries synchronization
+  // Real-time Firestore Inquiries synchronization (Admin sees all; travelers see own)
   useEffect(() => {
+    if (!user && !auth.currentUser) {
+      return;
+    }
+
     try {
+      const currentUid = user?.id || auth.currentUser?.uid;
       const inqCol = collection(db, 'inquiries');
+      const q = isCurrentAdmin
+        ? inqCol
+        : (currentUid ? query(inqCol, where('userId', '==', currentUid)) : null);
+
+      if (!q) return;
+
       const unsubscribe = onSnapshot(
-        inqCol,
+        q,
         (snapshot) => {
           const firestoreInquiries = snapshot.docs.map(docSnap => docSnap.data() as ContactInquiry);
           setContactInquiries(firestoreInquiries);
@@ -613,9 +633,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // offline fallback
     }
-  }, []);
+  }, [user?.id, user?.email, isCurrentAdmin]);
 
-  // Real-time Firestore Reviews synchronization
+  // Real-time Firestore Reviews synchronization (Publicly accessible)
   useEffect(() => {
     try {
       const reviewsCol = collection(db, 'reviews');
@@ -635,8 +655,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Real-time Firestore Partners synchronization
+  // Real-time Firestore Partners synchronization (Strictly Admin Only)
   useEffect(() => {
+    if (!isCurrentAdmin) {
+      return;
+    }
+
     try {
       const partnersCol = collection(db, 'partners');
       const unsubscribe = onSnapshot(
@@ -653,10 +677,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // offline fallback
     }
-  }, []);
+  }, [isCurrentAdmin]);
 
-  // Real-time Firestore Newsletter Subscribers synchronization
+  // Real-time Firestore Newsletter Subscribers synchronization (Strictly Admin Only)
   useEffect(() => {
+    if (!isCurrentAdmin) {
+      return;
+    }
+
     try {
       const subsCol = collection(db, 'subscribers');
       const unsubscribe = onSnapshot(
@@ -673,17 +701,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // offline fallback
     }
-  }, []);
+  }, [isCurrentAdmin]);
 
-  // Real-time Firestore Broadcasts synchronization
+  // Real-time Firestore Broadcasts synchronization (Strictly Admin Only)
   useEffect(() => {
+    if (!isCurrentAdmin) {
+      return;
+    }
+
     try {
       const broadcastsCol = collection(db, 'broadcasts');
       const unsubscribe = onSnapshot(
         broadcastsCol,
         (snapshot) => {
           const firestoreBroadcasts = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() } as Broadcast));
-          // Sort newest first
           firestoreBroadcasts.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
           setBroadcasts(firestoreBroadcasts);
         },
@@ -695,7 +726,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch {
       // offline fallback
     }
-  }, []);
+  }, [isCurrentAdmin]);
 
   // Real-time Firestore Alert Settings synchronization
   useEffect(() => {
@@ -952,7 +983,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               setFavorites(userData.favorites);
               localStorage.setItem('dpa_user_favorites', JSON.stringify(userData.favorites));
             }
-            localStorage.setItem('chogori_user', JSON.stringify(loggedUser));
+            localStorage.setItem('dpa_user', JSON.stringify(loggedUser));
 
             await logActivity({
               userId: loggedUser.id,
@@ -1111,7 +1142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setUser(null);
     setFavorites([]);
-    localStorage.removeItem('chogori_user');
+    localStorage.removeItem('dpa_user');
     localStorage.removeItem('dpa_user_favorites');
   };
 
@@ -1766,14 +1797,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       const updatedUser: User = { ...user, ...data };
       setUser(updatedUser);
-      localStorage.setItem('chogori_user', JSON.stringify(updatedUser));
+      localStorage.setItem('dpa_user', JSON.stringify(updatedUser));
       return { success: true };
     } catch (err) {
       console.error('Error updating user profile:', err);
       // Fallback update local state if offline
       const updatedUser: User = { ...user, ...data };
       setUser(updatedUser);
-      localStorage.setItem('chogori_user', JSON.stringify(updatedUser));
+      localStorage.setItem('dpa_user', JSON.stringify(updatedUser));
       return { success: true };
     }
   };
@@ -1786,7 +1817,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         await auth.currentUser.delete().catch(() => {});
       }
       setUser(null);
-      localStorage.removeItem('chogori_user');
+      localStorage.removeItem('dpa_user');
       return { success: true };
     } catch (err) {
       console.warn('Error deleting user account from Firebase:', err);
