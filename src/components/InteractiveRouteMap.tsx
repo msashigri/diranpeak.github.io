@@ -41,29 +41,27 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const currentTileLayerRef = useRef<L.TileLayer | null>(null);
 
-  const routeData: TrekkingRoute = useMemo(() => {
-    return getRouteForTour(
-      tourId,
-      tourSlug,
-      tour || { id: tourId, slug: tourSlug, title: tourTitle, location: tourLocation, maxAltitude, itinerary }
-    );
-  }, [tourId, tourSlug, tourTitle, tourLocation, maxAltitude, itinerary, tour]);
+  const routeData: TrekkingRoute = getRouteForTour(
+    tourId,
+    tourSlug,
+    tour || { id: tourId, slug: tourSlug, title: tourTitle, location: tourLocation, maxAltitude, itinerary }
+  );
 
   const [activeLayer, setActiveLayer] = useState<TileLayerType>('topo');
-  const [selectedWaypoint, setSelectedWaypoint] = useState<RouteWaypoint | null>(null);
+  const [selectedWaypoint, setSelectedWaypoint] = useState<RouteWaypoint | null>(
+    routeData.waypoints[routeData.waypoints.length - 1] || routeData.waypoints[0] || null
+  );
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showElevationProfile, setShowElevationProfile] = useState(true);
 
-  // Sync selected waypoint when tour or routeData changes
+  // Sync selected waypoint when tour changes
   useEffect(() => {
-    if (routeData.waypoints && routeData.waypoints.length > 0) {
-      // Default to high point or final camp
-      const highPoint = [...routeData.waypoints].sort((a, b) => b.altitude - a.altitude)[0];
-      setSelectedWaypoint(highPoint || routeData.waypoints[routeData.waypoints.length - 1] || routeData.waypoints[0]);
+    if (routeData.waypoints.length > 0) {
+      setSelectedWaypoint(routeData.waypoints[routeData.waypoints.length - 1] || routeData.waypoints[0]);
     } else {
       setSelectedWaypoint(null);
     }
-  }, [routeData]);
+  }, [tourId, tourSlug, routeData.waypoints.length]);
 
   // Tile layer providers
   const tileProviders = {
@@ -250,7 +248,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [tourId, tourSlug, routeData]);
+  }, [tourId, tourSlug, routeData.title, routeData.waypoints.length]);
 
   // Handle Layer Switch
   const handleLayerChange = (layer: TileLayerType) => {

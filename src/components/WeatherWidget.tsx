@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Cloud,
   CloudRain,
@@ -16,8 +16,6 @@ import {
   CheckCircle2,
   Calendar
 } from 'lucide-react';
-import { matchGazetteer, PAKISTAN_GAZETTEER } from '../data/trekkingRoutes';
-import { getTourBySlugOrId } from '../data/toursData';
 
 interface WeatherWidgetProps {
   tourId: string;
@@ -80,182 +78,373 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
   const [forecast, setForecast] = useState<DailyForecast[]>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
-  const effectiveTour = useMemo(() => {
-    return tour || getTourBySlugOrId(tourId) || getTourBySlugOrId(tourSlug) || {
-      id: tourId,
-      slug: tourSlug,
-      title: tourTitle,
-      location: tourLocation,
-      maxAltitude,
-      itinerary
-    };
-  }, [tour, tourId, tourSlug, tourTitle, tourLocation, maxAltitude, itinerary]);
+  // Define location profiles dynamically tailored to the specific tour
+  const locations: WeatherLocation[] = (() => {
+    const s = `${tourId} ${tourSlug} ${tourTitle} ${tourLocation}`.toLowerCase();
 
-  // Define location profiles dynamically tailored to the specific tour & itinerary
-  const locations: WeatherLocation[] = useMemo(() => {
-    const locList: WeatherLocation[] = [];
-    const addedNames = new Set<string>();
-
-    const addLocation = (loc: WeatherLocation) => {
-      const key = loc.name.toLowerCase().trim();
-      if (!addedNames.has(key) && locList.length < 4) {
-        addedNames.add(key);
-        locList.push(loc);
-      }
-    };
-
-    const itin = effectiveTour.itinerary || [];
-
-    // 1. High destination / Summit / Basecamp from itinerary
-    const highStage = itin.find((d: any) => {
-      const t = `${d.title} ${d.description}`.toLowerCase();
-      return (
-        t.includes('summit') ||
-        t.includes('base camp') ||
-        t.includes('bc') ||
-        t.includes('high camp') ||
-        t.includes('pass') ||
-        t.includes('concordia') ||
-        t.includes('plateau') ||
-        t.includes('lake') ||
-        t.includes('meadow')
-      );
-    });
-
-    if (highStage) {
-      const matched = matchGazetteer(`${highStage.title} ${highStage.description}`);
-      if (matched) {
-        let alt = matched.altitude;
-        if (highStage.altitude) {
-          const num = parseInt(highStage.altitude.replace(/[^0-9]/g, ''), 10);
-          if (!isNaN(num) && num > 0) alt = num;
-        }
-        addLocation({
-          id: 'primary-destination',
-          name: matched.name,
-          type: matched.type === 'summit' ? 'summit' : matched.type === 'pass' ? 'plateau' : 'basecamp',
-          altitudeM: alt,
-          lat: matched.lat,
-          lng: matched.lng,
-          description: highStage.title.replace(/^Day\s*\d+[:\-.]\s*/i, '')
-        });
-      }
-    }
-
-    // 2. Scan title & location directly for matching mountain or region
-    const matchedFromTitle = matchGazetteer(`${effectiveTour.title} ${effectiveTour.location}`);
-    if (matchedFromTitle) {
-      addLocation({
-        id: 'title-location',
-        name: matchedFromTitle.name,
-        type: matchedFromTitle.type === 'summit' ? 'summit' : 'basecamp',
-        altitudeM: matchedFromTitle.altitude,
-        lat: matchedFromTitle.lat,
-        lng: matchedFromTitle.lng,
-        description: matchedFromTitle.terrain || 'Expedition Destination'
-      });
-    }
-
-    // 3. Middle camp / Trailhead from itinerary
-    const midStage = itin.find((d: any, idx: number) => {
-      if (idx === 0 || idx === itin.length - 1) return false;
-      const t = `${d.title} ${d.description}`.toLowerCase();
-      return t.includes('camp') || t.includes('trailhead') || t.includes('village') || t.includes('glacier');
-    });
-    if (midStage) {
-      const matchedMid = matchGazetteer(`${midStage.title} ${midStage.description}`);
-      if (matchedMid) {
-        let alt = matchedMid.altitude;
-        if (midStage.altitude) {
-          const num = parseInt(midStage.altitude.replace(/[^0-9]/g, ''), 10);
-          if (!isNaN(num) && num > 0) alt = num;
-        }
-        addLocation({
-          id: 'mid-camp',
-          name: matchedMid.name,
-          type: matchedMid.type === 'glacier' || matchedMid.type === 'camp' ? 'basecamp' : 'valley',
-          altitudeM: alt,
-          lat: matchedMid.lat,
-          lng: matchedMid.lng,
-          description: midStage.title.replace(/^Day\s*\d+[:\-.]\s*/i, '')
-        });
-      }
-    }
-
-    // 4. Staging gateway valley / city from day 1 or tour location
-    const startStage = itin[0];
-    if (startStage) {
-      const matchedStart = matchGazetteer(`${startStage.title} ${startStage.description}`);
-      if (matchedStart) {
-        addLocation({
-          id: 'gateway-city',
-          name: matchedStart.name,
+    // 1. Diran Peak Expedition
+    if (s.includes('diran')) {
+      return [
+        {
+          id: 'diran-bc',
+          name: 'Tagaphari / Diran Base Camp',
+          type: 'basecamp',
+          altitudeM: 3650,
+          lat: 36.1600,
+          lng: 74.6200,
+          description: 'Minapin glacier alpine moraine'
+        },
+        {
+          id: 'minapin-valley',
+          name: 'Minapin / Nagar Gateway',
           type: 'valley',
-          altitudeM: matchedStart.altitude,
-          lat: matchedStart.lat,
-          lng: matchedStart.lng,
-          description: 'Expedition Staging Gateway'
-        });
-      }
+          altitudeM: 2000,
+          lat: 36.2550,
+          lng: 74.5360,
+          description: 'Expedition launch village'
+        }
+      ];
     }
 
-    // 5. Regional contextual defaults based on tour region
-    const locText = `${effectiveTour.location || ''} ${effectiveTour.title || ''}`.toLowerCase();
-    if (locText.includes('skardu') || locText.includes('baltistan') || locText.includes('k2') || locText.includes('shigar') || locText.includes('broad') || locText.includes('gasherbrum') || locText.includes('pastore')) {
-      addLocation({
-        id: 'skardu-valley',
-        name: 'Skardu Gateway Basin',
-        type: 'valley',
-        altitudeM: 2228,
-        lat: 35.2971,
-        lng: 75.6333,
-        description: 'Baltistan expedition launch valley'
-      });
-    } else if (locText.includes('hunza') || locText.includes('nagar') || locText.includes('diran') || locText.includes('rakaposhi') || locText.includes('passu')) {
-      addLocation({
-        id: 'karimabad-valley',
-        name: 'Karimabad / Central Hunza',
-        type: 'valley',
-        altitudeM: 2438,
-        lat: 36.3275,
-        lng: 74.6631,
-        description: 'Central Hunza valley oasis'
-      });
-    } else if (locText.includes('fairy') || locText.includes('nanga') || locText.includes('diamer') || locText.includes('chilas')) {
-      addLocation({
-        id: 'raikot-chilas',
-        name: 'Raikot / Chilas Indus Basin',
-        type: 'valley',
-        altitudeM: 1265,
-        lat: 35.4200,
-        lng: 74.1000,
-        description: 'Karakoram Highway staging valley'
-      });
-    } else if (locText.includes('chitral') || locText.includes('kalash') || locText.includes('hindu') || locText.includes('shandur')) {
-      addLocation({
-        id: 'chitral-valley',
-        name: 'Chitral Town & Kalash',
-        type: 'valley',
-        altitudeM: 1500,
-        lat: 35.8510,
-        lng: 71.7864,
-        description: 'Hindu Kush cultural valley'
-      });
-    } else if (locText.includes('swat') || locText.includes('kalam') || locText.includes('malam')) {
-      addLocation({
-        id: 'swat-valley',
-        name: 'Swat Valley / Kalam',
-        type: 'valley',
-        altitudeM: 1500,
-        lat: 34.7750,
-        lng: 72.3600,
-        description: 'Lush Swat River valley'
-      });
+    // 2. K2, Baltoro & Gondogoro La
+    if (s.includes('k2') || s.includes('gondogoro') || s.includes('concordia') || s.includes('baltoro')) {
+      return [
+        {
+          id: 'k2-bc',
+          name: 'K2 Base Camp & Concordia',
+          type: 'basecamp',
+          altitudeM: 5150,
+          lat: 35.8450,
+          lng: 76.5133,
+          description: 'Upper Baltoro Glacier alpine zone'
+        },
+        {
+          id: 'skardu-valley',
+          name: 'Skardu Gateway',
+          type: 'valley',
+          altitudeM: 2228,
+          lat: 35.2971,
+          lng: 75.6333,
+          description: 'Expedition launch valley & airport'
+        },
+        {
+          id: 'paiju-camp',
+          name: 'Paiju Granite Camp',
+          type: 'basecamp',
+          altitudeM: 3450,
+          lat: 35.7333,
+          lng: 76.1667,
+          description: 'Snout of Baltoro Glacier'
+        }
+      ];
     }
 
-    // Fallbacks to always have at least 2 weather perspectives
-    if (locList.length === 0) {
-      locList.push({
+    // 3. Broad Peak & Gasherbrum
+    if (s.includes('broad-peak') || s.includes('gasherbrum')) {
+      return [
+        {
+          id: 'broad-peak-bc',
+          name: 'Broad Peak / Gasherbrum Base',
+          type: 'summit',
+          altitudeM: 4960,
+          lat: 35.8083,
+          lng: 76.5667,
+          description: 'Godwin-Austen glacier high camp'
+        },
+        {
+          id: 'skardu-valley',
+          name: 'Skardu Gateway',
+          type: 'valley',
+          altitudeM: 2228,
+          lat: 35.2971,
+          lng: 75.6333,
+          description: 'Expedition launch valley'
+        }
+      ];
+    }
+
+    // 4. Fairy Meadows & Nanga Parbat
+    if (s.includes('fairy') || s.includes('nanga')) {
+      return [
+        {
+          id: 'fairy-meadows',
+          name: 'Fairy Meadows & Nanga Parbat Base',
+          type: 'basecamp',
+          altitudeM: 3300,
+          lat: 35.3850,
+          lng: 74.5820,
+          description: 'Raikot face alpine meadows'
+        },
+        {
+          id: 'raikot-chilas',
+          name: 'Raikot Bridge / Chilas Gateway',
+          type: 'valley',
+          altitudeM: 1250,
+          lat: 35.4200,
+          lng: 74.1000,
+          description: 'Karakoram Highway staging point'
+        }
+      ];
+    }
+
+    // 5. Hunza Valley, Gojal & Khunjerab
+    if (s.includes('hunza') || s.includes('karimabad') || s.includes('attabad') || s.includes('passu')) {
+      return [
+        {
+          id: 'karimabad-hunza',
+          name: 'Karimabad & Altit Fort',
+          type: 'valley',
+          altitudeM: 2438,
+          lat: 36.3275,
+          lng: 74.6631,
+          description: 'Central Hunza historic valley'
+        },
+        {
+          id: 'passu-cones',
+          name: 'Passu Cones & Attabad Fjord',
+          type: 'basecamp',
+          altitudeM: 2559,
+          lat: 36.4670,
+          lng: 74.8830,
+          description: 'Upper Hunza glacier region'
+        },
+        {
+          id: 'khunjerab-pass',
+          name: 'Khunjerab Pass (Pak-China Border)',
+          type: 'plateau',
+          altitudeM: 4693,
+          lat: 36.8500,
+          lng: 75.4300,
+          description: 'World\'s highest paved alpine border'
+        }
+      ];
+    }
+
+    // 6. Skardu Valley, Shigar, Khaplu
+    if (s.includes('skardu') || s.includes('shigar') || s.includes('khaplu')) {
+      return [
+        {
+          id: 'skardu-valley',
+          name: 'Skardu Valley & Shangrila Lake',
+          type: 'valley',
+          altitudeM: 2228,
+          lat: 35.2971,
+          lng: 75.6333,
+          description: 'Lower Kachura lake & Cold Desert'
+        },
+        {
+          id: 'shigar-khaplu',
+          name: 'Shigar & Khaplu Royal Forts',
+          type: 'valley',
+          altitudeM: 2450,
+          lat: 35.4244,
+          lng: 75.7369,
+          description: 'Baltistan heritage oasis'
+        }
+      ];
+    }
+
+    // 7. Deosai National Park
+    if (s.includes('deosai')) {
+      return [
+        {
+          id: 'deosai-plateau',
+          name: 'Deosai National Plateau',
+          type: 'plateau',
+          altitudeM: 4114,
+          lat: 35.0300,
+          lng: 75.4600,
+          description: 'Land of Giants high plateau'
+        },
+        {
+          id: 'skardu-valley',
+          name: 'Skardu Valley Gateway',
+          type: 'valley',
+          altitudeM: 2228,
+          lat: 35.2971,
+          lng: 75.6333,
+          description: 'Gateway valley & supply base'
+        }
+      ];
+    }
+
+    // 8. Spantik & Khosar Gang
+    if (s.includes('spantik') || s.includes('khosar')) {
+      return [
+        {
+          id: 'spantik-khosar-bc',
+          name: 'Spantik / Khosar Gang High Camp',
+          type: 'basecamp',
+          altitudeM: 4300,
+          lat: 36.0100,
+          lng: 75.0500,
+          description: 'Chogo Lungma / Shigar high alpine zone'
+        },
+        {
+          id: 'shigar-gateway',
+          name: 'Shigar Valley Gateway',
+          type: 'valley',
+          altitudeM: 2280,
+          lat: 35.4244,
+          lng: 75.7369,
+          description: 'Expedition approach valley'
+        }
+      ];
+    }
+
+    // 9. Laila Peak & Hushe
+    if (s.includes('laila') || s.includes('hushe')) {
+      return [
+        {
+          id: 'laila-bc',
+          name: 'Laila Peak Base Camp',
+          type: 'basecamp',
+          altitudeM: 4200,
+          lat: 35.5100,
+          lng: 76.4200,
+          description: 'Gondogoro glacier needle spire basin'
+        },
+        {
+          id: 'hushe-valley',
+          name: 'Hushe Valley Gateway',
+          type: 'valley',
+          altitudeM: 3050,
+          lat: 35.4333,
+          lng: 76.3500,
+          description: 'Climbers trailhead village'
+        }
+      ];
+    }
+
+    // 10. Nangma Valley & Amin Brakk
+    if (s.includes('nangma') || s.includes('amin-brak')) {
+      return [
+        {
+          id: 'nangma-bc',
+          name: 'Nangma Valley Granite Cirque',
+          type: 'basecamp',
+          altitudeM: 4150,
+          lat: 35.3950,
+          lng: 76.3600,
+          description: 'Amin Brakk big wall base camp'
+        },
+        {
+          id: 'khaplu-gateway',
+          name: 'Khaplu Palace Gateway',
+          type: 'valley',
+          altitudeM: 2600,
+          lat: 35.1556,
+          lng: 76.3378,
+          description: 'Baltistan royal orchard valley'
+        }
+      ];
+    }
+
+    // 11. Chitral, Kalash & Hindu Kush / Koyo Zom
+    if (s.includes('chitral') || s.includes('kalash') || s.includes('shandur') || s.includes('koyo')) {
+      return [
+        {
+          id: 'shandur-pass',
+          name: 'Shandur Pass High Plains',
+          type: 'plateau',
+          altitudeM: 3720,
+          lat: 36.0833,
+          lng: 72.5333,
+          description: 'Roof of the world polo grounds'
+        },
+        {
+          id: 'chitral-town',
+          name: 'Chitral Town & Kalash Valleys',
+          type: 'valley',
+          altitudeM: 1500,
+          lat: 35.8510,
+          lng: 71.7864,
+          description: 'Hindu Kush cultural valley'
+        }
+      ];
+    }
+
+    // 12. Swat Valley & Malam Jabba
+    if (s.includes('swat') || s.includes('malam') || s.includes('kalam')) {
+      return [
+        {
+          id: 'malam-jabba',
+          name: 'Malam Jabba Mountain Ridge',
+          type: 'basecamp',
+          altitudeM: 2804,
+          lat: 34.7990,
+          lng: 72.5720,
+          description: 'Pine forested alpine ridge'
+        },
+        {
+          id: 'swat-mingora',
+          name: 'Kalam & Mingora Valley',
+          type: 'valley',
+          altitudeM: 1500,
+          lat: 34.7750,
+          lng: 72.3600,
+          description: 'Swat River lush basin'
+        }
+      ];
+    }
+
+    // 13. Lahore Cultural Heritage
+    if (s.includes('lahore')) {
+      return [
+        {
+          id: 'lahore-city',
+          name: 'Lahore Walled City & Badshahi',
+          type: 'valley',
+          altitudeM: 217,
+          lat: 31.5880,
+          lng: 74.3120,
+          description: 'Mughal historical heartland'
+        }
+      ];
+    }
+
+    // 14. Peshawar Silk Route
+    if (s.includes('peshawar')) {
+      return [
+        {
+          id: 'peshawar-city',
+          name: 'Peshawar Old City & Khyber Gate',
+          type: 'valley',
+          altitudeM: 359,
+          lat: 34.0151,
+          lng: 71.5249,
+          description: 'Historic Silk Route frontier'
+        }
+      ];
+    }
+
+    // 15. South Pakistan & Indus Civilization
+    if (s.includes('south') || s.includes('karachi') || s.includes('mohenjo') || s.includes('indus')) {
+      return [
+        {
+          id: 'mohenjo-daro',
+          name: 'Mohenjo-Daro Archaeological Plain',
+          type: 'valley',
+          altitudeM: 52,
+          lat: 27.3292,
+          lng: 68.1367,
+          description: '5,000-year-old Bronze Age site'
+        },
+        {
+          id: 'karachi-coast',
+          name: 'Karachi Arabian Coastal Zone',
+          type: 'valley',
+          altitudeM: 10,
+          lat: 24.8607,
+          lng: 67.0011,
+          description: 'Arabian Sea coastal gateway'
+        }
+      ];
+    }
+
+    // 16. Gilgit Baltistan General
+    return [
+      {
         id: 'gilgit-valley',
         name: 'Gilgit Gateway Basin',
         type: 'valley',
@@ -263,31 +452,27 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
         lat: 35.9221,
         lng: 74.3087,
         description: 'Northern Pakistan junction valley'
-      });
-    }
-    if (locList.length === 1) {
-      locList.push({
-        id: 'islamabad-gateway',
-        name: 'Islamabad Federal Gateway',
+      },
+      {
+        id: 'skardu-base',
+        name: 'Skardu Mountain Gateway',
         type: 'valley',
-        altitudeM: 540,
-        lat: 33.6844,
-        lng: 73.0479,
-        description: 'Expedition launch & briefing hub'
-      });
-    }
+        altitudeM: 2228,
+        lat: 35.2971,
+        lng: 75.6333,
+        description: 'Karakoram departure base'
+      }
+    ];
+  })();
 
-    return locList;
-  }, [effectiveTour]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>(locations[0].id);
 
-  const [selectedLocationId, setSelectedLocationId] = useState<string>(locations[0]?.id || 'primary');
-
-  // Automatically reset active weather location when user switches tours or locations change
+  // Automatically reset active weather location when user switches tours
   useEffect(() => {
     if (locations && locations.length > 0) {
       setSelectedLocationId(locations[0].id);
     }
-  }, [locations]);
+  }, [tourId, tourSlug]);
 
   const activeLocation = locations.find((l) => l.id === selectedLocationId) || locations[0];
 
@@ -445,7 +630,8 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <span>{loc.name.length > 24 ? loc.name.substring(0, 22) + '...' : loc.name}</span>
+                  <Mountain className={`w-3.5 h-3.5 ${isActive ? 'text-[#5191fa]' : 'text-slate-400'}`} />
+                  <span>{loc.name.split(' ')[0]}</span>
                   <span className="text-[10px] opacity-75 font-mono">({loc.altitudeM}m)</span>
                 </button>
               );

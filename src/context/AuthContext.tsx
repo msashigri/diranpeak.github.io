@@ -210,7 +210,7 @@ interface AuthContextType {
   login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (data: { firstName: string; last_name?: string; lastName?: string; email: string; phone?: string; password: string }) => Promise<{ success: boolean; error?: string }>;
-  resetPassword: (email: string) => Promise<{ success: boolean; error?: string; message?: string; tempPassword?: string }>;
+  resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   createBooking: (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>) => Booking;
   addContactInquiry: (inquiry: Omit<ContactInquiry, 'id' | 'date' | 'status'>) => ContactInquiry;
@@ -234,7 +234,7 @@ interface AuthContextType {
   deleteUserAccount: () => Promise<{ success: boolean; error?: string }>;
   deleteUserBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
   updateBookingDetails: (id: string, updates: Partial<Booking>) => Promise<{ success: boolean; error?: string }>;
-  adminResetUserPassword: (userEmail: string, directPassword?: string, userId?: string, userRole?: string) => Promise<{ success: boolean; message?: string; tempPassword?: string; error?: string }>;
+  adminResetUserPassword: (userEmail: string, directPassword?: string, userId?: string) => Promise<{ success: boolean; message?: string; tempPassword?: string; error?: string }>;
   adminDirectChangePassword: (userId: string, userEmail: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   adminUpdateUserProfile: (targetUserId: string, updates: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   fetchAllUsersForAdmin: () => Promise<any[]>;
@@ -911,47 +911,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!trimmedEmail || !pass) {
       return { success: false, error: 'The email and password fields are required.' };
     }
-
-    const isTargetAdminInput =
-      trimmedEmail.toLowerCase() === 'admin' ||
-      trimmedEmail.toLowerCase() === 'dpa-admin' ||
-      trimmedEmail.toLowerCase() === adminCredentials.loginId.toLowerCase();
-
-    if (!trimmedEmail.includes('@') && !isTargetAdminInput) {
+    if (!trimmedEmail.includes('@')) {
       return { success: false, error: 'The email address format is invalid.' };
     }
     if (pass.length < 6) {
       return { success: false, error: 'The password must be at least 6 characters.' };
-    }
-
-    // Direct check for Master Admin credentials
-    const isMasterAdminEmail =
-      isTargetAdminInput ||
-      trimmedEmail.toLowerCase() === adminCredentials.email.toLowerCase() ||
-      trimmedEmail.toLowerCase() === 'admin@diranpeakadventure.com' ||
-      trimmedEmail.toLowerCase() === 'admin@diranpeak.com' ||
-      trimmedEmail.toLowerCase() === 'msa78677@gmail.com';
-
-    const isMasterAdminPassword =
-      pass === adminCredentials.password ||
-      pass === 'admin123' ||
-      pass === 'dpa2027!';
-
-    if (isMasterAdminEmail && isMasterAdminPassword) {
-      const adminUser: User = {
-        id: ADMIN_USER_ID,
-        firstName: 'Admin',
-        lastName: 'Director',
-        email: trimmedEmail.includes('@') ? trimmedEmail.toLowerCase() : adminCredentials.email,
-        role: 'admin',
-        phone: '+92 345 6412992',
-        joinedDate: 'March 2027',
-        favorites: []
-      };
-      setUser(adminUser);
-      localStorage.setItem('dpa_user', JSON.stringify(adminUser));
-      closeModals();
-      return { success: true };
     }
 
     try {
@@ -996,10 +960,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       // Check if admin user is logging in with updated admin credentials
       if (
-        (isTargetAdminInput ||
-         trimmedEmail.toLowerCase() === adminCredentials.email.toLowerCase() ||
+        (trimmedEmail.toLowerCase() === adminCredentials.email.toLowerCase() ||
          trimmedEmail.toLowerCase() === 'msa78677@gmail.com' ||
-         trimmedEmail.toLowerCase() === 'admin@diranpeakadventure.com' ||
          trimmedEmail.toLowerCase() === 'admin@diranpeak.com') &&
         (pass === adminCredentials.password || pass === 'admin123' || pass === 'dpa2027!')
       ) {
@@ -1007,7 +969,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: ADMIN_USER_ID,
           firstName: 'Admin',
           lastName: 'Director',
-          email: trimmedEmail.includes('@') ? trimmedEmail.toLowerCase() : adminCredentials.email,
+          email: trimmedEmail.toLowerCase(),
           role: 'admin',
           phone: '+92 345 6412992',
           joinedDate: 'March 2027',
@@ -1189,51 +1151,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const resetPassword = async (
-    emailOrLoginId: string
-  ): Promise<{ success: boolean; error?: string; message?: string; tempPassword?: string }> => {
-    const trimmed = (emailOrLoginId || '').trim();
-    if (!trimmed) {
-      return { success: false, error: 'Please enter a valid email address or Admin Login ID.' };
-    }
-
-    const isTargetAdmin =
-      trimmed.toLowerCase() === 'admin' ||
-      trimmed.toLowerCase() === 'dpa-admin' ||
-      trimmed.toLowerCase() === adminCredentials.loginId.toLowerCase() ||
-      trimmed.toLowerCase() === adminCredentials.email.toLowerCase() ||
-      trimmed.toLowerCase() === 'admin@diranpeakadventure.com' ||
-      trimmed.toLowerCase() === 'admin@diranpeak.com' ||
-      trimmed.toLowerCase() === 'msa78677@gmail.com';
-
-    if (isTargetAdmin) {
-      const adminEmail = trimmed.includes('@') ? trimmed : (adminCredentials.email || 'admin@diranpeakadventure.com');
-      const resetRes = await adminResetUserPassword(adminEmail, undefined, ADMIN_USER_ID, 'admin');
-      return {
-        success: true,
-        message: `Admin master password successfully reset! New password: "${resetRes.tempPassword}".`,
-        tempPassword: resetRes.tempPassword
-      };
-    }
-
-    if (!trimmed.includes('@')) {
+  const resetPassword = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    const trimmed = email.trim();
+    if (!trimmed || !trimmed.includes('@')) {
       return { success: false, error: 'Please enter a valid email address.' };
     }
-
     try {
       await sendPasswordResetEmail(auth, trimmed);
-      return { success: true, message: `Password reset email dispatched to ${trimmed}.` };
-    } catch (err: any) {
-      console.warn('Firebase sendPasswordResetEmail notice:', err);
-      // Fallback: reset via Firestore user account & registry
-      const localReset = await adminResetUserPassword(trimmed);
-      if (localReset.success) {
-        return {
-          success: true,
-          message: `Temporary password generated for account: "${localReset.tempPassword}".`,
-          tempPassword: localReset.tempPassword
-        };
-      }
+      return { success: true };
+    } catch (err) {
       return { success: false, error: formatAuthError(err) };
     }
   };
@@ -1316,12 +1242,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     setAdminCredentials(updated);
-    try {
-      localStorage.setItem('dpa_admin_credentials', JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
-
     if (adminAuth) {
       setAdminAuth(prev => prev ? {
         ...prev,
@@ -1334,27 +1254,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       ...prev,
       notificationEmail: updated.email
     }));
-
-    // Persist to Firestore system configuration & users
-    try {
-      setDoc(doc(db, 'system', 'admin_credentials'), updated, { merge: true }).catch(() => {});
-      setDoc(doc(db, 'users', 'admin'), {
-        id: 'admin',
-        email: updated.email,
-        role: 'admin',
-        tempPassword: updated.password,
-        updatedAt: new Date().toISOString()
-      }, { merge: true }).catch(() => {});
-      setDoc(doc(db, 'users', ADMIN_USER_ID), {
-        id: ADMIN_USER_ID,
-        email: updated.email,
-        role: 'admin',
-        tempPassword: updated.password,
-        updatedAt: new Date().toISOString()
-      }, { merge: true }).catch(() => {});
-    } catch {
-      // ignore
-    }
 
     return { success: true };
   };
@@ -1758,12 +1657,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const adminResetUserPassword = async (
     userEmail: string,
     directPassword?: string,
-    userId?: string,
-    userRole?: string
+    userId?: string
   ): Promise<{ success: boolean; message?: string; tempPassword?: string; error?: string }> => {
     const trimmed = (userEmail || '').trim();
-    if (!trimmed) {
-      return { success: false, error: 'A valid user email address or login ID is required.' };
+    if (!trimmed || !trimmed.includes('@')) {
+      return { success: false, error: 'A valid user email address is required.' };
     }
 
     const assignedPassword = directPassword && directPassword.trim().length >= 6
@@ -1771,21 +1669,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       : 'Pass@' + Math.floor(100000 + Math.random() * 900000);
 
     const isTargetAdmin =
-      userRole === 'admin' ||
-      Boolean(userId && (userId === ADMIN_USER_ID || userId === 'admin')) ||
+      Boolean(userId && userId === ADMIN_USER_ID) ||
       trimmed.toLowerCase() === adminCredentials.email.toLowerCase() ||
-      trimmed.toLowerCase() === adminCredentials.loginId.toLowerCase() ||
       trimmed.toLowerCase() === 'admin@diranpeak.com' ||
       trimmed.toLowerCase() === 'admin@diranpeakadventure.com' ||
       trimmed.toLowerCase() === 'msa78677@gmail.com' ||
-      trimmed.toLowerCase() === 'admin' ||
-      trimmed.toLowerCase() === 'dpa-admin';
+      trimmed.toLowerCase() === 'admin';
 
     // If resetting the Admin account, update adminCredentials state and persistence immediately
     if (isTargetAdmin) {
       const updatedCreds = {
-        loginId: adminCredentials.loginId || 'admin',
-        email: trimmed.includes('@') ? trimmed.toLowerCase() : adminCredentials.email,
+        loginId: adminCredentials.loginId || 'ADMIN',
+        email: trimmed.toLowerCase(),
         password: assignedPassword
       };
       setAdminCredentials(updatedCreds);
@@ -1794,21 +1689,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch {
         // ignore
       }
-      setDoc(doc(db, 'system', 'admin_credentials'), updatedCreds, { merge: true }).catch(() => {});
-      setDoc(doc(db, 'users', 'admin'), {
-        id: 'admin',
-        email: updatedCreds.email,
-        role: 'admin',
-        tempPassword: assignedPassword,
-        updatedAt: new Date().toISOString()
-      }, { merge: true }).catch(() => {});
-      setDoc(doc(db, 'users', ADMIN_USER_ID), {
-        id: ADMIN_USER_ID,
-        email: updatedCreds.email,
-        role: 'admin',
-        tempPassword: assignedPassword,
-        updatedAt: new Date().toISOString()
-      }, { merge: true }).catch(() => {});
     }
 
     // Persist to quick credentials store for instant traveler login
