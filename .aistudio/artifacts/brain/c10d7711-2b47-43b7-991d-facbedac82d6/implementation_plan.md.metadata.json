@@ -1,0 +1,6 @@
+{
+  "summary": "Comprehensive implementation plan for:\n1. Dynamic 5-day weather forecast component on every tour detail page powered by Open-Meteo free API with Karakoram & Himalayan high-altitude coordinates (Skardu, Gilgit, Askole, Hunza, Fairy Meadows, etc.).\n2. Seamless guest booking, inquiry, and instant reservation persistence to Firebase Firestore with guest tagging and full real-time visibility in the Admin Panel.\n3. Official downloadable PDF booking voucher generator with QR verification code, Government of Pakistan DTS Lic. #1842 certification, and traveler expedition paperwork.",
+  "updatedAt": "2026-10-15T16:28:46.827656644Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

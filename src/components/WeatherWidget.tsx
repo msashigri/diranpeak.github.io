@@ -119,6 +119,15 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
           description: 'Upper Baltoro Glacier alpine zone'
         },
         {
+          id: 'askole-trailhead',
+          name: 'Askole Trailhead Village',
+          type: 'valley',
+          altitudeM: 3048,
+          lat: 35.6811,
+          lng: 75.8197,
+          description: 'Final roadhead village before Baltoro glacier'
+        },
+        {
           id: 'skardu-valley',
           name: 'Skardu Gateway',
           type: 'valley',
@@ -504,7 +513,7 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
       }
 
       if (data.daily && data.daily.time) {
-        const dailyList: DailyForecast[] = data.daily.time.slice(0, 4).map((d: string, i: number) => ({
+        const dailyList: DailyForecast[] = data.daily.time.slice(0, 5).map((d: string, i: number) => ({
           date: d,
           weatherCode: data.daily.weather_code[i],
           tempMax: Math.round(data.daily.temperature_2m_max[i]),
@@ -534,7 +543,9 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
       setForecast([
         { date: 'Today', weatherCode: isHigh ? 71 : 1, tempMax: baseTemp + 4, tempMin: baseTemp - 5, precipitationProb: 15 },
         { date: 'Tomorrow', weatherCode: 2, tempMax: baseTemp + 5, tempMin: baseTemp - 4, precipitationProb: 10 },
-        { date: 'Day 3', weatherCode: 0, tempMax: baseTemp + 6, tempMin: baseTemp - 3, precipitationProb: 5 }
+        { date: 'Day 3', weatherCode: 0, tempMax: baseTemp + 6, tempMin: baseTemp - 3, precipitationProb: 5 },
+        { date: 'Day 4', weatherCode: 1, tempMax: baseTemp + 5, tempMin: baseTemp - 4, precipitationProb: 10 },
+        { date: 'Day 5', weatherCode: isHigh ? 71 : 2, tempMax: baseTemp + 3, tempMin: baseTemp - 6, precipitationProb: 20 }
       ]);
     } finally {
       setLoading(false);
@@ -782,33 +793,47 @@ export const WeatherWidget: React.FC<WeatherWidgetProps> = ({
             </div>
           </div>
 
-          {/* 4-Day Forecast Cards */}
+          {/* 5-Day Regional Mountain Forecast Cards */}
           <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4">
             <div className="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center justify-between">
-              <span>Alpine Multi-Day Forecast</span>
+              <span className="flex items-center gap-1.5 text-[#1a2b48]">
+                <span>5-Day Regional Mountain Forecast</span>
+              </span>
               <span className="text-[10px] text-slate-400 font-normal">Open-Meteo High-Resolution Alpine Modeling</span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              {forecast.map((f, idx) => {
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {forecast.slice(0, 5).map((f, idx) => {
                 const dayMeta = getWeatherInfo(f.weatherCode);
                 const DayIcon = dayMeta.icon;
-                const formattedDay = idx === 0 ? 'Today' : idx === 1 ? 'Tomorrow' : new Date(f.date).toLocaleDateString('en-US', { weekday: 'short' });
+                const dateObj = new Date(f.date);
+                const formattedDay = idx === 0 ? 'Today' : idx === 1 ? 'Tomorrow' : dateObj.toLocaleDateString('en-US', { weekday: 'short' });
+                const formattedDate = !isNaN(dateObj.getTime()) ? dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
 
                 return (
                   <div
                     key={f.date || idx}
-                    className="bg-white rounded-xl p-3 border border-slate-200/60 text-center flex flex-col items-center justify-between shadow-2xs"
+                    className="bg-white rounded-xl p-2.5 sm:p-3 border border-slate-200/70 text-center flex flex-col items-center justify-between shadow-2xs hover:border-[#5191fa] transition-all"
                   >
-                    <span className="text-[11px] font-bold text-[#1a2b48]">{formattedDay}</span>
-                    <DayIcon className={`w-6 h-6 my-2 ${dayMeta.color}`} />
-                    <span className="text-[10px] text-slate-500 font-medium truncate w-full" title={dayMeta.label}>
+                    <div>
+                      <span className="block text-[11px] font-extrabold text-[#1a2b48]">{formattedDay}</span>
+                      {formattedDate && (
+                        <span className="block text-[9px] text-slate-400 font-medium">{formattedDate}</span>
+                      )}
+                    </div>
+                    <DayIcon className={`w-6 h-6 my-1.5 ${dayMeta.color}`} />
+                    <span className="text-[10px] text-slate-600 font-semibold truncate w-full" title={dayMeta.label}>
                       {dayMeta.label.split('/')[0]}
                     </span>
-                    <div className="mt-1 text-xs font-extrabold text-[#1a2b48] flex items-center gap-1 font-mono">
+                    <div className="mt-1.5 text-xs font-black text-[#1a2b48] flex items-center justify-center gap-1 font-mono">
                       <span>{convertTemp(f.tempMax)}°</span>
                       <span className="text-[10px] text-slate-400 font-normal">{convertTemp(f.tempMin)}°</span>
                     </div>
+                    {f.precipitationProb !== undefined && (
+                      <span className="text-[9px] text-blue-500 font-semibold mt-1">
+                        💧 {f.precipitationProb}%
+                      </span>
+                    )}
                   </div>
                 );
               })}

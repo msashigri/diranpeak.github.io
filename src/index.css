@@ -1,27 +1,11 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
-/* Prevent Leaflet elements from bleeding above sticky navigation headers or dropdown menus */
+/* Leaflet container isolation guarantees map elements never bleed above sticky navigation */
 .leaflet-container {
   isolation: isolate !important;
+  position: relative !important;
   z-index: 1 !important;
-}
-
-.leaflet-pane,
-.leaflet-tile-pane,
-.leaflet-overlay-pane,
-.leaflet-shadow-pane,
-.leaflet-marker-pane,
-.leaflet-tooltip-pane,
-.leaflet-popup-pane {
-  z-index: 1 !important;
-}
-
-.leaflet-top,
-.leaflet-bottom,
-.leaflet-control,
-.leaflet-bar {
-  z-index: 2 !important;
 }
 
 @layer base {

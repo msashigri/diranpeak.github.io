@@ -24,6 +24,7 @@ import { auth, db, googleProvider } from '../firebase/config';
 import { handleFirestoreError, OperationType } from '../firebase/errorHandler';
 import { initLanguageTranslator, translateWholeWebsite, getLanguageByCodeOrName } from '../utils/translator';
 import { TOURS_DATA } from '../data/toursData';
+import { downloadBookingVoucherPDF } from '../utils/pdfVoucherGenerator';
 
 export const ADMIN_USER_ID = '83oYhWqa5ONqFdaJUVs26BnhEZl1';
 
@@ -77,10 +78,13 @@ export interface Booking {
   customerEmail: string;
   customerPhone: string;
   specialRequests?: string;
+  isGuest?: boolean;
+  paymentStatus?: string;
 }
 
 export interface ContactInquiry {
   id: string;
+  userId?: string;
   name: string;
   email: string;
   phone: string;
@@ -88,6 +92,9 @@ export interface ContactInquiry {
   message: string;
   date: string;
   status: 'New' | 'Contacted' | 'Closed';
+  tourId?: string;
+  tourTitle?: string;
+  isGuest?: boolean;
 }
 
 export interface PartnerRequest {
@@ -207,7 +214,7 @@ interface AuthContextType {
   openRegister: () => void;
   openForgot: () => void;
   closeModals: () => void;
-  login: (email: string, pass: string) => Promise<{ success: boolean; error?: string }>;
+  login: (emailOrUsername: string, pass: string) => Promise<{ success: boolean; isAdmin?: boolean; error?: string }>;
   loginWithGoogle: () => Promise<{ success: boolean; error?: string }>;
   register: (data: { firstName: string; last_name?: string; lastName?: string; email: string; phone?: string; password: string }) => Promise<{ success: boolean; error?: string }>;
   resetPassword: (email: string) => Promise<{ success: boolean; error?: string }>;
@@ -249,6 +256,7 @@ interface AuthContextType {
   logActivity: (activity: Omit<TravelerActivity, 'id' | 'timestamp'>) => Promise<void>;
   fetchAllActivitiesForAdmin: () => Promise<TravelerActivity[]>;
   formatPrice: (usdPrice: number) => string;
+  downloadVoucher: (booking: Booking) => void;
   dismissLatestBooking: () => void;
   exportBookingsToCsv: () => void;
   exportContactsToCsv: () => void;
@@ -310,7 +318,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_guest_bookings');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [contactInquiries, setContactInquiries] = useState<ContactInquiry[]>(() => {
     try {
@@ -565,40 +580,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  // Helper to determine if current user has admin privileges
+  // Helper to determine if current session has admin privileges
   const isCurrentAdmin = Boolean(
-    (user && (user.id === ADMIN_USER_ID || user.email?.toLowerCase() === 'msa78677@gmail.com' || user.role === 'admin')) ||
-    (auth.currentUser && (auth.currentUser.uid === ADMIN_USER_ID || auth.currentUser.email?.toLowerCase() === 'msa78677@gmail.com'))
+    adminAuth?.isAuthenticated ||
+    (user && (user.id === ADMIN_USER_ID || user.email?.toLowerCase() === 'msa78677@gmail.com' || user.email?.toLowerCase() === 'admin@diranpeak.com' || user.role === 'admin')) ||
+    (auth.currentUser && (auth.currentUser.uid === ADMIN_USER_ID || auth.currentUser.email?.toLowerCase() === 'msa78677@gmail.com' || auth.currentUser.email?.toLowerCase() === 'admin@diranpeak.com'))
   );
 
-  // Real-time Firestore Bookings synchronization
+  // Real-time Firestore Bookings synchronization (Admin gets ALL bookings; logged-in travelers get own; guests retain local reservations)
   useEffect(() => {
-    if (!user && !auth.currentUser) {
-      setBookings([]);
-      return;
-    }
-
     try {
       const currentUid = user?.id || auth.currentUser?.uid;
       const bookingsCol = collection(db, 'bookings');
-      const q = isCurrentAdmin
-        ? bookingsCol
-        : (currentUid ? query(bookingsCol, where('userId', '==', currentUid)) : null);
 
-      if (!q) return;
-
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const firestoreBookings = snapshot.docs.map(docSnap => docSnap.data() as Booking);
-          setBookings(firestoreBookings);
-        },
-        (error) => {
-          handleFirestoreError(error, OperationType.GET, 'bookings');
+      if (isCurrentAdmin) {
+        // Admin: listen to ALL bookings from Firestore (including guest bookings)
+        const unsubscribe = onSnapshot(
+          bookingsCol,
+          (snapshot) => {
+            const firestoreBookings = snapshot.docs.map(docSnap => docSnap.data() as Booking);
+            setBookings(firestoreBookings);
+          },
+          (error) => {
+            handleFirestoreError(error, OperationType.GET, 'bookings');
+          }
+        );
+        return () => unsubscribe();
+      } else if (currentUid) {
+        // Logged-in traveler: listen to their own bookings
+        const q = query(bookingsCol, where('userId', '==', currentUid));
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            const firestoreBookings = snapshot.docs.map(docSnap => docSnap.data() as Booking);
+            setBookings(firestoreBookings);
+          },
+          (error) => {
+            handleFirestoreError(error, OperationType.GET, 'bookings');
+          }
+        );
+        return () => unsubscribe();
+      } else {
+        // Unauthenticated guest traveler: preserve their locally stored guest bookings
+        try {
+          const stored = localStorage.getItem('dpa_guest_bookings');
+          if (stored) {
+            setBookings(JSON.parse(stored));
+          }
+        } catch {
+          // ignore
         }
-      );
-
-      return () => unsubscribe();
+      }
     } catch {
       // offline fallback
     }
@@ -606,30 +638,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Real-time Firestore Inquiries synchronization (Admin sees all; travelers see own)
   useEffect(() => {
-    if (!user && !auth.currentUser) {
-      return;
-    }
-
     try {
       const currentUid = user?.id || auth.currentUser?.uid;
       const inqCol = collection(db, 'inquiries');
-      const q = isCurrentAdmin
-        ? inqCol
-        : (currentUid ? query(inqCol, where('userId', '==', currentUid)) : null);
 
-      if (!q) return;
-
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const firestoreInquiries = snapshot.docs.map(docSnap => docSnap.data() as ContactInquiry);
-          setContactInquiries(firestoreInquiries);
-        },
-        (error) => {
-          handleFirestoreError(error, OperationType.GET, 'inquiries');
-        }
-      );
-      return () => unsubscribe();
+      if (isCurrentAdmin) {
+        // Admin: listen to ALL inquiries from Firestore
+        const unsubscribe = onSnapshot(
+          inqCol,
+          (snapshot) => {
+            const firestoreInquiries = snapshot.docs.map(docSnap => docSnap.data() as ContactInquiry);
+            setContactInquiries(firestoreInquiries);
+          },
+          (error) => {
+            handleFirestoreError(error, OperationType.GET, 'inquiries');
+          }
+        );
+        return () => unsubscribe();
+      } else if (currentUid) {
+        const q = query(inqCol, where('userId', '==', currentUid));
+        const unsubscribe = onSnapshot(
+          q,
+          (snapshot) => {
+            const firestoreInquiries = snapshot.docs.map(docSnap => docSnap.data() as ContactInquiry);
+            setContactInquiries(firestoreInquiries);
+          },
+          (error) => {
+            handleFirestoreError(error, OperationType.GET, 'inquiries');
+          }
+        );
+        return () => unsubscribe();
+      }
     } catch {
       // offline fallback
     }
@@ -906,142 +945,203 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return !isFav;
   };
 
-  const login = async (email: string, pass: string): Promise<{ success: boolean; error?: string }> => {
-    const trimmedEmail = email.trim();
-    if (!trimmedEmail || !pass) {
-      return { success: false, error: 'The email and password fields are required.' };
-    }
-    if (!trimmedEmail.includes('@')) {
-      return { success: false, error: 'The email address format is invalid.' };
-    }
-    if (pass.length < 6) {
-      return { success: false, error: 'The password must be at least 6 characters.' };
+  const login = async (emailOrUsername: string, pass: string): Promise<{ success: boolean; isAdmin?: boolean; error?: string }> => {
+    const trimmedInput = (emailOrUsername || '').trim();
+    const lowerInput = trimmedInput.toLowerCase();
+    const trimmedPass = (pass || '').trim();
+
+    if (!trimmedInput || !trimmedPass) {
+      return { success: false, error: 'Please enter both your email or username and password.' };
     }
 
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, trimmedEmail, pass);
+    // 1. Direct check for Administrator credentials (admin ID, username, or registered admin emails)
+    const matchesAdminId =
+      lowerInput === adminCredentials.loginId.toLowerCase() ||
+      lowerInput === 'admin' ||
+      lowerInput === 'dpa-admin';
+    const matchesAdminEmail =
+      lowerInput === adminCredentials.email.toLowerCase() ||
+      lowerInput === 'msa78677@gmail.com' ||
+      lowerInput === 'admin@diranpeak.com';
+    const isPasswordAdminValid =
+      trimmedPass === adminCredentials.password ||
+      trimmedPass === 'admin123' ||
+      trimmedPass === 'dpa2027!';
 
-      const fbUser = userCredential.user;
-      const userDocRef = doc(db, 'users', fbUser.uid);
-      try {
-        const snap = await getDoc(userDocRef);
-        if (snap.exists()) {
-          const udata = snap.data();
-          await updateDoc(userDocRef, { lastLoginAt: new Date().toISOString() });
-          if (udata.favorites && Array.isArray(udata.favorites)) {
-            setFavorites(udata.favorites);
-            localStorage.setItem('dpa_user_favorites', JSON.stringify(udata.favorites));
-          }
-        } else {
-          await setDoc(userDocRef, {
-            id: fbUser.uid,
-            firstName: fbUser.displayName?.split(' ')[0] || trimmedEmail.split('@')[0],
-            lastName: fbUser.displayName?.split(' ').slice(1).join(' ') || 'Trekker',
-            email: trimmedEmail.toLowerCase(),
-            role: 'customer',
-            createdAt: new Date().toISOString(),
-            lastLoginAt: new Date().toISOString()
-          });
-        }
-      } catch (dbErr) {
-        handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
-      }
+    if ((matchesAdminId || matchesAdminEmail) && isPasswordAdminValid) {
+      const adminUser: User = {
+        id: ADMIN_USER_ID,
+        firstName: 'Chief',
+        lastName: 'Director',
+        email: matchesAdminEmail ? lowerInput : adminCredentials.email,
+        role: 'admin',
+        phone: '+92 345 6412992',
+        joinedDate: 'March 2027',
+        favorites: []
+      };
+      const session: AdminAuth = {
+        isAuthenticated: true,
+        adminId: adminCredentials.loginId.toUpperCase(),
+        adminEmail: adminCredentials.email,
+        adminName: 'Chief Expedition Director',
+        role: 'superadmin',
+        lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      };
+      setUser(adminUser);
+      setAdminAuth(session);
+      localStorage.setItem('dpa_user', JSON.stringify(adminUser));
+      localStorage.setItem('dpa_admin_session', JSON.stringify(session));
 
       await logActivity({
-        userId: fbUser.uid,
-        userEmail: trimmedEmail.toLowerCase(),
-        userName: fbUser.displayName || trimmedEmail.split('@')[0],
+        userId: adminUser.id,
+        userEmail: adminUser.email,
+        userName: `${adminUser.firstName} ${adminUser.lastName}`,
         action: 'USER_LOGIN',
-        details: `Signed into traveler account via Firebase Auth`
-      });
+        details: `Signed into administrative portal session`
+      }).catch(() => {});
 
       closeModals();
-      return { success: true };
-    } catch (err) {
-      // Check if admin user is logging in with updated admin credentials
-      if (
-        (trimmedEmail.toLowerCase() === adminCredentials.email.toLowerCase() ||
-         trimmedEmail.toLowerCase() === 'msa78677@gmail.com' ||
-         trimmedEmail.toLowerCase() === 'admin@diranpeak.com') &&
-        (pass === adminCredentials.password || pass === 'admin123' || pass === 'dpa2027!')
-      ) {
-        const adminUser: User = {
-          id: ADMIN_USER_ID,
-          firstName: 'Admin',
-          lastName: 'Director',
-          email: trimmedEmail.toLowerCase(),
-          role: 'admin',
-          phone: '+92 345 6412992',
-          joinedDate: 'March 2027',
-          favorites: []
-        };
-        setUser(adminUser);
-        localStorage.setItem('dpa_user', JSON.stringify(adminUser));
-        closeModals();
-        return { success: true };
-      }
+      return { success: true, isAdmin: true };
+    }
 
-      // Check if admin assigned a temporary password directly in Firestore or local registry
+    // 2. Standard Email/Password login via Firebase Auth
+    if (lowerInput.includes('@')) {
       try {
-        let storedTemp: string | undefined;
+        const userCredential = await signInWithEmailAndPassword(auth, lowerInput, trimmedPass);
+        const fbUser = userCredential.user;
+        const userDocRef = doc(db, 'users', fbUser.uid);
+        let userRole: 'customer' | 'admin' | 'guide' = 'customer';
         try {
-          const storedMap = JSON.parse(localStorage.getItem('dpa_temp_passwords') || '{}');
-          storedTemp = storedMap[trimmedEmail.toLowerCase()];
+          const snap = await getDoc(userDocRef);
+          if (snap.exists()) {
+            const udata = snap.data();
+            userRole = udata.role || 'customer';
+            await updateDoc(userDocRef, { lastLoginAt: new Date().toISOString() });
+            if (udata.favorites && Array.isArray(udata.favorites)) {
+              setFavorites(udata.favorites);
+              localStorage.setItem('dpa_user_favorites', JSON.stringify(udata.favorites));
+            }
+          } else {
+            await setDoc(userDocRef, {
+              id: fbUser.uid,
+              firstName: fbUser.displayName?.split(' ')[0] || lowerInput.split('@')[0],
+              lastName: fbUser.displayName?.split(' ').slice(1).join(' ') || 'Trekker',
+              email: lowerInput,
+              role: 'customer',
+              createdAt: new Date().toISOString(),
+              lastLoginAt: new Date().toISOString()
+            });
+          }
+        } catch (dbErr) {
+          handleFirestoreError(dbErr, OperationType.WRITE, `users/${fbUser.uid}`);
+        }
+
+        const isUserAdmin = userRole === 'admin' || fbUser.uid === ADMIN_USER_ID || lowerInput === adminCredentials.email.toLowerCase() || lowerInput === 'msa78677@gmail.com';
+
+        if (isUserAdmin) {
+          const session: AdminAuth = {
+            isAuthenticated: true,
+            adminId: adminCredentials.loginId.toUpperCase(),
+            adminEmail: lowerInput,
+            adminName: fbUser.displayName || 'Chief Expedition Director',
+            role: 'superadmin',
+            lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          };
+          setAdminAuth(session);
+          localStorage.setItem('dpa_admin_session', JSON.stringify(session));
+        }
+
+        await logActivity({
+          userId: fbUser.uid,
+          userEmail: lowerInput,
+          userName: fbUser.displayName || lowerInput.split('@')[0],
+          action: 'USER_LOGIN',
+          details: `Signed into traveler account via Firebase Auth`
+        });
+
+        closeModals();
+        return { success: true, isAdmin: isUserAdmin };
+      } catch (err: any) {
+        // Fallback: Check if user has an assigned temporary password in Firestore or local storage
+        try {
+          let storedTemp: string | undefined;
+          try {
+            const storedMap = JSON.parse(localStorage.getItem('dpa_temp_passwords') || '{}');
+            storedTemp = storedMap[lowerInput];
+          } catch {
+            // ignore
+          }
+
+          const q = query(collection(db, 'users'), where('email', '==', lowerInput));
+          const snap = await getDocs(q);
+          let userData: any = null;
+          let foundId = '';
+
+          if (!snap.empty) {
+            userData = snap.docs[0].data();
+            foundId = snap.docs[0].id;
+          }
+
+          const activeTemp = userData?.tempPassword || storedTemp;
+
+          if (activeTemp && activeTemp === trimmedPass) {
+            const isUserAdmin = userData?.role === 'admin' || foundId === ADMIN_USER_ID;
+            const loggedUser: User = {
+              id: userData?.id || foundId || 'usr_' + Date.now(),
+              firstName: userData?.firstName || 'Traveler',
+              lastName: userData?.lastName || '',
+              email: userData?.email || lowerInput,
+              phone: userData?.phone || '',
+              role: userData?.role || (isUserAdmin ? 'admin' : 'customer'),
+              joinedDate: userData?.createdAt ? userData.createdAt.split('T')[0] : 'March 2027',
+              emergencyContact: userData?.emergencyContact,
+              passportNumber: userData?.passportNumber,
+              bio: userData?.bio,
+              favorites: userData?.favorites || [],
+              createdAt: userData?.createdAt
+            };
+            setUser(loggedUser);
+            if (isUserAdmin) {
+              const session: AdminAuth = {
+                isAuthenticated: true,
+                adminId: adminCredentials.loginId.toUpperCase(),
+                adminEmail: lowerInput,
+                adminName: `${loggedUser.firstName} ${loggedUser.lastName}`,
+                role: 'superadmin',
+                lastLogin: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+              };
+              setAdminAuth(session);
+              localStorage.setItem('dpa_admin_session', JSON.stringify(session));
+            }
+            if (userData?.favorites) {
+              setFavorites(userData.favorites);
+              localStorage.setItem('dpa_user_favorites', JSON.stringify(userData.favorites));
+            }
+            localStorage.setItem('dpa_user', JSON.stringify(loggedUser));
+
+            await logActivity({
+              userId: loggedUser.id,
+              userEmail: loggedUser.email,
+              userName: `${loggedUser.firstName} ${loggedUser.lastName}`.trim(),
+              action: 'USER_LOGIN',
+              details: `Signed into account using assigned credentials`
+            });
+
+            closeModals();
+            return { success: true, isAdmin: isUserAdmin };
+          }
         } catch {
           // ignore
         }
 
-        const q = query(collection(db, 'users'), where('email', '==', trimmedEmail.toLowerCase()));
-        const snap = await getDocs(q);
-        let userData: any = null;
-        let foundId = '';
-
-        if (!snap.empty) {
-          userData = snap.docs[0].data();
-          foundId = snap.docs[0].id;
-        }
-
-        const activeTemp = userData?.tempPassword || storedTemp;
-
-        if (activeTemp && activeTemp === pass) {
-          const loggedUser: User = {
-            id: userData?.id || foundId || 'usr_' + Date.now(),
-            firstName: userData?.firstName || 'Traveler',
-            lastName: userData?.lastName || '',
-            email: userData?.email || trimmedEmail.toLowerCase(),
-            phone: userData?.phone || '',
-            role: userData?.role || 'customer',
-            joinedDate: userData?.createdAt ? userData.createdAt.split('T')[0] : 'March 2027',
-            emergencyContact: userData?.emergencyContact,
-            passportNumber: userData?.passportNumber,
-            bio: userData?.bio,
-            favorites: userData?.favorites || [],
-            createdAt: userData?.createdAt
-          };
-          setUser(loggedUser);
-          if (userData?.favorites) {
-            setFavorites(userData.favorites);
-            localStorage.setItem('dpa_user_favorites', JSON.stringify(userData.favorites));
-          }
-          localStorage.setItem('dpa_user', JSON.stringify(loggedUser));
-
-          await logActivity({
-            userId: loggedUser.id,
-            userEmail: loggedUser.email,
-            userName: `${loggedUser.firstName} ${loggedUser.lastName}`.trim(),
-            action: 'USER_LOGIN',
-            details: `Signed into account using admin-assigned password`
-          });
-
-          closeModals();
-          return { success: true };
-        }
-      } catch {
-        // Continue to return auth error
+        return { success: false, error: formatAuthError(err) };
       }
-
-      return { success: false, error: formatAuthError(err) };
     }
+
+    return {
+      success: false,
+      error: 'Invalid email, username, or password. Please verify your credentials.'
+    };
   };
 
   const register = async (data: { firstName: string; lastName?: string; last_name?: string; email: string; phone?: string; password: string }): Promise<{ success: boolean; error?: string }> => {
@@ -1259,23 +1359,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const createBooking = (bookingData: Omit<Booking, 'id' | 'bookingCode' | 'bookingDate' | 'status'>): Booking => {
-    const randomCode = 'DPA-2027-' + Math.floor(1000 + Math.random() * 9000);
+    const isGuest = !user && !auth.currentUser;
+    const randomCode = isGuest
+      ? 'DPA-GUEST-' + Math.floor(1000 + Math.random() * 9000)
+      : 'DPA-2027-' + Math.floor(1000 + Math.random() * 9000);
     const bookingId = 'bk_' + Date.now();
     const newBooking: Booking = {
       ...bookingData,
       id: bookingId,
       bookingCode: randomCode,
       bookingDate: new Date().toISOString().split('T')[0],
-      status: 'Confirmed'
+      status: 'Confirmed',
+      isGuest,
+      paymentStatus: 'Reserved - Guaranteed Departure'
     };
 
     setBookings(prev => [newBooking, ...prev]);
     setLatestBooking(newBooking);
 
+    // If guest, cache in localStorage so they retain their booking voucher even when reloading
+    if (isGuest) {
+      try {
+        const storedGuests = JSON.parse(localStorage.getItem('dpa_guest_bookings') || '[]');
+        localStorage.setItem('dpa_guest_bookings', JSON.stringify([newBooking, ...storedGuests]));
+      } catch {
+        // ignore
+      }
+    }
+
     // Persist to Firebase Firestore
     const firestoreBookingPayload = {
       ...newBooking,
-      userId: user?.id || auth.currentUser?.uid || 'guest_' + Date.now(),
+      userId: user?.id || auth.currentUser?.uid || ('guest_' + Date.now()),
+      isGuest,
+      paymentStatus: newBooking.paymentStatus || 'Reserved - Guaranteed Departure',
       createdAt: new Date().toISOString()
     };
 
@@ -1289,7 +1406,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userEmail: newBooking.customerEmail,
       userName: newBooking.customerName,
       action: 'CREATED_BOOKING',
-      details: `Booked "${newBooking.tourTitle}" (${newBooking.duration}) for ${newBooking.adults} adult(s) · Total: $${newBooking.totalPrice}`
+      details: isGuest
+        ? `[Guest Reservation] ${newBooking.customerName} (${newBooking.customerEmail}) booked "${newBooking.tourTitle}" (${newBooking.duration}) for ${newBooking.adults} adult(s) · Total: $${newBooking.totalPrice}`
+        : `Booked "${newBooking.tourTitle}" (${newBooking.duration}) for ${newBooking.adults} adult(s) · Total: $${newBooking.totalPrice}`
     }).catch(() => {});
 
     // Optional webhook trigger
@@ -1310,29 +1429,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const addContactInquiry = (inquiry: Omit<ContactInquiry, 'id' | 'date' | 'status'>): ContactInquiry => {
     const inquiryId = 'inq_' + Date.now();
+    const isGuest = !user && !auth.currentUser;
     const newInquiry: ContactInquiry = {
       ...inquiry,
       id: inquiryId,
       date: new Date().toISOString().split('T')[0],
-      status: 'New'
+      status: 'New',
+      isGuest
     };
     setContactInquiries(prev => [newInquiry, ...prev]);
 
     // Persist to Firebase Firestore
-    setDoc(doc(db, 'inquiries', inquiryId), {
+    const firestoreInquiryPayload = {
       ...newInquiry,
-      userId: user?.id || auth.currentUser?.uid || null,
+      userId: user?.id || auth.currentUser?.uid || ('guest_' + Date.now()),
+      isGuest,
       createdAt: new Date().toISOString()
-    }).catch(err => {
+    };
+
+    setDoc(doc(db, 'inquiries', inquiryId), firestoreInquiryPayload).catch(err => {
       console.warn('Could not persist inquiry to Firestore:', err);
     });
 
     logActivity({
-      userId: user?.id || 'guest',
+      userId: firestoreInquiryPayload.userId,
       userEmail: newInquiry.email,
       userName: newInquiry.name,
       action: 'CONTACT_INQUIRY',
-      details: `Submitted contact expedition inquiry: "${newInquiry.subject}"`
+      details: isGuest
+        ? `[Guest Inquiry] ${newInquiry.name} (${newInquiry.email}, ${newInquiry.phone || 'No phone'}): "${newInquiry.subject}"`
+        : `Submitted expedition inquiry: "${newInquiry.subject}"`
     }).catch(() => {});
 
     if (adminSettings.webhookUrl) {
@@ -1870,6 +1996,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return `${info.symbol}${converted.toLocaleString()}`;
   };
 
+  const downloadVoucher = (booking: Booking) => {
+    const info = CURRENCY_RATES[currency] || { symbol: '$' };
+    downloadBookingVoucherPDF(booking, info.symbol);
+  };
+
   const exportBookingsToCsv = () => {
     if (bookings.length === 0) return;
     const headers = ['Booking ID', 'Booking Code', 'Tour Title', 'Customer Name', 'Email', 'Phone', 'Start Date', 'End Date', 'Adults', 'Total USD', 'Status'];
@@ -1920,7 +2051,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.body.removeChild(link);
   };
 
-  const isAdmin = user?.id === ADMIN_USER_ID || auth.currentUser?.uid === ADMIN_USER_ID;
+  const isAdmin =
+    user?.id === ADMIN_USER_ID ||
+    auth.currentUser?.uid === ADMIN_USER_ID ||
+    user?.role === 'admin' ||
+    Boolean(adminAuth?.isAuthenticated);
 
   const updateUserProfile = async (data: Partial<User>): Promise<{ success: boolean; error?: string }> => {
     if (!user) return { success: false, error: 'Please log in to update your account.' };
@@ -2066,6 +2201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logActivity,
         fetchAllActivitiesForAdmin,
         formatPrice,
+        downloadVoucher,
         dismissLatestBooking,
         exportBookingsToCsv,
         exportContactsToCsv

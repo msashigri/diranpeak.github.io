@@ -10,7 +10,10 @@
         "lastName": { "type": "string", "maxLength": 100 },
         "email": { "type": "string", "format": "email", "maxLength": 150 },
         "phone": { "type": "string", "maxLength": 50 },
-        "role": { "type": "string", "enum": ["customer", "admin", "guide"] },
+        "role": { "type": "string", "enum": ["customer", "admin", "guide", "manager", "moderator", "traveler", "climber", "partner_vehicle", "partner_hotel"] },
+        "verified": { "type": "boolean" },
+        "permissions": { "type": "array", "items": { "type": "string" } },
+        "tempPassword": { "type": "string", "maxLength": 100 },
         "photoURL": { "type": "string", "maxLength": 500 },
         "createdAt": { "type": "string", "format": "date-time" },
         "lastLoginAt": { "type": "string", "format": "date-time" }
@@ -60,7 +63,11 @@
         "subject": { "type": "string", "maxLength": 250 },
         "message": { "type": "string", "maxLength": 2500 },
         "date": { "type": "string", "maxLength": 50 },
-        "status": { "type": "string", "enum": ["New", "Contacted", "Closed"] },
+        "status": { "type": "string", "enum": ["New", "In Review", "Contacted", "Approved", "Declined", "Closed"] },
+        "type": { "type": "string", "enum": ["contact", "vehicle", "hotel", "guide_porter", "b2b_partner"] },
+        "specifics": { "type": "object" },
+        "comments": { "type": "array" },
+        "replies": { "type": "array" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "name", "email", "message"]
@@ -106,8 +113,12 @@
         "contactName": { "type": "string", "maxLength": 150 },
         "email": { "type": "string", "format": "email", "maxLength": 150 },
         "phone": { "type": "string", "maxLength": 50 },
-        "status": { "type": "string", "enum": ["Pending", "Approved", "Declined"] },
+        "location": { "type": "string", "maxLength": 150 },
+        "details": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["Pending", "In Review", "Approved", "Declined"] },
         "date": { "type": "string", "maxLength": 50 },
+        "comments": { "type": "array" },
+        "replies": { "type": "array" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "category", "companyName", "contactName", "email"]

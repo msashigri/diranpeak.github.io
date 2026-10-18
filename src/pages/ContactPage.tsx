@@ -1,139 +1,171 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Phone, Mail, MapPin, Send, CheckCircle2, ShieldAlert, ArrowRight } from 'lucide-react';
+import { TOURS_DATA } from '../data/toursData';
+import {
+  Mail, Phone, MapPin, Send, CheckCircle2, ShieldCheck, Clock,
+  MessageSquare, AlertCircle, Compass, Radio, ArrowRight
+} from 'lucide-react';
 
-export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({ onNavigate }) => {
-  const { addContactInquiry, adminSettings } = useAuth();
+interface ContactPageProps {
+  onNavigate: (route: string, param?: string) => void;
+}
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [subject, setSubject] = useState('K2 Base Camp Trek Inquiry');
+export const ContactPage: React.FC<ContactPageProps> = ({ onNavigate }) => {
+  const { addContactInquiry, user } = useAuth();
+
+  const [name, setName] = useState(user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [subject, setSubject] = useState('Expedition Inquiry');
+  const [selectedTourId, setSelectedTourId] = useState('');
   const [message, setMessage] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const cleanAdminPhone = adminSettings.notificationPhone.replace(/[^0-9]/g, '');
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!name.trim()) {
+      setError('Please provide your full name.');
+      return;
+    }
+    if (!email.trim()) {
+      setError('Please provide your email address.');
+      return;
+    }
+    if (!message.trim()) {
+      setError('Please type your inquiry or message.');
+      return;
+    }
+
     setSubmitting(true);
+    try {
+      const selectedTour = TOURS_DATA.find(t => t.id === selectedTourId);
 
-    // Save to context/local storage and trigger notification
-    addContactInquiry({
-      name,
-      email,
-      phone,
-      subject,
-      message
-    });
+      addContactInquiry({
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        subject,
+        message: message.trim(),
+        tourId: selectedTourId || undefined,
+        tourTitle: selectedTour ? selectedTour.title : undefined,
+        isGuest: !user
+      });
 
-    setTimeout(() => {
-      setSubmitting(false);
       setSubmitted(true);
-    }, 500);
+      setMessage('');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send your message. Please try again or message via WhatsApp.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const whatsappMessage = encodeURIComponent(
-    `*NEW INQUIRY VIA WEBSITE - DIRAN PEAK ADVENTURE (DPA)*\n\n` +
-    `*From:* ${name}\n` +
-    `*Email:* ${email}\n` +
-    `*Phone:* ${phone}\n` +
-    `*Interest:* ${subject}\n\n` +
-    `*Message:* ${message}`
-  );
-
   return (
-    <div className="bg-[#f7f8fa] min-h-screen py-12">
+    <div className="bg-[#f7f8fa] min-h-screen py-10 sm:py-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Breadcrumb */}
         <div className="text-xs text-slate-500 mb-4 flex items-center gap-1.5 font-medium">
-          <button onClick={() => onNavigate('home')} className="hover:text-[#5191fa]">Home</button>
+          <button onClick={() => onNavigate('home')} className="hover:text-[#5191fa] cursor-pointer">Home</button>
           <span>/</span>
-          <span className="text-slate-800 font-semibold">Contact Us</span>
+          <span className="text-slate-800 font-semibold">Contact Our Basecamp Team</span>
         </div>
 
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-bold uppercase tracking-wider text-[#5191fa] mb-1 block">
-            We Are Here To Help
-          </span>
-          <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#1a2b48]">
-            Get In Touch With Diran Peak Adventure
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-2">
-            Have questions about permits, fitness preparation, visa LOI, or custom private dates? Reach our expedition coordinators directly.
-          </p>
+        {/* Hero Header */}
+        <div className="bg-gradient-to-br from-[#1a2b48] via-[#203657] to-[#1a2b48] text-white rounded-3xl p-8 sm:p-12 shadow-xl mb-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-[#5191fa]/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative z-10 max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-3">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>DTS Licensed Tour Operator #1842</span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-heading font-extrabold text-white leading-tight">
+              Get in Touch with Our Expedition Specialists
+            </h1>
+            <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed">
+              Have questions regarding K2 Base Camp departures, climbing permits, Pakistan visa Letters of Invitation (LOI), or custom Karakoram itineraries? Our Baltistan basecamp team is available 24/7.
+            </p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* Form Column */}
-          <div className="lg:col-span-2 bg-white rounded-3xl p-6 sm:p-10 shadow-sm border border-slate-200">
+        {/* Main Grid: Form + Office Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-14">
+          {/* Left Column: Contact Form */}
+          <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
+            <div className="mb-6">
+              <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-[#5191fa]" />
+                <span>Send Us an Expedition Inquiry</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Your message is recorded directly in our real-time Firestore database and dispatched to our expedition director.
+              </p>
+            </div>
+
             {submitted ? (
-              <div className="py-8 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+              <div className="p-8 text-center bg-emerald-50 border border-emerald-200 rounded-2xl animate-in fade-in">
+                <div className="w-14 h-14 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-3 shadow-md">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <h3 className="text-2xl font-bold font-heading text-slate-900">Message Received!</h3>
-                <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                  Thank you, <strong className="text-slate-900">{name}</strong>. Your inquiry has been stored in the <strong>Admin Portal</strong> and emailed to <strong className="text-slate-900">{adminSettings.notificationEmail}</strong>.
+                <h3 className="text-xl font-heading font-bold text-emerald-950 mb-1">
+                  Inquiry Dispatched Successfully!
+                </h3>
+                <p className="text-xs text-emerald-800 max-w-md mx-auto leading-relaxed mb-5">
+                  Thank you, <strong>{name}</strong>. A dedicated Balti expedition manager will review your request and get back to you within 4-8 hours with full route notes and permit guidance.
                 </p>
-
-                {/* Instant WhatsApp Dispatch */}
-                <div className="pt-2 max-w-md mx-auto space-y-3">
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSubmitted(false)}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl transition-colors cursor-pointer"
+                  >
+                    Send Another Inquiry
+                  </button>
                   <a
-                    href={`https://wa.me/${cleanAdminPhone}?text=${whatsappMessage}`}
+                    href="https://wa.me/923456412992"
                     target="_blank"
                     rel="noreferrer"
-                    className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md flex items-center justify-center gap-2"
+                    className="px-4 py-2 bg-[#25D366] hover:bg-[#20ba5a] text-white text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5"
                   >
-                    <Phone className="w-4 h-4" />
-                    <span>Send Directly to WhatsApp (+92 345 6412992)</span>
+                    <Phone className="w-3.5 h-3.5" />
+                    <span>Chat on WhatsApp</span>
                   </a>
-
-                  <button
-                    onClick={() => onNavigate('admin')}
-                    className="w-full py-2.5 px-4 bg-[#1a2b48] hover:bg-[#2c436b] text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <span>View this submission in Admin Portal</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100">
-                  <button
-                    onClick={() => {
-                      setSubmitted(false);
-                      setMessage('');
-                    }}
-                    className="text-xs text-[#5191fa] hover:underline font-semibold cursor-pointer"
-                  >
-                    Submit another inquiry
-                  </button>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {error && (
+                  <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Your Full Name</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Your Full Name *</label>
                     <input
                       type="text"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="e.g. John Doe"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa] focus:bg-white"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Email Address *</label>
                     <input
                       type="email"
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="e.g. john@example.com"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa] focus:bg-white"
+                      placeholder="climber@domain.com"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
                     />
                   </div>
                 </div>
@@ -145,126 +177,149 @@ export const ContactPage: React.FC<{ onNavigate: (route: string) => void }> = ({
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      placeholder="+1 (555) 000-0000"
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa] focus:bg-white"
+                      placeholder="+92 345 6412992"
+                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Trip of Interest</label>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Inquiry Topic</label>
                     <select
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa] focus:bg-white cursor-pointer"
+                      className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
                     >
-                      <option value="K2 Base Camp Trek Inquiry">K2 Base Camp Trek</option>
-                      <option value="K2 Gondogoro La Trek Inquiry">K2 Gondogoro La Trek</option>
-                      <option value="K2 Climbing Expedition (8611m)">K2 Climbing Expedition (8,611m)</option>
-                      <option value="Broad Peak Expedition">Broad Peak Expedition (8,047m)</option>
-                      <option value="Spantik Peak Expedition">Spantik Peak (7,027m)</option>
-                      <option value="Khosar Gang Peak">Khosar Gang (6,040m)</option>
-                      <option value="Nanga Parbat & Fairy Meadows">Nanga Parbat &amp; Fairy Meadows</option>
-                      <option value="Custom Private Expedition">Custom Private Group / B2B</option>
+                      <option value="Expedition Inquiry">Expedition &amp; Trek Inquiry</option>
+                      <option value="Visa Support & LOI">Pakistan Visa LOI &amp; Documents</option>
+                      <option value="Custom Group Itinerary">Custom Private Expedition</option>
+                      <option value="Climbing Permit Assistance">8000m Peak Climbing Permit</option>
+                      <option value="Partner & B2B">B2B Tour Operator Partnership</option>
+                      <option value="General Question">General Assistance</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Message &amp; Requirements</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Related Tour Package (Optional)</label>
+                  <select
+                    value={selectedTourId}
+                    onChange={(e) => setSelectedTourId(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                  >
+                    <option value="">-- General Karakoram &amp; Himalayan Inquiry --</option>
+                    {TOURS_DATA.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.title} ({t.duration} · {t.location})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Your Detailed Message / Requirements *</label>
                   <textarea
                     required
                     rows={5}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    placeholder="Tell us about your mountaineering background, preferred dates, group size, and any specific requirements..."
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa] focus:bg-white"
+                    placeholder="Tell us about your mountaineering experience, preferred travel dates, group size, or any specific logistics needed..."
+                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa] resize-y"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="py-3 px-6 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-3 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-xs font-bold rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-2"
                 >
                   {submitting ? (
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    <Send className="w-4 h-4" />
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Dispatch Inquiry to Expedition HQ</span>
+                    </>
                   )}
-                  <span>{submitting ? 'Routing Message...' : 'Send Message'}</span>
                 </button>
               </form>
             )}
           </div>
 
-          {/* Contact Details Card */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200">
-              <h3 className="font-heading text-lg font-bold text-[#1a2b48] mb-4">Direct Contact</h3>
-
-              <div className="space-y-4 text-xs">
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#5191fa] flex items-center justify-center shrink-0">
-                    <Phone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900">Phone &amp; WhatsApp</div>
-                    <a href="tel:+923456412992" className="text-slate-600 hover:text-[#5191fa] font-medium block">
-                      +92 345 6412992
-                    </a>
-                    <div className="text-[11px] text-emerald-600 font-semibold mt-0.5">● 24/7 Dispatch Live</div>
-                  </div>
+          {/* Right Column: Basecamp & Liaison Offices */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Headquarters Card */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2.5 mb-4 text-[#1a2b48]">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#5191fa] flex items-center justify-center">
+                  <MapPin className="w-5 h-5" />
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#5191fa] flex items-center justify-center shrink-0">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900">Official Inquiries</div>
-                    <a href="mailto:info@diranpeakadventure.com" className="text-slate-600 hover:text-[#5191fa] block">
-                      info@diranpeakadventure.com
-                    </a>
-                  </div>
+                <div>
+                  <h3 className="font-heading font-bold text-base text-slate-900">Skardu Expedition Basecamp</h3>
+                  <p className="text-[11px] text-slate-500">Gateway to Baltoro &amp; K2</p>
                 </div>
+              </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#5191fa] flex items-center justify-center shrink-0">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900">Skardu Basecamp Office</div>
-                    <p className="text-slate-500 leading-relaxed">
-                      Diran Peak House, Airport Road, Skardu, Gilgit-Baltistan, Pakistan
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#5191fa] flex items-center justify-center shrink-0">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="font-bold text-slate-900">Islamabad Liaison Office</div>
-                    <p className="text-slate-500 leading-relaxed">
-                      Sector F-7/2, Blue Area, Islamabad, Pakistan
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-3 text-xs text-slate-600">
+                <p>
+                  <strong>Address:</strong> Aliabad / College Road, Skardu, Gilgit-Baltistan, Pakistan
+                </p>
+                <p>
+                  <strong>Phone / WhatsApp:</strong>{' '}
+                  <a href="tel:+923456412992" className="text-[#5191fa] font-bold hover:underline">
+                    +92 345 6412992
+                  </a>
+                </p>
+                <p>
+                  <strong>Email:</strong>{' '}
+                  <a href="mailto:info@diranpeakadventure.com" className="text-[#5191fa] font-bold hover:underline">
+                    info@diranpeakadventure.com
+                  </a>
+                </p>
+                <p>
+                  <strong>Hours:</strong> Mon - Sun: 7:00 AM - 10:00 PM PKT (During Trekking Season)
+                </p>
               </div>
             </div>
 
-            {/* Emergency Hotline card */}
-            <div className="bg-[#1a2b48] text-white rounded-3xl p-6 shadow-md border border-slate-700">
-              <div className="flex items-center gap-2 mb-2 text-rose-400">
-                <ShieldAlert className="w-5 h-5" />
-                <h4 className="font-bold text-sm text-white">Emergency Heli Evacuation</h4>
+            {/* Islamabad Liaison Office */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200">
+              <div className="flex items-center gap-2.5 mb-4 text-[#1a2b48]">
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Compass className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-heading font-bold text-base text-slate-900">Islamabad Liaison Office</h3>
+                  <p className="text-[11px] text-slate-500">Ministry of Tourism Clearance &amp; Briefings</p>
+                </div>
               </div>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Askari Aviation helicopter coordination line for all registered expedition groups in the Karakoram:
+
+              <div className="space-y-3 text-xs text-slate-600">
+                <p>
+                  <strong>Location:</strong> Blue Area, Sector F-6/G-6, Islamabad, Pakistan
+                </p>
+                <p>
+                  <strong>Services:</strong> Alpine Club of Pakistan Permit Processing, Visa Letters of Invitation (LOI), Helicopter Rescue Bond Clearance
+                </p>
+              </div>
+            </div>
+
+            {/* Satellite & Emergency Logistics */}
+            <div className="bg-gradient-to-br from-slate-900 to-[#1a2b48] text-white rounded-3xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Radio className="w-4 h-4 text-emerald-400 animate-pulse" />
+                <h4 className="font-heading font-bold text-sm text-white">24/7 Satellite Mountain Dispatch</h4>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                All high-altitude DPA expeditions carry Garmin inReach Explorer+ 2-way satellite messengers and Thuraya satellite phones with Askari Aviation military helicopter rescue coverage.
               </p>
-              <div className="mt-3 font-mono font-bold text-sm text-[#5191fa]">
-                +92 345 6412992
-              </div>
+              <a
+                href="https://wa.me/923456412992?text=Salam%20DPA%20Team%20Emergency%20Helpline"
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Instant WhatsApp Hotline</span>
+              </a>
             </div>
           </div>
         </div>

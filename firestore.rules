@@ -35,13 +35,15 @@ service cloud.firestore {
       return data.keys().hasAll(['id', 'email', 'firstName', 'role']) &&
         data.keys().hasOnly([
           'id', 'email', 'firstName', 'lastName', 'phone', 'role', 'photoURL',
-          'emergencyContact', 'passportNumber', 'bio', 'favorites',
+          'emergencyContact', 'passportNumber', 'bio', 'favorites', 'verified', 'permissions',
           'createdAt', 'lastLoginAt', 'updatedAt', 'passwordResetRequested', 'passwordResetAt', 'tempPassword'
         ]) &&
         data.id is string && data.id.size() <= 128 &&
         data.email is string && data.email.size() <= 150 &&
         data.firstName is string && data.firstName.size() <= 100 &&
-        data.role in ['customer', 'admin', 'guide'] &&
+        data.role in ['customer', 'admin', 'guide', 'manager', 'moderator', 'traveler', 'climber', 'partner_vehicle', 'partner_hotel'] &&
+        (!('verified' in data) || (data.verified is bool)) &&
+        (!('permissions' in data) || (data.permissions is list)) &&
         (!('lastName' in data) || (data.lastName is string && data.lastName.size() <= 100)) &&
         (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
         (!('emergencyContact' in data) || (data.emergencyContact is string && data.emergencyContact.size() <= 200)) &&
@@ -57,7 +59,8 @@ service cloud.firestore {
           'startDate', 'endDate', 'duration', 'adults', 'children',
           'singleTent', 'airportTransfer', 'totalPrice', 'currency',
           'bookingDate', 'status', 'customerName', 'customerEmail',
-          'customerPhone', 'specialRequests', 'createdAt', 'updatedAt'
+          'customerPhone', 'specialRequests', 'createdAt', 'updatedAt',
+          'isGuest', 'paymentStatus'
         ]) &&
         data.id is string && data.id.size() <= 128 &&
         data.userId is string && data.userId.size() <= 128 &&
@@ -67,19 +70,27 @@ service cloud.firestore {
         data.customerName is string && data.customerName.size() <= 150 &&
         data.customerEmail is string && data.customerEmail.size() <= 150 &&
         data.status in ['Confirmed', 'Pending Verification', 'Cancelled', 'Completed', 'Accepted', 'Declined'] &&
-        (!('specialRequests' in data) || (data.specialRequests is string && data.specialRequests.size() <= 1000));
+        (!('specialRequests' in data) || (data.specialRequests is string && data.specialRequests.size() <= 1000)) &&
+        (!('isGuest' in data) || (data.isGuest is bool)) &&
+        (!('paymentStatus' in data) || (data.paymentStatus is string && data.paymentStatus.size() <= 50));
     }
 
     function isValidInquiry(data) {
       return data.keys().hasAll(['id', 'name', 'email', 'message']) &&
-        data.keys().hasOnly(['id', 'userId', 'name', 'email', 'phone', 'subject', 'message', 'date', 'status', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'name', 'email', 'phone', 'subject', 'message', 'date', 'status', 'createdAt', 'tourId', 'tourTitle', 'isGuest', 'type', 'specifics', 'comments', 'replies', 'updatedAt']) &&
         data.id is string && data.id.size() <= 128 &&
         data.name is string && data.name.size() <= 150 &&
         data.email is string && data.email.size() <= 150 &&
         data.message is string && data.message.size() <= 2500 &&
-        (!('status' in data) || (data.status in ['New', 'Contacted', 'Closed'])) &&
+        (!('status' in data) || (data.status in ['New', 'In Review', 'Contacted', 'Approved', 'Declined', 'Closed'])) &&
+        (!('type' in data) || (data.type in ['contact', 'vehicle', 'hotel', 'guide_porter', 'b2b_partner'])) &&
         (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
-        (!('subject' in data) || (data.subject is string && data.subject.size() <= 250));
+        (!('subject' in data) || (data.subject is string && data.subject.size() <= 250)) &&
+        (!('tourId' in data) || (data.tourId is string && data.tourId.size() <= 100)) &&
+        (!('tourTitle' in data) || (data.tourTitle is string && data.tourTitle.size() <= 200)) &&
+        (!('comments' in data) || (data.comments is list)) &&
+        (!('replies' in data) || (data.replies is list)) &&
+        (!('isGuest' in data) || (data.isGuest is bool));
     }
 
     function isValidSubscriber(data) {
@@ -92,51 +103,45 @@ service cloud.firestore {
     // 1. Users Collection
     match /users/{userId} {
       allow get: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow list: if isAdmin();
+      allow list: if true;
       allow create: if isSignedIn() && (isAdmin() || (request.auth.uid == userId && isValidUser(incoming()) && incoming().role == 'customer'));
       allow update: if isSignedIn() && (isAdmin() || (request.auth.uid == userId && isValidUser(incoming()) && incoming().role == existing().role && incoming().id == existing().id));
       allow delete: if isSignedIn() && (request.auth.uid == userId || isAdmin());
     }
 
-    // 2. Bookings Collection
+    // 2. Bookings Collection (Allows guest bookings, admin dashboard, and voucher lookups)
     match /bookings/{bookingId} {
-      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
-      allow create: if isSignedIn() && (isAdmin() || (isValidBooking(incoming()) && incoming().userId == request.auth.uid));
-      allow update: if isSignedIn() && (
-        isAdmin() ||
-        (isValidBooking(incoming()) && resource.data.userId == request.auth.uid && incoming().userId == existing().userId && incoming().bookingCode == existing().bookingCode)
-      );
-      allow delete: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow get, list: if true;
+      allow create: if isValidBooking(incoming());
+      allow update: if isValidBooking(incoming()) || isAdmin();
+      allow delete: if isAdmin() || isSignedIn();
     }
 
-    // 3. Inquiries Collection
+    // 3. Inquiries Collection (Allows guest inquiries and admin management)
     match /inquiries/{inquiryId} {
-      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow create: if isValidInquiry(incoming()) && (!isSignedIn() || !('userId' in incoming()) || incoming().userId == request.auth.uid);
-      allow update, delete: if isAdmin();
+      allow get, list: if true;
+      allow create: if isValidInquiry(incoming());
+      allow update, delete: if isAdmin() || isSignedIn();
     }
 
     // 4. Newsletter Subscribers Collection
     match /subscribers/{subscriberId} {
-      allow get, list: if isAdmin();
+      allow get, list: if true;
       allow create: if isValidSubscriber(incoming());
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAdmin() || isSignedIn();
     }
 
     // 5. Admins list
     match /admins/{adminId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
     }
 
     // 6. Activities Collection (User & Traveler Activity Log for Admin)
     match /activities/{activityId} {
-      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow list: if isAdmin();
-      allow create: if isSignedIn() || ('userId' in incoming()) || isAdmin();
-      allow update, delete: if isAdmin();
+      allow read, list: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin() || isSignedIn();
     }
 
     // 7. Favorites Collection

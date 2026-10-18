@@ -15,7 +15,7 @@ interface TourDetailPageProps {
 }
 
 export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate }) => {
-  const { formatPrice, user, createBooking, openLogin, isAuthenticated, isFavorite, toggleFavorite, addReview, deleteReview, getReviewsForTour, isAdmin } = useAuth();
+  const { formatPrice, user, createBooking, addContactInquiry, openLogin, isAuthenticated, isFavorite, toggleFavorite, addReview, deleteReview, getReviewsForTour, isAdmin } = useAuth();
 
   // Reviews state from Firestore
   const tourReviews = getReviewsForTour(tour.id);
@@ -120,6 +120,9 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
 
   // Enquiry state
   const [enquirySent, setEnquirySent] = useState(false);
+  const [enquiryQuestion, setEnquiryQuestion] = useState('');
+  const [enquirySubmitting, setEnquirySubmitting] = useState(false);
+  const [enquiryError, setEnquiryError] = useState<string | null>(null);
 
   // Accordion state
   const [expandedDays, setExpandedDays] = useState<Record<number, boolean>>({
@@ -131,6 +134,14 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
   const [expandedFaqs, setExpandedFaqs] = useState<Record<number, boolean>>({
     0: true
   });
+
+  // Active map day synchronized with InteractiveRouteMap
+  const [activeMapDay, setActiveMapDay] = useState<number | undefined>(undefined);
+
+  const handleSelectMapDay = React.useCallback((dayNum: number) => {
+    setActiveMapDay(dayNum);
+    setExpandedDays(prev => ({ ...prev, [dayNum]: true }));
+  }, []);
 
   // Photo gallery active index
   const [activeImage, setActiveImage] = useState(tour.image);
@@ -182,7 +193,34 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
 
   const handleEnquirySubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setEnquirySent(true);
+    setEnquiryError(null);
+    if (!guestName.trim()) {
+      setEnquiryError('Please enter your name.');
+      return;
+    }
+    if (!guestEmail.trim() || !guestEmail.includes('@')) {
+      setEnquiryError('Please enter a valid email address.');
+      return;
+    }
+
+    setEnquirySubmitting(true);
+    try {
+      addContactInquiry({
+        name: guestName.trim(),
+        email: guestEmail.trim(),
+        phone: guestPhone.trim() || '+92 345 6412992',
+        subject: `Expedition Inquiry: ${tour.title}`,
+        message: enquiryQuestion.trim() || `Inquiry regarding ${tour.title} dates, group logistics, and pricing.`,
+        tourId: tour.id,
+        tourTitle: tour.title
+      });
+      setEnquirySent(true);
+      setEnquiryQuestion('');
+    } catch {
+      setEnquiryError('Failed to dispatch enquiry. Please WhatsApp us directly.');
+    } finally {
+      setEnquirySubmitting(false);
+    }
   };
 
   return (
@@ -364,7 +402,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
             />
 
             {/* Interactive Leaflet Expedition & Trekking Route Map */}
-            <div id="route-map-section" className="relative z-10 isolate">
+            <div id="route-map-section" className="relative z-10 isolate scroll-mt-24">
               <InteractiveRouteMap
                 tourId={tour.id}
                 tourSlug={tour.slug}
@@ -373,6 +411,8 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                 maxAltitude={tour.maxAltitude}
                 itinerary={tour.itinerary}
                 tour={tour}
+                activeDayNumber={activeMapDay}
+                onSelectDay={handleSelectMapDay}
               />
             </div>
 
@@ -393,7 +433,7 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                     tour.itinerary.forEach(i => { allTrue[i.day] = true; });
                     setExpandedDays(allTrue);
                   }}
-                  className="text-xs text-[#5191fa] hover:underline font-semibold"
+                  className="text-xs text-[#5191fa] hover:underline font-semibold cursor-pointer"
                 >
                   Expand All
                 </button>
@@ -402,32 +442,73 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
               <div className="space-y-3">
                 {tour.itinerary.map((item) => {
                   const isOpen = !!expandedDays[item.day];
+                  const isMapActive = activeMapDay === item.day;
                   return (
                     <div
                       key={item.day}
-                      className="border border-slate-200 rounded-xl overflow-hidden transition-all"
+                      id={`itinerary-day-${item.day}`}
+                      className={`border rounded-xl overflow-hidden transition-all ${
+                        isMapActive
+                          ? 'border-[#5191fa] ring-2 ring-blue-100 bg-blue-50/20 shadow-xs'
+                          : 'border-slate-200'
+                      }`}
                     >
-                      <button
-                        onClick={() => toggleDay(item.day)}
-                        className="w-full flex items-center justify-between p-4 bg-slate-50/70 hover:bg-slate-100/70 transition-colors text-left cursor-pointer"
+                      <div
+                        className={`w-full flex items-center justify-between p-4 transition-colors text-left ${
+                          isMapActive ? 'bg-blue-50/50 hover:bg-blue-50/80' : 'bg-slate-50/70 hover:bg-slate-100/70'
+                        }`}
                       >
-                        <div className="flex items-center gap-3">
-                          <span className="w-7 h-7 rounded-lg bg-[#5191fa] text-white flex items-center justify-center font-bold text-xs shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => toggleDay(item.day)}
+                          className="flex-1 flex items-center gap-3 text-left cursor-pointer"
+                        >
+                          <span className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+                            isMapActive ? 'bg-[#1a2b48] text-white shadow-xs' : 'bg-[#5191fa] text-white'
+                          }`}>
                             {item.day}
                           </span>
                           <span className="font-heading font-bold text-xs sm:text-sm text-[#1a2b48]">
                             {item.title}
                           </span>
-                        </div>
-                        <div className="flex items-center gap-3">
+                        </button>
+                        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMapDay(item.day);
+                              setExpandedDays(prev => ({ ...prev, [item.day]: true }));
+                              const mapEl = document.getElementById('route-map-section');
+                              if (mapEl) {
+                                mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }
+                            }}
+                            className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 sm:px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                              isMapActive
+                                ? 'bg-[#5191fa] text-white border-[#5191fa] shadow-xs'
+                                : 'bg-white text-[#5191fa] hover:bg-blue-50 border-blue-200/80'
+                            }`}
+                            title={`Focus Day ${item.day} on GPS Route Map`}
+                          >
+                            <Compass className="w-3.5 h-3.5 shrink-0" />
+                            <span className="hidden sm:inline">View on Map</span>
+                          </button>
                           {item.altitude && (
                             <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
                               {item.altitude}
                             </span>
                           )}
-                          {isOpen ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                          <button
+                            type="button"
+                            onClick={() => toggleDay(item.day)}
+                            className="p-1 text-slate-500 hover:text-slate-800 cursor-pointer"
+                            aria-label={isOpen ? 'Collapse day details' : 'Expand day details'}
+                          >
+                            {isOpen ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+                          </button>
                         </div>
-                      </button>
+                      </div>
 
                       {isOpen && (
                         <div className="p-4 bg-white text-xs text-slate-600 leading-relaxed border-t border-slate-100">
@@ -1431,15 +1512,27 @@ export const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onNavigate
                         <textarea
                           required
                           rows={3}
+                          value={enquiryQuestion}
+                          onChange={(e) => setEnquiryQuestion(e.target.value)}
                           placeholder="Ask about fitness level, custom group rates, or dates..."
                           className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
                         />
                       </div>
+                      {enquiryError && (
+                        <div className="text-[11px] text-rose-600 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                          {enquiryError}
+                        </div>
+                      )}
                       <button
                         type="submit"
-                        className="w-full py-2.5 px-4 bg-[#1a2b48] hover:bg-[#2c436b] text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer"
+                        disabled={enquirySubmitting}
+                        className="w-full py-2.5 px-4 bg-[#1a2b48] hover:bg-[#2c436b] text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
                       >
-                        Submit Enquiry
+                        {enquirySubmitting ? (
+                          <span>Sending to Operations Desk...</span>
+                        ) : (
+                          <span>Submit Official Tour Enquiry</span>
+                        )}
                       </button>
                     </form>
                   )}

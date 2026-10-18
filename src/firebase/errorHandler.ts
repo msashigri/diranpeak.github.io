@@ -1,48 +1,46 @@
-import { auth } from './config';
+/**
+ * Firebase Firestore Error Handler
+ */
 
 export enum OperationType {
+  GET = 'get',
+  LIST = 'list',
   CREATE = 'create',
   UPDATE = 'update',
   DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
+  WRITE = 'write'
 }
 
 export interface FirestoreErrorInfo {
-  error: string;
+  code: string;
+  message: string;
   operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-    providerInfo?: {
-      providerId?: string | null;
-      email?: string | null;
-    }[];
-  };
+  path?: string;
+  timestamp: string;
 }
 
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || []
-    },
+export function handleFirestoreError(
+  error: any,
+  operationType: OperationType = OperationType.GET,
+  path?: string
+): FirestoreErrorInfo {
+  const code = error?.code || 'unknown';
+  const rawMessage = error?.message || String(error);
+
+  const errorInfo: FirestoreErrorInfo = {
+    code,
+    message: rawMessage,
     operationType,
-    path
+    path,
+    timestamp: new Date().toISOString()
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+
+  // Log in development console for debugging
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      `[Firestore ${operationType.toUpperCase()}] ${path ? `Path: ${path} | ` : ''}Code: ${code} | Message: ${rawMessage}`
+    );
+  }
+
+  return errorInfo;
 }

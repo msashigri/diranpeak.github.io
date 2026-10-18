@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { RouteWaypoint, TrekkingRoute, getRouteForTour } from '../data/trekkingRoutes';
@@ -23,6 +23,8 @@ interface InteractiveRouteMapProps {
     accommodation?: string;
   }>;
   tour?: any;
+  activeDayNumber?: number;
+  onSelectDay?: (dayNumber: number) => void;
 }
 
 type TileLayerType = 'topo' | 'osm' | 'satellite';
@@ -34,34 +36,122 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
   tourLocation,
   maxAltitude,
   itinerary,
-  tour
+  tour,
+  activeDayNumber,
+  onSelectDay
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const layerGroupRef = useRef<L.LayerGroup | null>(null);
   const currentTileLayerRef = useRef<L.TileLayer | null>(null);
 
-  const routeData: TrekkingRoute = getRouteForTour(
-    tourId,
-    tourSlug,
-    tour || { id: tourId, slug: tourSlug, title: tourTitle, location: tourLocation, maxAltitude, itinerary }
-  );
+  const routeData: TrekkingRoute = useMemo(() => {
+    const base = getRouteForTour(
+      tourId,
+      tourSlug,
+      tour || { id: tourId, slug: tourSlug, title: tourTitle, location: tourLocation, maxAltitude, itinerary }
+    );
+    const guaranteedWaypoints = (base.waypoints || []).map((wp, idx) => ({
+      ...wp,
+      id: wp.id || `${base.id || 'route'}-stage-${idx}-${(wp.name || 'node').toLowerCase().replace(/[^a-z0-9]/g, '-')}`
+    }));
+    return {
+      ...base,
+      waypoints: guaranteedWaypoints
+    };
+  }, [tourId, tourSlug, tourTitle, tourLocation, maxAltitude, itinerary, tour]);
 
   const [activeLayer, setActiveLayer] = useState<TileLayerType>('topo');
-  const [selectedWaypoint, setSelectedWaypoint] = useState<RouteWaypoint | null>(
-    routeData.waypoints[routeData.waypoints.length - 1] || routeData.waypoints[0] || null
-  );
+  const [selectedWaypoint, setSelectedWaypoint] = useState<RouteWaypoint | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showElevationProfile, setShowElevationProfile] = useState(true);
 
-  // Sync selected waypoint when tour changes
+  const onSelectDayRef = useRef(onSelectDay);
   useEffect(() => {
-    if (routeData.waypoints.length > 0) {
-      setSelectedWaypoint(routeData.waypoints[routeData.waypoints.length - 1] || routeData.waypoints[0]);
+    onSelectDayRef.current = onSelectDay;
+  }, [onSelectDay]);
+
+  const markersMapRef = useRef<Map<string | number, L.Marker>>(new Map());
+  const isInternalPanRef = useRef(false);
+
+  const getMarkerForWaypoint = (wp: RouteWaypoint): L.Marker | undefined => {
+    if (wp.id && markersMapRef.current.has(wp.id)) return markersMapRef.current.get(wp.id);
+    if (wp.dayNumber !== undefined && markersMapRef.current.has(wp.dayNumber)) return markersMapRef.current.get(wp.dayNumber);
+    if (wp.dayNumber !== undefined && markersMapRef.current.has(String(wp.dayNumber))) return markersMapRef.current.get(String(wp.dayNumber));
+    if (wp.name && markersMapRef.current.has(wp.name)) return markersMapRef.current.get(wp.name);
+    return markersMapRef.current.get(wp.dayNumber ?? wp.name);
+  };
+
+  const panToWaypoint = (wp: RouteWaypoint) => {
+    setSelectedWaypoint(wp);
+    if (!mapInstanceRef.current) return;
+
+    const lat = typeof wp.lat === 'number' ? wp.lat : parseFloat(wp.lat as any);
+    const lng = typeof wp.lng === 'number' ? wp.lng : parseFloat(wp.lng as any);
+
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    try {
+      mapInstanceRef.current.invalidateSize({ animate: false });
+      const currentZoom = mapInstanceRef.current.getZoom();
+      const targetZoom = Math.max(currentZoom || 10, 12);
+
+      // Stop previous pan/zoom animations safely to avoid conflict
+      (mapInstanceRef.current as any).stop?.();
+
+      mapInstanceRef.current.flyTo([lat, lng], targetZoom, {
+        animate: true,
+        duration: 0.8
+      });
+
+      const marker = getMarkerForWaypoint(wp);
+      if (marker) {
+        setTimeout(() => {
+          try {
+            marker.openPopup();
+          } catch {
+            // fallback
+          }
+        }, 120);
+      }
+    } catch (err) {
+      console.warn('Map pan error:', err);
+      try {
+        mapInstanceRef.current.setView([lat, lng], 12);
+      } catch {
+        // fallback
+      }
+    }
+  };
+
+  // Sync selected waypoint when tour or routeData changes
+  useEffect(() => {
+    if (routeData.waypoints && routeData.waypoints.length > 0) {
+      if (activeDayNumber) {
+        const found = routeData.waypoints.find(w => w.dayNumber === activeDayNumber);
+        if (found) {
+          setSelectedWaypoint(found);
+          return;
+        }
+      }
+      // Default to high point or final camp
+      const highPoint = [...routeData.waypoints].sort((a, b) => b.altitude - a.altitude)[0];
+      setSelectedWaypoint(highPoint || routeData.waypoints[routeData.waypoints.length - 1] || routeData.waypoints[0]);
     } else {
       setSelectedWaypoint(null);
     }
-  }, [tourId, tourSlug, routeData.waypoints.length]);
+  }, [routeData, activeDayNumber]);
+
+  // Synchronize with external activeDayNumber changes (e.g. user clicked itinerary day)
+  useEffect(() => {
+    if (activeDayNumber && routeData.waypoints && routeData.waypoints.length > 0) {
+      if (isInternalPanRef.current) return;
+      const targetWp = routeData.waypoints.find(w => w.dayNumber === activeDayNumber);
+      if (targetWp) {
+        panToWaypoint(targetWp);
+      }
+    }
+  }, [activeDayNumber, routeData]);
 
   // Tile layer providers
   const tileProviders = {
@@ -216,15 +306,35 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
       marker.bindPopup(popupContent);
       marker.on('click', () => {
         setSelectedWaypoint(wp);
+        if (onSelectDayRef.current && wp.dayNumber) {
+          onSelectDayRef.current(wp.dayNumber);
+        }
       });
 
       marker.addTo(layerGroup);
+      markersMapRef.current.set(wp.dayNumber ?? wp.name, marker);
+      if (wp.id) markersMapRef.current.set(wp.id, marker);
+      if (wp.dayNumber !== undefined && wp.dayNumber !== null) {
+        markersMapRef.current.set(wp.dayNumber, marker);
+        markersMapRef.current.set(String(wp.dayNumber), marker);
+      }
+      if (wp.name) markersMapRef.current.set(wp.name, marker);
     });
 
     // Invalidate size after mount to guarantee tile rendering across all screen sizes
     const resizeTimer1 = setTimeout(() => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.invalidateSize();
+        if (routeData.pathCoordinates && routeData.pathCoordinates.length > 0) {
+          try {
+            const b = L.latLngBounds(routeData.pathCoordinates);
+            if (b.isValid()) {
+              mapInstanceRef.current.fitBounds(b, { padding: [40, 40], maxZoom: 13 });
+            }
+          } catch {
+            // Safe fallback
+          }
+        }
       }
     }, 150);
 
@@ -245,10 +355,11 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
       clearTimeout(resizeTimer1);
       clearTimeout(resizeTimer2);
       window.removeEventListener('resize', handleWindowResize);
+      markersMapRef.current.clear();
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [tourId, tourSlug, routeData.title, routeData.waypoints.length]);
+  }, [tourId, tourSlug, routeData]);
 
   // Handle Layer Switch
   const handleLayerChange = (layer: TileLayerType) => {
@@ -267,13 +378,14 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
 
   // Pan to waypoint
   const handleFlyToWaypoint = (wp: RouteWaypoint) => {
-    setSelectedWaypoint(wp);
-    if (!mapInstanceRef.current) return;
-
-    mapInstanceRef.current.flyTo([wp.lat, wp.lng], 12, {
-      animate: true,
-      duration: 1.2
-    });
+    isInternalPanRef.current = true;
+    panToWaypoint(wp);
+    if (onSelectDayRef.current && wp.dayNumber) {
+      onSelectDayRef.current(wp.dayNumber);
+    }
+    setTimeout(() => {
+      isInternalPanRef.current = false;
+    }, 900);
   };
 
   // Reset to full route bounds
@@ -300,7 +412,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
   <trk>
     <name>${routeData.title}</name>
     <trkseg>
-      ${routeData.pathCoordinates.map(([lat, lng]) => `<trkpt lat="${lat}" lon="${lng}"></trkpt>`).join('\n      ')}
+      ${routeData.pathCoordinates.map(([lat, lng]: [number, number]) => `<trkpt lat="${lat}" lon="${lng}"></trkpt>`).join('\n      ')}
     </trkseg>
   </trk>
 </gpx>`;
@@ -320,6 +432,12 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
     <div className={`bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden transition-all ${
       isFullscreen ? 'fixed inset-0 z-50 rounded-none h-screen' : 'relative my-8'
     }`}>
+      <style>{`
+        .leaflet-div-icon.custom-wp-pin {
+          background: transparent !important;
+          border: none !important;
+        }
+      `}</style>
       {/* Top Header Bar */}
       <div className="p-4 sm:p-5 bg-white border-b border-[#eaeef3] flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -487,7 +605,11 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
             <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
               <span className="font-mono">{selectedWaypoint.lat.toFixed(4)}° N, {selectedWaypoint.lng.toFixed(4)}° E</span>
               <button
-                onClick={() => handleFlyToWaypoint(selectedWaypoint)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (selectedWaypoint) handleFlyToWaypoint(selectedWaypoint);
+                }}
                 className="text-[#5191fa] hover:underline font-semibold flex items-center gap-0.5 cursor-pointer"
               >
                 <span>Center</span>
@@ -506,6 +628,7 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
             <span>Day-by-Day Expedition Stages (Click to Pan)</span>
           </div>
           <button
+            type="button"
             onClick={() => setShowElevationProfile(!showElevationProfile)}
             className="text-xs text-[#5191fa] hover:underline font-medium cursor-pointer"
           >
@@ -516,11 +639,18 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
         {/* Scrollable Waypoint Chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin">
           {routeData.waypoints.map((wp, index) => {
-            const isSelected = selectedWaypoint?.id === wp.id;
+            const isSelected = (selectedWaypoint?.id && wp.id && selectedWaypoint.id === wp.id) ||
+              selectedWaypoint?.name === wp.name ||
+              (activeDayNumber !== undefined && wp.dayNumber === activeDayNumber);
+            const chipKey = wp.id || `wp-chip-${index}-${wp.name}`;
             return (
               <button
-                key={wp.id}
-                onClick={() => handleFlyToWaypoint(wp)}
+                key={chipKey}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFlyToWaypoint(wp);
+                }}
                 className={`shrink-0 px-3 py-2 rounded-xl text-left border transition-all cursor-pointer ${
                   isSelected
                     ? 'bg-[#1a2b48] text-white border-[#1a2b48] shadow-md'
@@ -587,19 +717,23 @@ export const InteractiveRouteMap: React.FC<InteractiveRouteMapProps> = ({
                     <>
                       <path d={pathD} fill="url(#altitudeGradient)" />
                       <path d={strokeD} fill="none" stroke="#5191fa" strokeWidth="2.5" strokeLinecap="round" />
-                      {points.map((p, i) => (
-                        <circle
-                          key={i}
-                          cx={p.x}
-                          cy={p.y}
-                          r={selectedWaypoint?.id === p.wp.id ? 5 : 3}
-                          fill={selectedWaypoint?.id === p.wp.id ? '#fa5636' : '#1a2b48'}
-                          stroke="#ffffff"
-                          strokeWidth="1.5"
-                          className="cursor-pointer transition-all hover:r-6"
-                          onClick={() => handleFlyToWaypoint(p.wp)}
-                        />
-                      ))}
+                      {points.map((p, i) => {
+                        const isNodeSelected = (selectedWaypoint?.id && p.wp.id && selectedWaypoint.id === p.wp.id) || selectedWaypoint?.name === p.wp.name;
+                        const circleKey = p.wp.id ? `elev-node-${p.wp.id}` : `elev-node-${i}-${p.wp.name}`;
+                        return (
+                          <circle
+                            key={circleKey}
+                            cx={p.x}
+                            cy={p.y}
+                            r={isNodeSelected ? 5 : 3}
+                            fill={isNodeSelected ? '#fa5636' : '#1a2b48'}
+                            stroke="#ffffff"
+                            strokeWidth="1.5"
+                            className="cursor-pointer transition-all hover:r-6"
+                            onClick={() => handleFlyToWaypoint(p.wp)}
+                          />
+                        );
+                      })}
                     </>
                   );
                 })()}

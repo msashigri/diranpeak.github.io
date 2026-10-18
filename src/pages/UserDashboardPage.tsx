@@ -7,7 +7,7 @@ import {
   AlertTriangle, Eye, Shield, KeyRound, Check, XCircle, Clock,
   Heart, Activity, Filter, Copy, FileText, Sparkles, MessageSquare,
   Handshake, Bell, Send, CheckCircle2, ChevronRight, ExternalLink, Globe,
-  Users
+  Users, FileDown
 } from 'lucide-react';
 
 interface FirestoreUserRecord {
@@ -34,8 +34,11 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
     isAuthenticated,
     bookings,
     formatPrice,
+    downloadVoucher,
     logout,
     openLogin,
+    adminAuth,
+    isAdmin,
     updateUserProfile,
     deleteUserAccount,
     deleteUserBooking,
@@ -70,8 +73,11 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
   } = useAuth();
 
   const isUserAdmin = Boolean(
+    isAdmin ||
+    adminAuth?.isAuthenticated ||
     user?.id === ADMIN_USER_ID ||
     user?.email?.toLowerCase() === 'msa78677@gmail.com' ||
+    user?.email?.toLowerCase() === 'admin@diranpeak.com' ||
     user?.role === 'admin'
   );
 
@@ -169,6 +175,8 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
   const [userTab, setUserTab] = useState<'bookings' | 'favorites' | 'profile'>('bookings');
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [guestLookupCode, setGuestLookupCode] = useState('');
+  const [guestLookupSearched, setGuestLookupSearched] = useState(false);
 
   useEffect(() => {
     if (initialTab === 'profile' || initialTab === 'edit-profile') {
@@ -241,6 +249,20 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
       loadAdminData();
     }
   }, [isUserAdmin]);
+
+  // Real-time synchronization of adminAllBookings with bookings from AuthContext
+  useEffect(() => {
+    if (isUserAdmin && bookings.length > 0) {
+      setAdminAllBookings(prev => {
+        const map = new Map<string, Booking>();
+        bookings.forEach(b => map.set(b.id, b));
+        prev.forEach(b => {
+          if (!map.has(b.id)) map.set(b.id, b);
+        });
+        return Array.from(map.values());
+      });
+    }
+  }, [bookings, isUserAdmin]);
 
   // Admin: Update booking status directly in Firestore
   const handleAdminUpdateStatus = async (bookingId: string, newStatus: Booking['status']) => {
@@ -619,31 +641,8 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
     );
   };
 
-  // Unauthenticated screen
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="bg-[#f7f8fa] min-h-[70vh] flex items-center justify-center py-16 px-4">
-        <div className="max-w-md w-full bg-white rounded-3xl p-8 shadow-sm border border-slate-200 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#5191fa] flex items-center justify-center mx-auto mb-4">
-            <User className="w-7 h-7" />
-          </div>
-          <h2 className="font-heading text-xl font-bold text-[#1a2b48] mb-2">Member Portal Access</h2>
-          <p className="text-xs text-slate-500 mb-6">
-            Please log in with your account or sign up to view your bookings, saved favorites, and personal travel paperwork.
-          </p>
-          <button
-            onClick={openLogin}
-            className="w-full py-2.5 px-4 bg-[#5191fa] text-white font-bold text-xs uppercase tracking-wider rounded-xl cursor-pointer hover:bg-[#3d7be3] transition-colors"
-          >
-            Log In / Sign Up
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   // =========================================================================
-  // ADMIN DASHBOARD VIEW (Shown ONLY when user ID 83oYhWqa5ONqFdaJUVs26BnhEZl1 logs in)
+  // ADMIN DASHBOARD VIEW (Shown when user has admin role or adminAuth session)
   // =========================================================================
   if (isUserAdmin) {
     const filteredUsers = adminUsers.filter(u => {
@@ -1039,7 +1038,7 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                     >
                       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
                         <div>
-                          <div className="flex items-center gap-2 mb-1.5">
+                          <div className="flex flex-wrap items-center gap-2 mb-1.5">
                             <span className="font-mono text-xs font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
                               {b.bookingCode}
                             </span>
@@ -1054,6 +1053,11 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                             >
                               {b.status}
                             </span>
+                            {(b.isGuest || !b.userId || b.userId.startsWith('guest')) && (
+                              <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                                Guest Reservation
+                              </span>
+                            )}
                             <span className="text-xs text-slate-400">· {b.bookingDate}</span>
                           </div>
 
@@ -1063,6 +1067,21 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
 
                           <div className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-3">
                             <span><strong>Traveler:</strong> {b.customerName} ({b.customerEmail})</span>
+                            {b.customerPhone && (
+                              <>
+                                <span>·</span>
+                                <a
+                                  href={`https://wa.me/${b.customerPhone.replace(/[^0-9]/g, '')}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-1 text-emerald-600 hover:underline font-semibold"
+                                  title="Chat with traveler on WhatsApp"
+                                >
+                                  <Phone className="w-3 h-3" />
+                                  <span>{b.customerPhone}</span>
+                                </a>
+                              </>
+                            )}
                             <span>·</span>
                             <span><strong>Dates:</strong> {b.startDate} to {b.endDate}</span>
                             <span>·</span>
@@ -1125,6 +1144,16 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                         </div>
 
                         <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => downloadVoucher(b)}
+                            className="px-3 py-1 bg-[#1a2b48] hover:bg-[#283d63] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                            title="Download official PDF expedition voucher"
+                          >
+                            <FileDown className="w-3.5 h-3.5 text-[#5191fa]" />
+                            <span>PDF Voucher</span>
+                          </button>
+
                           <button
                             type="button"
                             onClick={() => handleOpenEditBooking(b)}
@@ -1230,7 +1259,7 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                       >
                         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                           <div>
-                            <div className="flex items-center gap-2 mb-1">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
                               <span className="font-bold text-sm text-[#1a2b48]">{inq.name}</span>
                               <span
                                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -1243,6 +1272,16 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                               >
                                 {inq.status}
                               </span>
+                              {(inq.isGuest || !inq.userId || inq.userId.startsWith('guest')) && (
+                                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                                  Guest Inquiry
+                                </span>
+                              )}
+                              {inq.tourTitle && (
+                                <span className="text-[11px] font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
+                                  {inq.tourTitle}
+                                </span>
+                              )}
                               <span className="text-[11px] text-slate-400">· {inq.date}</span>
                             </div>
 
@@ -1252,10 +1291,16 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                                 <span>{inq.email}</span>
                               </a>
                               {inq.phone && (
-                                <span className="flex items-center gap-1 text-slate-600">
+                                <a
+                                  href={`https://wa.me/${inq.phone.replace(/[^0-9]/g, '')}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="flex items-center gap-1 text-emerald-600 hover:underline font-semibold"
+                                  title="WhatsApp this traveler directly"
+                                >
                                   <Phone className="w-3.5 h-3.5" />
                                   <span>{inq.phone}</span>
-                                </span>
+                                </a>
                               )}
                             </div>
                           </div>
@@ -2636,6 +2681,245 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
   }
 
   // =========================================================================
+  // GUEST TRAVELER & VOUCHER DOWNLOAD VIEW (When user is not signed in)
+  // =========================================================================
+  if (!user) {
+    const storedGuestBookings: Booking[] = (() => {
+      try {
+        const stored = localStorage.getItem('dpa_guest_bookings');
+        if (stored) return JSON.parse(stored);
+      } catch {
+        // ignore
+      }
+      return [];
+    })();
+
+    // Merge in-memory guest bookings and local storage guest bookings
+    const combinedGuestBookings = Array.from(
+      new Map([
+        ...storedGuestBookings.map(b => [b.id, b] as [string, Booking]),
+        ...bookings.filter(b => b.isGuest || !b.userId || b.userId.startsWith('guest')).map(b => [b.id, b] as [string, Booking])
+      ]).values()
+    );
+
+    const filteredGuestBookings = combinedGuestBookings.filter(b => {
+      if (!guestLookupCode.trim()) return true;
+      const q = guestLookupCode.toLowerCase().trim();
+      return (
+        b.bookingCode.toLowerCase().includes(q) ||
+        (b.customerEmail && b.customerEmail.toLowerCase().includes(q)) ||
+        (b.customerName && b.customerName.toLowerCase().includes(q)) ||
+        (b.tourTitle && b.tourTitle.toLowerCase().includes(q))
+      );
+    });
+
+    return (
+      <div className="bg-[#f7f8fa] min-h-screen py-10">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Breadcrumb */}
+          <div className="text-xs text-slate-500 mb-4 flex items-center gap-1.5 font-medium">
+            <button onClick={() => onNavigate('home')} className="hover:text-[#5191fa] cursor-pointer">Home</button>
+            <span>/</span>
+            <span className="text-slate-800 font-semibold">Traveler Portal &amp; Booking Voucher</span>
+          </div>
+
+          {/* Guest Voucher Banner */}
+          <div className="bg-gradient-to-br from-[#1a2b48] via-[#233a60] to-[#1a2b48] text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[#5191fa]/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 mb-3">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>DTS License #1842 Verified</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-white">
+                  Expedition Voucher &amp; Reservation Portal
+                </h1>
+                <p className="text-xs text-slate-300 mt-1.5 max-w-xl leading-relaxed">
+                  Download your official Government of Pakistan licensed expedition voucher, check reservation status, or log in to link your bookings to your climber profile.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={openLogin}
+                  className="px-4 py-2.5 bg-[#5191fa] hover:bg-[#3d7be3] text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Sign In / Create Account</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onNavigate('tours', 'all')}
+                  className="px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  Explore Expeditions
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Voucher Lookup Search Box */}
+          <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-sm border border-slate-200 mb-8">
+            <h2 className="text-base font-heading font-bold text-[#1a2b48] mb-2 flex items-center gap-2">
+              <Search className="w-4 h-4 text-[#5191fa]" />
+              <span>Find Your Reservation &amp; Download Voucher</span>
+            </h2>
+            <p className="text-xs text-slate-500 mb-4">
+              Enter the Booking Reference Code (e.g. <span className="font-mono text-slate-700 font-semibold">DPA-GUEST-1234</span>) or email address used during booking.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={guestLookupCode}
+                  onChange={(e) => {
+                    setGuestLookupCode(e.target.value);
+                    setGuestLookupSearched(true);
+                  }}
+                  placeholder="e.g. DPA-GUEST-1042 or traveler@example.com"
+                  className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:border-[#5191fa]"
+                />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+              </div>
+              {guestLookupCode && (
+                <button
+                  type="button"
+                  onClick={() => setGuestLookupCode('')}
+                  className="px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-xl cursor-pointer"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Reservations List */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="text-lg font-heading font-bold text-[#1a2b48] flex items-center gap-2">
+                  <CalendarCheck className="w-5 h-5 text-[#5191fa]" />
+                  <span>Available Booking Vouchers ({filteredGuestBookings.length})</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Click download to generate an official expedition voucher with QR security code and Pakistan DTS license seal.
+                </p>
+              </div>
+            </div>
+
+            {filteredGuestBookings.length > 0 ? (
+              <div className="space-y-4">
+                {filteredGuestBookings.map((b) => (
+                  <div
+                    key={b.id}
+                    className="p-5 rounded-2xl border border-slate-200 bg-white hover:border-[#5191fa] transition-all shadow-xs"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                          <span className="font-mono text-xs font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
+                            {b.bookingCode}
+                          </span>
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                            Guest Reservation
+                          </span>
+                          <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                            {b.status || 'Confirmed'}
+                          </span>
+                          <span className="text-xs text-slate-400">· {b.bookingDate}</span>
+                        </div>
+                        <h4 className="font-heading font-bold text-slate-900 text-base">
+                          {b.tourTitle}
+                        </h4>
+                        <div className="text-xs text-slate-600 mt-1 flex flex-wrap items-center gap-3">
+                          <span><strong>Lead Climber:</strong> {b.customerName}</span>
+                          <span>·</span>
+                          <span><strong>Email:</strong> {b.customerEmail}</span>
+                          {b.customerPhone && (
+                            <>
+                              <span>·</span>
+                              <span><strong>WhatsApp:</strong> {b.customerPhone}</span>
+                            </>
+                          )}
+                          <span>·</span>
+                          <span><strong>Dates:</strong> {b.startDate} to {b.endDate}</span>
+                          <span>·</span>
+                          <span><strong>Party:</strong> {b.adults} Adults {b.children ? `+ ${b.children} Youths` : ''}</span>
+                        </div>
+                        {b.specialRequests && (
+                          <div className="text-xs text-slate-600 mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                            <strong>Note:</strong> {b.specialRequests}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="text-left md:text-right shrink-0">
+                        <div className="text-[10px] text-slate-400 uppercase font-bold">Total Amount</div>
+                        <div className="text-lg font-black text-[#1a2b48]">
+                          {formatPrice(b.totalPrice)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                      <button
+                        type="button"
+                        onClick={() => downloadVoucher(b)}
+                        className="px-4 py-2 bg-[#1a2b48] hover:bg-[#283d63] text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+                      >
+                        <FileDown className="w-4 h-4 text-[#5191fa]" />
+                        <span>Download Official PDF Voucher</span>
+                      </button>
+
+                      {b.customerPhone && (
+                        <a
+                          href={`https://wa.me/923456412992?text=${encodeURIComponent(`Salam DPA Team, I am checking my booking ${b.bookingCode} for ${b.tourTitle}.`)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-emerald-600 font-semibold hover:underline flex items-center gap-1.5"
+                        >
+                          <Phone className="w-3.5 h-3.5" />
+                          <span>WhatsApp Expedition Logistics (+92 345 6412992)</span>
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 text-xs">
+                <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="font-semibold text-slate-700 text-sm">No reservations found matching your query.</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
+                  If you booked recently as a guest, please make sure you typed the exact reference code from your confirmation screen (e.g., DPA-GUEST-XXXX) or the email you entered.
+                </p>
+                <div className="mt-4 flex justify-center gap-2">
+                  <button
+                    type="button"
+                    onClick={openLogin}
+                    className="px-4 py-2 bg-[#5191fa] text-white font-bold rounded-xl text-xs hover:bg-[#3d7be3] cursor-pointer"
+                  >
+                    Sign In to Account
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onNavigate('tours', 'all')}
+                    className="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-xl text-xs hover:bg-slate-200 cursor-pointer"
+                  >
+                    Browse All Expeditions
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
   // NORMAL TRAVELER DASHBOARD VIEW (Every other user sees their own dashboard)
   // =========================================================================
   const myBookings = bookings.filter(
@@ -2830,13 +3114,25 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                             {formatPrice(b.totalPrice)}
                           </div>
                         </div>
-                        <button
-                          onClick={() => deleteUserBooking(b.id)}
-                          className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Cancel Booking</span>
-                        </button>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => downloadVoucher(b)}
+                            className="px-3.5 py-1.5 bg-[#1a2b48] hover:bg-[#283d63] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                            title="Download official PDF booking voucher"
+                          >
+                            <FileDown className="w-3.5 h-3.5 text-[#5191fa]" />
+                            <span>Download PDF Voucher</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteUserBooking(b.id)}
+                            className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>Cancel Booking</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
