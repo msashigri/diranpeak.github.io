@@ -9,7 +9,7 @@ interface TopbarProps {
 }
 
 export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
-  const { user, isAuthenticated, isAdmin, adminAuth, currency, language, languageCode, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries, favorites } = useAuth();
+  const { user, isAuthenticated, isAdmin, adminAuth, adminLogout, currency, language, languageCode, setCurrency, setLanguage, openLogin, openRegister, logout, bookings, contactInquiries, favorites } = useAuth();
   const [showCurrencyDropdown, setShowCurrencyDropdown] = useState(false);
   const [showLangDropdown, setShowLangDropdown] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
@@ -175,7 +175,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
           <span className="text-[#3b4b66]">|</span>
 
           {/* User Account / Login & Register */}
-          {isAuthenticated && user ? (
+          {(isAuthenticated && user) || adminAuth?.isAuthenticated ? (
             <div className="relative flex items-center gap-2">
               {isAdmin && (
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500 text-slate-950 flex items-center gap-1 shadow-xs">
@@ -188,23 +188,25 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
                 className="flex items-center gap-1.5 font-medium hover:text-white transition-colors cursor-pointer"
               >
                 <div className="w-5 h-5 rounded-full bg-[#5191fa] text-white flex items-center justify-center font-bold text-[10px]">
-                  {(user.firstName || user.email)[0].toUpperCase()}
+                  {((user?.firstName || user?.email || adminAuth?.adminName || 'A'))[0].toUpperCase()}
                 </div>
-                <span>Hi, {user.firstName || 'Traveler'}</span>
+                <span>Hi, {user?.firstName || adminAuth?.adminName || 'Admin'}</span>
                 <ChevronDown className="w-3 h-3 text-slate-400" />
               </button>
               {showUserDropdown && (
                 <div className="absolute right-0 top-full mt-1 w-48 bg-white text-slate-800 rounded-lg shadow-xl border border-slate-100 py-1.5 z-[1100]">
-                  <button
-                    onClick={() => {
-                      setShowUserDropdown(false);
-                      onNavigate('dashboard', 'profile');
-                    }}
-                    className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-[#5191fa] font-semibold cursor-pointer border-b border-slate-100"
-                  >
-                    <Edit3 className="w-3.5 h-3.5 text-[#5191fa]" />
-                    <span>Edit Profile</span>
-                  </button>
+                  {user && (
+                    <button
+                      onClick={() => {
+                        setShowUserDropdown(false);
+                        onNavigate('dashboard', 'profile');
+                      }}
+                      className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-slate-50 text-[#5191fa] font-semibold cursor-pointer border-b border-slate-100"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-[#5191fa]" />
+                      <span>Edit Profile</span>
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setShowUserDropdown(false);
@@ -228,9 +230,12 @@ export const Topbar: React.FC<TopbarProps> = ({ onNavigate }) => {
                     </button>
                   )}
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={async () => {
                       setShowUserDropdown(false);
-                      logout();
+                      await logout();
+                      adminLogout();
+                      onNavigate('home');
                     }}
                     className="w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-rose-50 text-rose-600 cursor-pointer"
                   >

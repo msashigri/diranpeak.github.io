@@ -20,7 +20,7 @@ import {
   query,
   where
 } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../firebase/config';
+import { auth, db, googleProvider, cleanFirestoreData } from '../firebase/config';
 import { handleFirestoreError, OperationType } from '../firebase/errorHandler';
 import { initLanguageTranslator, translateWholeWebsite, getLanguageByCodeOrName } from '../utils/translator';
 import { TOURS_DATA } from '../data/toursData';
@@ -52,8 +52,13 @@ export interface User {
   bio?: string;
   createdAt?: string;
   favorites?: string[];
-  role?: 'customer' | 'admin' | 'guide';
+  role?: string;
+  verified?: boolean;
+  isVerified?: boolean;
+  verifiedAt?: string;
+  country?: string;
   tempPassword?: string;
+  permissions?: string[];
 }
 
 export interface Booking {
@@ -82,6 +87,14 @@ export interface Booking {
   paymentStatus?: string;
 }
 
+export interface InquiryComment {
+  id: string;
+  author: string;
+  text: string;
+  date: string;
+  isReply?: boolean;
+}
+
 export interface ContactInquiry {
   id: string;
   userId?: string;
@@ -91,10 +104,16 @@ export interface ContactInquiry {
   subject: string;
   message: string;
   date: string;
-  status: 'New' | 'Contacted' | 'Closed';
+  status: 'New' | 'In Review' | 'Contacted' | 'Replied' | 'Approved' | 'Declined' | 'Closed';
   tourId?: string;
   tourTitle?: string;
   isGuest?: boolean;
+  type?: 'contact' | 'vehicle' | 'hotel' | 'guide_porter' | 'b2b_partner';
+  specifics?: Record<string, any>;
+  comments?: InquiryComment[];
+  replies?: InquiryComment[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface PartnerRequest {
@@ -107,8 +126,9 @@ export interface PartnerRequest {
   location?: string;
   details?: string;
   date: string;
-  status: 'Pending' | 'Approved' | 'Declined';
+  status: 'Pending' | 'In Review' | 'Replied' | 'Approved' | 'Declined';
   createdAt?: string;
+  comments?: InquiryComment[];
 }
 
 export interface NewsletterSubscriber {
@@ -237,6 +257,54 @@ interface AuthContextType {
   updateContactStatus: (id: string, status: ContactInquiry['status']) => void;
   deleteContactInquiry: (id: string) => void;
   updateAdminSettings: (settings: Partial<AdminSettings>) => void;
+  addVehicleInquiry: (inquiry: {
+    vehicle: string;
+    name: string;
+    email: string;
+    phone?: string;
+    route: string;
+    notes?: string;
+    startDate?: string;
+    duration?: string;
+    passengers?: number | string;
+  }) => Promise<ContactInquiry>;
+  addHotelInquiry: (inquiry: {
+    hotel: string;
+    name: string;
+    email: string;
+    phone: string;
+    checkIn: string;
+    checkOut: string;
+    guests: string | number;
+    roomType: string;
+    notes?: string;
+  }) => Promise<ContactInquiry>;
+  addGuideApplication: (app: {
+    name: string;
+    email: string;
+    phone: string;
+    roleApplied: string;
+    region: string;
+    experience: string;
+    certifications?: string;
+    summits?: string;
+    notes?: string;
+  }) => Promise<ContactInquiry>;
+  updateInquiryStatus: (id: string, status: ContactInquiry['status']) => Promise<void>;
+  addInquiryComment: (inquiryId: string, commentText: string, authorName?: string, isReply?: boolean) => Promise<void>;
+  deleteInquiry: (id: string) => Promise<void>;
+  adminCreateUser: (userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password?: string;
+    phone?: string;
+    role: string;
+    country?: string;
+    isVerified?: boolean;
+  }) => Promise<{ success: boolean; user?: any; error?: string }>;
+  adminUpdateUserRole: (userId: string, role: string) => Promise<{ success: boolean; error?: string }>;
+  adminVerifyUser: (userId: string, isVerified: boolean) => Promise<{ success: boolean; error?: string }>;
   updateUserProfile: (data: Partial<User>) => Promise<{ success: boolean; error?: string }>;
   deleteUserAccount: () => Promise<{ success: boolean; error?: string }>;
   deleteUserBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
@@ -871,7 +939,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setActivities(prev => [newAct, ...prev]);
 
     try {
-      await setDoc(doc(db, 'activities', actId), newAct);
+      await setDoc(doc(db, 'activities', actId), cleanFirestoreData(newAct));
     } catch (err) {
       console.warn('Could not persist activity log to Firestore:', err);
     }
@@ -1280,9 +1348,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Error signing out from Firebase:', err);
     }
     setUser(null);
+    setAdminAuth(null);
     setFavorites([]);
     localStorage.removeItem('dpa_user');
     localStorage.removeItem('dpa_user_favorites');
+    localStorage.removeItem('dpa_admin_session');
+    try {
+      sessionStorage.removeItem('dpa_admin_session');
+      sessionStorage.clear();
+    } catch {
+      // ignore
+    }
   };
 
   const adminLogin = async (loginIdOrEmail: string, pass: string): Promise<{ success: boolean; error?: string }> => {
@@ -1322,6 +1398,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const adminLogout = () => {
     setAdminAuth(null);
+    setUser(null);
+    localStorage.removeItem('dpa_admin_session');
+    localStorage.removeItem('dpa_user');
+    try {
+      sessionStorage.removeItem('dpa_admin_session');
+      sessionStorage.clear();
+    } catch {
+      // ignore
+    }
   };
 
   const updateAdminCredentials = (creds: { loginId: string; email: string; password: string }): { success: boolean; error?: string } => {
@@ -1447,7 +1532,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createdAt: new Date().toISOString()
     };
 
-    setDoc(doc(db, 'inquiries', inquiryId), firestoreInquiryPayload).catch(err => {
+    setDoc(doc(db, 'inquiries', inquiryId), cleanFirestoreData(firestoreInquiryPayload)).catch(err => {
       console.warn('Could not persist inquiry to Firestore:', err);
     });
 
@@ -1487,7 +1572,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
     setPartnerRequests(prev => [newReq, ...prev]);
     try {
-      await setDoc(doc(db, 'partners', id), newReq);
+      await setDoc(doc(db, 'partners', id), cleanFirestoreData(newReq));
       await logActivity({
         userId: user?.id || 'guest',
         userEmail: newReq.email,
@@ -1973,13 +2058,355 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateContactStatus = (id: string, status: ContactInquiry['status']) => {
-    setContactInquiries(prev => prev.map(c => c.id === id ? { ...c, status } : c));
-    updateDoc(doc(db, 'inquiries', id), { status }).catch(() => {});
+    setContactInquiries(prev => prev.map(c => c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c));
+    updateDoc(doc(db, 'inquiries', id), { status, updatedAt: new Date().toISOString() }).catch(() => {});
   };
 
   const deleteContactInquiry = (id: string) => {
     setContactInquiries(prev => prev.filter(c => c.id !== id));
     deleteDoc(doc(db, 'inquiries', id)).catch(() => {});
+  };
+
+  const addVehicleInquiry = async (inquiry: {
+    vehicle: string;
+    name: string;
+    email: string;
+    phone?: string;
+    route: string;
+    notes?: string;
+    startDate?: string;
+    duration?: string;
+    passengers?: number | string;
+  }): Promise<ContactInquiry> => {
+    const inquiryId = 'veh_inq_' + Date.now();
+    const isGuest = !user && !auth.currentUser;
+    const cleanVehicle = (inquiry.vehicle || '4x4 Fleet Vehicle').trim();
+    const cleanName = (inquiry.name || '').trim();
+    const cleanEmail = (inquiry.email || '').trim();
+    const cleanPhone = (inquiry.phone || '').trim();
+    const cleanRoute = (inquiry.route || '').trim();
+    const cleanStartDate = (inquiry.startDate || '').trim();
+    const cleanDuration = (inquiry.duration || '').trim();
+    const cleanPassengers = inquiry.passengers !== undefined && inquiry.passengers !== null ? String(inquiry.passengers).trim() : '';
+    const cleanNotes = (inquiry.notes || '').trim();
+
+    let fullMsg = `Route: ${cleanRoute}`;
+    if (cleanStartDate) fullMsg += ` · Start Date: ${cleanStartDate}`;
+    if (cleanDuration) fullMsg += ` · Duration: ${cleanDuration}`;
+    if (cleanPassengers) fullMsg += ` · Party: ${cleanPassengers}`;
+    if (cleanNotes) fullMsg += `\nNotes: ${cleanNotes}`;
+
+    const newInquiry: ContactInquiry = {
+      id: inquiryId,
+      userId: user?.id || auth.currentUser?.uid || ('guest_' + Date.now()),
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      subject: `4x4 Fleet Inquiry: ${cleanVehicle}`,
+      message: fullMsg,
+      date: new Date().toISOString().split('T')[0],
+      status: 'New',
+      type: 'vehicle',
+      specifics: {
+        vehicle: cleanVehicle,
+        route: cleanRoute,
+        startDate: cleanStartDate,
+        duration: cleanDuration,
+        passengers: cleanPassengers,
+        notes: cleanNotes
+      },
+      isGuest,
+      createdAt: new Date().toISOString()
+    };
+
+    setContactInquiries(prev => [newInquiry, ...prev]);
+
+    try {
+      const payload = cleanFirestoreData(newInquiry);
+      await setDoc(doc(db, 'inquiries', inquiryId), payload);
+      await logActivity({
+        userId: newInquiry.userId!,
+        userEmail: newInquiry.email,
+        userName: newInquiry.name,
+        action: 'CONTACT_INQUIRY',
+        details: `Submitted vehicle fleet charter inquiry for ${cleanVehicle} (${cleanRoute})`
+      });
+    } catch (err) {
+      console.warn('Error saving vehicle inquiry to Firestore:', err);
+    }
+    return newInquiry;
+  };
+
+  const addHotelInquiry = async (inquiry: {
+    hotel: string;
+    name: string;
+    email: string;
+    phone: string;
+    checkIn: string;
+    checkOut: string;
+    guests: string | number;
+    roomType: string;
+    notes?: string;
+  }): Promise<ContactInquiry> => {
+    const inquiryId = 'htl_inq_' + Date.now();
+    const isGuest = !user && !auth.currentUser;
+    const cleanHotel = (inquiry.hotel || 'Hotel / Resort').trim();
+    const cleanName = (inquiry.name || '').trim();
+    const cleanEmail = (inquiry.email || '').trim();
+    const cleanPhone = (inquiry.phone || '').trim();
+    const cleanCheckIn = (inquiry.checkIn || '').trim();
+    const cleanCheckOut = (inquiry.checkOut || '').trim();
+    const cleanGuests = inquiry.guests !== undefined && inquiry.guests !== null ? String(inquiry.guests).trim() : '2';
+    const cleanRoomType = (inquiry.roomType || 'Standard Room').trim();
+    const cleanNotes = (inquiry.notes || '').trim();
+
+    const newInquiry: ContactInquiry = {
+      id: inquiryId,
+      userId: user?.id || auth.currentUser?.uid || ('guest_' + Date.now()),
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      subject: `Hotel Reservation: ${cleanHotel}`,
+      message: `Dates: ${cleanCheckIn} to ${cleanCheckOut} · Guests: ${cleanGuests} · Room: ${cleanRoomType}${cleanNotes ? `\nNotes: ${cleanNotes}` : ''}`,
+      date: new Date().toISOString().split('T')[0],
+      status: 'New',
+      type: 'hotel',
+      specifics: {
+        hotel: cleanHotel,
+        checkIn: cleanCheckIn,
+        checkOut: cleanCheckOut,
+        guests: cleanGuests,
+        roomType: cleanRoomType,
+        notes: cleanNotes
+      },
+      isGuest,
+      createdAt: new Date().toISOString()
+    };
+
+    setContactInquiries(prev => [newInquiry, ...prev]);
+
+    try {
+      const payload = cleanFirestoreData(newInquiry);
+      await setDoc(doc(db, 'inquiries', inquiryId), payload);
+      await logActivity({
+        userId: newInquiry.userId!,
+        userEmail: newInquiry.email,
+        userName: newInquiry.name,
+        action: 'CONTACT_INQUIRY',
+        details: `Submitted hotel reservation request for ${cleanHotel} (${cleanCheckIn} to ${cleanCheckOut})`
+      });
+    } catch (err) {
+      console.warn('Error saving hotel inquiry to Firestore:', err);
+    }
+    return newInquiry;
+  };
+
+  const addGuideApplication = async (app: {
+    name: string;
+    email: string;
+    phone: string;
+    roleApplied: string;
+    region: string;
+    experience: string;
+    certifications?: string;
+    summits?: string;
+    notes?: string;
+  }): Promise<ContactInquiry> => {
+    const inquiryId = 'guide_app_' + Date.now();
+    const isGuest = !user && !auth.currentUser;
+    const cleanName = (app.name || '').trim();
+    const cleanEmail = (app.email || '').trim();
+    const cleanPhone = (app.phone || '').trim();
+    const cleanRole = (app.roleApplied || 'Alpine Staff').trim();
+    const cleanRegion = (app.region || 'Gilgit-Baltistan').trim();
+    const cleanExperience = (app.experience || '').trim();
+    const cleanCertifications = (app.certifications || '').trim();
+    const cleanSummits = (app.summits || '').trim();
+    const cleanNotes = (app.notes || '').trim();
+
+    const newInquiry: ContactInquiry = {
+      id: inquiryId,
+      userId: user?.id || auth.currentUser?.uid || ('guest_' + Date.now()),
+      name: cleanName,
+      email: cleanEmail,
+      phone: cleanPhone,
+      subject: `Alpine Staff Application: ${cleanRole} (${cleanRegion})`,
+      message: `Role: ${cleanRole} · Region: ${cleanRegion} · Experience: ${cleanExperience}${cleanSummits ? ` · Summits: ${cleanSummits}` : ''}${cleanCertifications ? ` · Licenses: ${cleanCertifications}` : ''}${cleanNotes ? `\nBio: ${cleanNotes}` : ''}`,
+      date: new Date().toISOString().split('T')[0],
+      status: 'New',
+      type: 'guide_porter',
+      specifics: {
+        roleApplied: cleanRole,
+        region: cleanRegion,
+        experience: cleanExperience,
+        certifications: cleanCertifications,
+        summits: cleanSummits,
+        notes: cleanNotes
+      },
+      isGuest,
+      createdAt: new Date().toISOString()
+    };
+
+    setContactInquiries(prev => [newInquiry, ...prev]);
+
+    try {
+      const payload = cleanFirestoreData(newInquiry);
+      await setDoc(doc(db, 'inquiries', inquiryId), payload);
+      await logActivity({
+        userId: newInquiry.userId!,
+        userEmail: newInquiry.email,
+        userName: newInquiry.name,
+        action: 'CONTACT_INQUIRY',
+        details: `Submitted alpine field staff application for ${cleanRole} in ${cleanRegion}`
+      });
+    } catch (err) {
+      console.warn('Error saving guide application to Firestore:', err);
+    }
+    return newInquiry;
+  };
+
+  const updateInquiryStatus = async (id: string, status: ContactInquiry['status']) => {
+    setContactInquiries(prev => prev.map(c => c.id === id ? { ...c, status, updatedAt: new Date().toISOString() } : c));
+    try {
+      await updateDoc(doc(db, 'inquiries', id), { status, updatedAt: new Date().toISOString() });
+    } catch (err) {
+      console.warn('Error updating inquiry status in Firestore:', err);
+    }
+  };
+
+  const addInquiryComment = async (inquiryId: string, commentText: string, authorName?: string, isReply?: boolean) => {
+    if (!commentText.trim()) return;
+    const newComment: InquiryComment = {
+      id: 'c_' + Date.now(),
+      author: authorName || (user ? `${user.firstName} ${user.lastName}`.trim() : 'Operations Desk'),
+      text: commentText.trim(),
+      date: new Date().toISOString(),
+      isReply: Boolean(isReply)
+    };
+
+    setContactInquiries(prev => prev.map(item => {
+      if (item.id === inquiryId) {
+        const comments = [...(item.comments || []), newComment];
+        const status = isReply ? 'Replied' : item.status;
+        return { ...item, comments, status, updatedAt: new Date().toISOString() };
+      }
+      return item;
+    }));
+
+    try {
+      const inqRef = doc(db, 'inquiries', inquiryId);
+      const snap = await getDoc(inqRef);
+      if (snap.exists()) {
+        const currentData = snap.data();
+        const comments = [...(currentData.comments || []), newComment];
+        const updates: any = {
+          comments,
+          updatedAt: new Date().toISOString()
+        };
+        if (isReply) {
+          updates.status = 'Replied';
+        }
+        await updateDoc(inqRef, updates);
+      }
+    } catch (err) {
+      console.warn('Error saving inquiry comment to Firestore:', err);
+    }
+  };
+
+  const deleteInquiry = async (id: string) => {
+    setContactInquiries(prev => prev.filter(c => c.id !== id));
+    try {
+      await deleteDoc(doc(db, 'inquiries', id));
+    } catch (err) {
+      console.warn('Error deleting inquiry in Firestore:', err);
+    }
+  };
+
+  const adminCreateUser = async (userData: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    password?: string;
+    phone?: string;
+    role: string;
+    country?: string;
+    isVerified?: boolean;
+  }): Promise<{ success: boolean; user?: any; error?: string }> => {
+    try {
+      const newUserId = 'usr_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      const newUserDoc = {
+        id: newUserId,
+        firstName: userData.firstName.trim(),
+        lastName: userData.lastName.trim(),
+        email: userData.email.trim().toLowerCase(),
+        phone: userData.phone?.trim() || '',
+        country: userData.country?.trim() || '',
+        role: userData.role || 'traveler',
+        verified: userData.isVerified ?? true,
+        tempPassword: userData.password?.trim() || 'DiranPeak2027!',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      await setDoc(doc(db, 'users', newUserId), newUserDoc);
+
+      await logActivity({
+        userId: newUserId,
+        userEmail: newUserDoc.email,
+        userName: `${newUserDoc.firstName} ${newUserDoc.lastName}`,
+        action: 'USER_REGISTER',
+        details: `Admin manually added user account (${newUserDoc.email}) with role "${newUserDoc.role}"`
+      });
+
+      return { success: true, user: newUserDoc };
+    } catch (err) {
+      console.error('Error creating user manually:', err);
+      return { success: false, error: (err as Error)?.message || 'Failed to create user in Firestore.' };
+    }
+  };
+
+  const adminUpdateUserRole = async (userId: string, role: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        role,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      await logActivity({
+        userId,
+        userEmail: 'user',
+        userName: 'Admin Role Manager',
+        action: 'PROFILE_UPDATED',
+        details: `Assigned new role "${role}" to user UID ${userId}`
+      });
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error updating user role:', err);
+      return { success: false, error: (err as Error)?.message || 'Failed to update user role.' };
+    }
+  };
+
+  const adminVerifyUser = async (userId: string, isVerified: boolean): Promise<{ success: boolean; error?: string }> => {
+    try {
+      await setDoc(doc(db, 'users', userId), {
+        verified: isVerified,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+
+      await logActivity({
+        userId,
+        userEmail: 'user',
+        userName: 'Admin Verification Desk',
+        action: 'PROFILE_UPDATED',
+        details: isVerified ? `Verified user credentials for UID ${userId}` : `Revoked verification for UID ${userId}`
+      });
+
+      return { success: true };
+    } catch (err) {
+      console.error('Error verifying user:', err);
+      return { success: false, error: (err as Error)?.message || 'Failed to verify user.' };
+    }
   };
 
   const updateAdminSettings = (settings: Partial<AdminSettings>) => {
@@ -2185,6 +2612,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteBooking,
         updateContactStatus,
         deleteContactInquiry,
+        addVehicleInquiry,
+        addHotelInquiry,
+        addGuideApplication,
+        updateInquiryStatus,
+        addInquiryComment,
+        deleteInquiry,
+        adminCreateUser,
+        adminUpdateUserRole,
+        adminVerifyUser,
         updateAdminSettings,
         updateUserProfile,
         deleteUserAccount,

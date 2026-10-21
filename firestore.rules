@@ -36,7 +36,7 @@ service cloud.firestore {
         data.keys().hasOnly([
           'id', 'email', 'firstName', 'lastName', 'phone', 'role', 'photoURL',
           'emergencyContact', 'passportNumber', 'bio', 'favorites', 'verified', 'permissions',
-          'createdAt', 'lastLoginAt', 'updatedAt', 'passwordResetRequested', 'passwordResetAt', 'tempPassword'
+          'createdAt', 'lastLoginAt', 'updatedAt', 'passwordResetRequested', 'passwordResetAt', 'tempPassword', 'country'
         ]) &&
         data.id is string && data.id.size() <= 128 &&
         data.email is string && data.email.size() <= 150 &&
@@ -46,6 +46,7 @@ service cloud.firestore {
         (!('permissions' in data) || (data.permissions is list)) &&
         (!('lastName' in data) || (data.lastName is string && data.lastName.size() <= 100)) &&
         (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
+        (!('country' in data) || (data.country is string && data.country.size() <= 100)) &&
         (!('emergencyContact' in data) || (data.emergencyContact is string && data.emergencyContact.size() <= 200)) &&
         (!('passportNumber' in data) || (data.passportNumber is string && data.passportNumber.size() <= 100)) &&
         (!('bio' in data) || (data.bio is string && data.bio.size() <= 2000)) &&
@@ -82,7 +83,7 @@ service cloud.firestore {
         data.name is string && data.name.size() <= 150 &&
         data.email is string && data.email.size() <= 150 &&
         data.message is string && data.message.size() <= 2500 &&
-        (!('status' in data) || (data.status in ['New', 'In Review', 'Contacted', 'Approved', 'Declined', 'Closed'])) &&
+        (!('status' in data) || (data.status in ['New', 'In Review', 'Contacted', 'Replied', 'Approved', 'Declined', 'Closed'])) &&
         (!('type' in data) || (data.type in ['contact', 'vehicle', 'hotel', 'guide_porter', 'b2b_partner'])) &&
         (!('phone' in data) || (data.phone is string && data.phone.size() <= 50)) &&
         (!('subject' in data) || (data.subject is string && data.subject.size() <= 250)) &&
@@ -172,6 +173,18 @@ service cloud.firestore {
     // 11. Alert Settings Collection
     match /alertSettings/{settingId} {
       allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 12. Tour Packages & Overrides Collection
+    match /tourPackages/{tourId} {
+      allow read, list: if true;
+      allow write: if isAdmin();
+    }
+
+    // 13. Site Settings & Branding
+    match /siteSettings/{settingId} {
+      allow read, list: if true;
       allow write: if isAdmin();
     }
   }

@@ -136,6 +136,56 @@
         "sentAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "subject", "message", "sender", "recipientCount"]
+    },
+    "TourPackage": {
+      "title": "TourPackage",
+      "description": "Customizable tour, trekking, and mountaineering package with pricing and media",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 200 },
+        "slug": { "type": "string", "maxLength": 150 },
+        "category": { "type": "string", "maxLength": 50 },
+        "price": { "type": "number" },
+        "originalPrice": { "type": "number" },
+        "image": { "type": "string", "maxLength": 800 },
+        "overview": { "type": "string", "maxLength": 4000 },
+        "duration": { "type": "string", "maxLength": 50 },
+        "daysCount": { "type": "number" },
+        "difficulty": { "type": "string", "maxLength": 50 },
+        "featured": { "type": "boolean" },
+        "bestSeller": { "type": "boolean" },
+        "location": { "type": "string", "maxLength": 150 },
+        "maxAltitude": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["id", "title", "price"]
+    },
+    "SiteSettings": {
+      "title": "SiteSettings",
+      "description": "Global website configuration, logo, favicon, titles, meta tags, and contact information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 50 },
+        "siteName": { "type": "string", "maxLength": 150 },
+        "tagline": { "type": "string", "maxLength": 250 },
+        "logoUrl": { "type": "string", "maxLength": 800 },
+        "faviconUrl": { "type": "string", "maxLength": 800 },
+        "metaTitle": { "type": "string", "maxLength": 250 },
+        "metaDescription": { "type": "string", "maxLength": 1000 },
+        "metaKeywords": { "type": "string", "maxLength": 500 },
+        "ogTitle": { "type": "string", "maxLength": 250 },
+        "ogDescription": { "type": "string", "maxLength": 1000 },
+        "contactPhone": { "type": "string", "maxLength": 50 },
+        "contactEmail": { "type": "string", "maxLength": 150 },
+        "whatsappNumber": { "type": "string", "maxLength": 50 },
+        "address": { "type": "string", "maxLength": 300 },
+        "licenseNumber": { "type": "string", "maxLength": 100 },
+        "heroTitle": { "type": "string", "maxLength": 250 },
+        "heroSubtitle": { "type": "string", "maxLength": 500 },
+        "heroBadge": { "type": "string", "maxLength": 150 },
+        "heroBgImage": { "type": "string", "maxLength": 800 }
+      },
+      "required": ["id", "siteName"]
     }
   },
   "firestore": {
@@ -166,6 +216,14 @@
     "/broadcasts/{broadcastId}": {
       "schema": { "$ref": "#/entities/Broadcast" },
       "description": "Email updates dispatched to subscribers"
+    },
+    "/tourPackages/{tourId}": {
+      "schema": { "$ref": "#/entities/TourPackage" },
+      "description": "Customizable tour packages, featured toggles, pricing, and media"
+    },
+    "/siteSettings/{settingId}": {
+      "schema": { "$ref": "#/entities/SiteSettings" },
+      "description": "Global website configuration, logo, favicon, titles, and SEO meta tags"
     }
   }
 }

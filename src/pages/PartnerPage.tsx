@@ -15,7 +15,13 @@ import {
   Sparkles,
   Coffee,
   Wifi,
-  Award
+  Award,
+  AlertCircle,
+  Calendar,
+  Phone,
+  Mail,
+  Clock,
+  Loader2
 } from 'lucide-react';
 
 interface VehicleItem {
@@ -254,7 +260,7 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
   onNavigate,
   initialCategory
 }) => {
-  const { addPartnerRequest } = useAuth();
+  const { addPartnerRequest, addVehicleInquiry, addHotelInquiry, addGuideApplication, user } = useAuth();
   const [activeTab, setActiveTab] = useState<'all' | 'vehicles' | 'hotels' | 'agencies'>(
     initialCategory === 'car' || initialCategory === 'vehicles' ? 'vehicles' :
     initialCategory === 'hotel' || initialCategory === 'hotels' ? 'hotels' : 'all'
@@ -264,15 +270,28 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
     initialCategory === 'hotel' || initialCategory === 'hotels' ? 'Hotels & Resorts' : 'Hotels & Resorts'
   );
 
+  // Guide & Porter Application specialized fields
+  const [guideRole, setGuideRole] = useState('Alpine Mountain Guide');
+  const [guideExperience, setGuideExperience] = useState('5+ Years in High Altitude');
+  const [guideCertifications, setGuideCertifications] = useState('Alpine Club of Pakistan (ACP) Sirdar License');
+  const [guideSummits, setGuideSummits] = useState('');
+
   // Vehicle filter states
   const [vehicleFilter, setVehicleFilter] = useState<'all' | '4x4' | 'van' | 'bus' | 'pickup'>('all');
   const [vehicleSearchQuery, setVehicleSearchQuery] = useState('');
   const [selectedVehicleForInquiry, setSelectedVehicleForInquiry] = useState<VehicleItem | null>(null);
   const [vehInquiryName, setVehInquiryName] = useState('');
   const [vehInquiryEmail, setVehInquiryEmail] = useState('');
+  const [vehInquiryPhone, setVehInquiryPhone] = useState('');
   const [vehInquiryRoute, setVehInquiryRoute] = useState('');
+  const [vehInquiryStartDate, setVehInquiryStartDate] = useState('');
+  const [vehInquiryDuration, setVehInquiryDuration] = useState('7 Days');
+  const [vehInquiryPassengers, setVehInquiryPassengers] = useState('4 Passengers');
   const [vehInquiryNotes, setVehInquiryNotes] = useState('');
+  const [vehInquirySubmitting, setVehInquirySubmitting] = useState(false);
   const [vehInquirySubmitted, setVehInquirySubmitted] = useState(false);
+  const [vehInquiryError, setVehInquiryError] = useState('');
+  const [lastSubmittedVehicleRef, setLastSubmittedVehicleRef] = useState('');
 
   // Hotel filter states
   const [hotelRegionFilter, setHotelRegionFilter] = useState<'all' | 'hunza' | 'skardu' | 'islamabad' | 'fairy-meadows'>('all');
@@ -319,49 +338,132 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    await addPartnerRequest({
-      category: partnerType,
-      companyName,
-      contactName,
-      email,
-      phone,
-      location,
-      details
-    });
+    try {
+      if (partnerType === 'Mountain Guides & Porters') {
+        await addGuideApplication({
+          name: contactName,
+          email,
+          phone,
+          roleApplied: guideRole || 'Alpine Mountain Guide',
+          region: location || 'Gilgit-Baltistan',
+          experience: guideExperience || '5+ Years',
+          certifications: guideCertifications || 'Alpine Club of Pakistan',
+          summits: guideSummits,
+          notes: details
+        });
+      } else {
+        await addPartnerRequest({
+          category: partnerType,
+          companyName,
+          contactName,
+          email,
+          phone,
+          location,
+          details
+        });
+      }
+    } catch (err) {
+      console.warn('Error submitting application:', err);
+    }
     setSubmitting(false);
     setSubmitted(true);
   };
 
-  const handleVehicleInquirySubmit = (e: React.FormEvent) => {
+  const handleOpenVehicleInquiry = (vehicle: VehicleItem) => {
+    setSelectedVehicleForInquiry(vehicle);
+    setVehInquirySubmitted(false);
+    setVehInquiryError('');
+    if (user) {
+      const uName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || '';
+      setVehInquiryName(uName);
+      setVehInquiryEmail(user.email || '');
+      setVehInquiryPhone(user.phone || '');
+    }
+    if (!vehInquiryRoute) {
+      setVehInquiryRoute(`Islamabad - Skardu - Askole (${vehicle.name})`);
+    }
+  };
+
+  const handleVehicleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!vehInquiryName.trim()) {
+      setVehInquiryError('Please enter your full name.');
+      return;
+    }
+    if (!vehInquiryEmail.trim()) {
+      setVehInquiryError('Please enter your email address.');
+      return;
+    }
+    if (!vehInquiryPhone.trim()) {
+      setVehInquiryError('Please enter your Phone or WhatsApp number so our dispatch desk can coordinate transit.');
+      return;
+    }
+    if (!vehInquiryRoute.trim()) {
+      setVehInquiryError('Please provide your requested route or trailhead.');
+      return;
+    }
+
+    setVehInquirySubmitting(true);
+    setVehInquiryError('');
+
     try {
+      const created = await addVehicleInquiry({
+        vehicle: selectedVehicleForInquiry?.name || '4x4 Fleet Vehicle',
+        name: vehInquiryName.trim(),
+        email: vehInquiryEmail.trim(),
+        phone: vehInquiryPhone.trim(),
+        route: vehInquiryRoute.trim(),
+        startDate: vehInquiryStartDate.trim(),
+        duration: vehInquiryDuration.trim(),
+        passengers: vehInquiryPassengers.trim(),
+        notes: vehInquiryNotes.trim()
+      });
+
+      const refId = created?.id || 'DP-FLEET-' + Date.now().toString().slice(-6);
+      setLastSubmittedVehicleRef(refId);
+
+      // Keep backup in localStorage
       const stored = JSON.parse(localStorage.getItem('dpa_vehicle_inquiries') || '[]');
       stored.push({
+        id: refId,
         vehicle: selectedVehicleForInquiry?.name,
-        name: vehInquiryName,
-        email: vehInquiryEmail,
-        route: vehInquiryRoute,
-        notes: vehInquiryNotes,
+        name: vehInquiryName.trim(),
+        email: vehInquiryEmail.trim(),
+        phone: vehInquiryPhone.trim(),
+        route: vehInquiryRoute.trim(),
+        startDate: vehInquiryStartDate.trim(),
+        duration: vehInquiryDuration.trim(),
+        passengers: vehInquiryPassengers.trim(),
+        notes: vehInquiryNotes.trim(),
         timestamp: new Date().toISOString()
       });
       localStorage.setItem('dpa_vehicle_inquiries', JSON.stringify(stored));
-    } catch (err) {
-      console.error(err);
+
+      setVehInquirySubmitted(true);
+    } catch (err: any) {
+      console.error('Error submitting vehicle inquiry:', err);
+      setVehInquiryError(err?.message || 'Could not dispatch vehicle charter request. Please try again or WhatsApp our desk.');
+    } finally {
+      setVehInquirySubmitting(false);
     }
-    setVehInquirySubmitted(true);
-    setTimeout(() => {
-      setSelectedVehicleForInquiry(null);
-      setVehInquirySubmitted(false);
-      setVehInquiryName('');
-      setVehInquiryEmail('');
-      setVehInquiryRoute('');
-      setVehInquiryNotes('');
-    }, 2000);
   };
 
-  const handleHotelInquirySubmit = (e: React.FormEvent) => {
+  const handleHotelInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      await addHotelInquiry({
+        hotel: selectedHotelForInquiry?.name || 'Hotel / Resort',
+        name: hotelInquiryName,
+        email: hotelInquiryEmail,
+        phone: hotelInquiryPhone,
+        checkIn: hotelInquiryCheckIn,
+        checkOut: hotelInquiryCheckOut,
+        guests: hotelInquiryGuests,
+        roomType: hotelInquiryRoomType,
+        notes: hotelInquiryNotes
+      });
+
+      // Keep backup in localStorage
       const stored = JSON.parse(localStorage.getItem('dpa_hotel_inquiries') || '[]');
       stored.push({
         hotel: selectedHotelForInquiry?.name,
@@ -1077,7 +1179,7 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
                         <div className="text-base font-extrabold text-[#5191fa]">{vehicle.dailyRate}</div>
                       </div>
                       <button
-                        onClick={() => setSelectedVehicleForInquiry(vehicle)}
+                        onClick={() => handleOpenVehicleInquiry(vehicle)}
                         className="px-4 py-2 bg-[#5191fa] hover:bg-[#3875dc] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
                       >
                         Inquire Fleet
@@ -1543,28 +1645,94 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {partnerType === '4x4 Vehicles & Transport'
-                    ? 'Vehicle Specifications & Expected Daily Rate'
-                    : partnerType === 'Hotels & Resorts'
-                    ? 'Total Rooms, Star Category & Amenities'
-                    : 'Service Capacity & Proposed Tariffs'}
-                </label>
-                <textarea
-                  rows={3}
-                  value={details}
-                  onChange={(e) => setDetails(e.target.value)}
-                  placeholder={
-                    partnerType === '4x4 Vehicles & Transport'
-                      ? 'e.g. 2x Toyota Hilux Revo (2020), 4x4 with snorkel. Routes: Skardu to Askole, Deosai. Expected rate: 35,000 PKR / day.'
+              {partnerType === 'Mountain Guides & Porters' ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Guiding Specialty / Role Applied For *</label>
+                      <select
+                        value={guideRole}
+                        onChange={(e) => setGuideRole(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      >
+                        <option value="Alpine Mountain Guide">Alpine Mountain Guide (Lead Guide)</option>
+                        <option value="High-Altitude Porter (HAP)">High-Altitude Porter (HAP)</option>
+                        <option value="Trekking & Cultural Guide">Trekking &amp; Cultural Guide</option>
+                        <option value="Expedition Base Camp Cook">Expedition Base Camp Cook</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">High-Altitude Experience *</label>
+                      <input
+                        type="text"
+                        required
+                        value={guideExperience}
+                        onChange={(e) => setGuideExperience(e.target.value)}
+                        placeholder="e.g. 8 years (K2 & Baltoro expeditions)"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      >
+                      </input>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Notable Summits / Max Altitude</label>
+                      <input
+                        type="text"
+                        value={guideSummits}
+                        onChange={(e) => setGuideSummits(e.target.value)}
+                        placeholder="e.g. K2 Base Camp, Spantik (7,027m), Gondogoro La"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Licenses &amp; Certifications</label>
+                      <input
+                        type="text"
+                        value={guideCertifications}
+                        onChange={(e) => setGuideCertifications(e.target.value)}
+                        placeholder="e.g. Alpine Club of Pakistan (ACP), First Aid"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Guiding Bio &amp; Rescue Skills</label>
+                    <textarea
+                      rows={3}
+                      value={details}
+                      onChange={(e) => setDetails(e.target.value)}
+                      placeholder="Tell our expedition directors about your mountain experience, language skills, glacier navigation, and safety training..."
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                    />
+                  </div>
+                </>
+              ) : (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    {partnerType === '4x4 Vehicles & Transport'
+                      ? 'Vehicle Specifications & Expected Daily Rate'
                       : partnerType === 'Hotels & Resorts'
-                      ? 'e.g. 24 rooms, en-suite hot bath, generator backup, restaurant with mountain view. Expected group rate: 20,000 PKR / night.'
-                      : 'Tell us about your services, certifications, or capacity.'
-                  }
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                />
-              </div>
+                      ? 'Total Rooms, Star Category & Amenities'
+                      : 'Service Capacity & Proposed Tariffs'}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={details}
+                    onChange={(e) => setDetails(e.target.value)}
+                    placeholder={
+                      partnerType === '4x4 Vehicles & Transport'
+                        ? 'e.g. 2x Toyota Hilux Revo (2020), 4x4 with snorkel. Routes: Skardu to Askole, Deosai. Expected rate: 35,000 PKR / day.'
+                        : partnerType === 'Hotels & Resorts'
+                        ? 'e.g. 24 rooms, en-suite hot bath, generator backup, restaurant with mountain view. Expected group rate: 20,000 PKR / night.'
+                        : 'Tell us about your services, certifications, or capacity.'
+                    }
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              )}
 
               <button
                 type="submit"
@@ -1580,97 +1748,264 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
 
       {/* Vehicle Inquiry Modal */}
       {selectedVehicleForInquiry && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 sm:p-7 shadow-2xl relative my-8">
             <button
-              onClick={() => setSelectedVehicleForInquiry(null)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 cursor-pointer"
+              onClick={() => {
+                setSelectedVehicleForInquiry(null);
+                setVehInquirySubmitted(false);
+                setVehInquiryError('');
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 cursor-pointer p-1 rounded-lg hover:bg-slate-100 transition-colors"
+              title="Close"
             >
               <X className="w-5 h-5" />
             </button>
 
             {vehInquirySubmitted ? (
-              <div className="text-center py-6">
-                <CheckCircle className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <h4 className="font-bold text-base text-slate-900 mb-1">Charter Request Received!</h4>
-                <p className="text-xs text-slate-600">
-                  Our dispatch coordinator in Skardu will check vehicle availability and contact you shortly.
+              <div className="text-center py-4">
+                <div className="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-inner">
+                  <CheckCircle className="w-8 h-8" />
+                </div>
+                <h4 className="font-heading font-extrabold text-xl text-slate-900 mb-1">
+                  Charter Request Dispatched!
+                </h4>
+                <p className="text-xs text-slate-600 max-w-sm mx-auto mb-4 leading-relaxed">
+                  Thank you, <strong className="text-slate-800">{vehInquiryName}</strong>. Your charter request for <strong className="text-[#5191fa]">{selectedVehicleForInquiry.name}</strong> has been sent to our Skardu operations base.
                 </p>
+
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-left text-xs mb-5 space-y-2">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 pb-2">
+                    <span className="text-slate-500 font-medium">Inquiry Reference:</span>
+                    <span className="font-mono font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">{lastSubmittedVehicleRef}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Vehicle:</span>
+                    <span className="font-semibold text-slate-800">{selectedVehicleForInquiry.name}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Route / Trailhead:</span>
+                    <span className="font-semibold text-slate-800">{vehInquiryRoute}</span>
+                  </div>
+                  {vehInquiryStartDate && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Start Date:</span>
+                      <span className="font-semibold text-slate-800">{vehInquiryStartDate} ({vehInquiryDuration})</span>
+                    </div>
+                  )}
+                  {vehInquiryPhone && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Dispatch WhatsApp / Phone:</span>
+                      <span className="font-semibold text-slate-800">{vehInquiryPhone}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-3 text-left text-[11px] text-amber-800 mb-5 flex items-start gap-2">
+                  <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                  <span>
+                    Our 24/7 mountain road dispatch desk will verify vehicle availability, check Babusar/Karakoram road status, and contact you via WhatsApp / Email within 2 hours.
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedVehicleForInquiry(null);
+                      setVehInquirySubmitted(false);
+                      setVehInquiryName('');
+                      setVehInquiryEmail('');
+                      setVehInquiryPhone('');
+                      setVehInquiryRoute('');
+                      setVehInquiryStartDate('');
+                      setVehInquiryNotes('');
+                    }}
+                    className="flex-1 py-2.5 px-4 bg-[#1a2b48] hover:bg-[#253d66] text-white text-xs font-bold uppercase rounded-xl transition-colors cursor-pointer shadow-sm"
+                  >
+                    Done &amp; Close
+                  </button>
+                </div>
               </div>
             ) : (
               <>
-                <div className="mb-4">
-                  <span className="text-[10px] font-bold uppercase text-[#5191fa] tracking-wider">
-                    Vehicle Charter Inquiry
-                  </span>
-                  <h3 className="font-heading font-bold text-lg text-[#1a2b48] mt-0.5">
+                {/* Vehicle Header Info */}
+                <div className="mb-4 pr-6">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold uppercase text-[#5191fa] tracking-wider bg-blue-50 px-2 py-0.5 rounded">
+                      Vehicle Charter Inquiry
+                    </span>
+                    <span className="text-[10px] text-slate-500 font-medium">
+                      {selectedVehicleForInquiry.tag}
+                    </span>
+                  </div>
+                  <h3 className="font-heading font-extrabold text-xl text-[#1a2b48]">
                     {selectedVehicleForInquiry.name}
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Estimated Rate: <strong className="text-[#5191fa]">{selectedVehicleForInquiry.dailyRate}</strong>{' '}
-                    (includes mountain driver &amp; fuel)
-                  </p>
+                  <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-500">
+                    <div>
+                      Daily Tariff: <strong className="text-[#5191fa] font-bold">{selectedVehicleForInquiry.dailyRate}</strong>
+                    </div>
+                    <div className="text-slate-300">·</div>
+                    <div>Seats: <strong className="text-slate-700">{selectedVehicleForInquiry.seats}</strong></div>
+                    <div className="text-slate-300">·</div>
+                    <div>Luggage: <strong className="text-slate-700">{selectedVehicleForInquiry.luggage}</strong></div>
+                  </div>
                 </div>
 
+                {/* Error Banner */}
+                {vehInquiryError && (
+                  <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+                    <span>{vehInquiryError}</span>
+                  </div>
+                )}
+
                 <form onSubmit={handleVehicleInquirySubmit} className="space-y-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Your Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={vehInquiryName}
-                      onChange={(e) => setVehInquiryName(e.target.value)}
-                      placeholder="Full Name"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                        Your Name *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={vehInquiryName}
+                        onChange={(e) => setVehInquiryName(e.target.value)}
+                        placeholder="Full Name"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                        Email Address *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={vehInquiryEmail}
+                        onChange={(e) => setVehInquiryEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                        Phone / WhatsApp *
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        value={vehInquiryPhone}
+                        onChange={(e) => setVehInquiryPhone(e.target.value)}
+                        placeholder="+92 344 1234567 or +1 555..."
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                        Charter Start Date
+                      </label>
+                      <input
+                        type="date"
+                        value={vehInquiryStartDate}
+                        onChange={(e) => setVehInquiryStartDate(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={vehInquiryEmail}
-                      onChange={(e) => setVehInquiryEmail(e.target.value)}
-                      placeholder="you@domain.com"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                      Route &amp; Dates *
+                      Route &amp; Destination Trailhead *
                     </label>
                     <input
                       type="text"
                       required
                       value={vehInquiryRoute}
                       onChange={(e) => setVehInquiryRoute(e.target.value)}
-                      placeholder="e.g. July 12 - 24 (Islamabad to Skardu & Askole)"
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      placeholder="e.g. Islamabad to Skardu & Askole (K2 Trailhead)"
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
                     />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                        Estimated Duration
+                      </label>
+                      <select
+                        value={vehInquiryDuration}
+                        onChange={(e) => setVehInquiryDuration(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
+                      >
+                        <option value="3 Days">3 Days (Short transit)</option>
+                        <option value="5 Days">5 Days (Valley tour)</option>
+                        <option value="7 Days">7 Days (Standard trip)</option>
+                        <option value="10 Days">10 Days (Trek approach)</option>
+                        <option value="14 Days">14 Days (Full expedition)</option>
+                        <option value="21 Days">21 Days (K2 / Baltoro roundtrip)</option>
+                        <option value="Custom Duration">Custom Duration</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
+                        Passengers in Party
+                      </label>
+                      <select
+                        value={vehInquiryPassengers}
+                        onChange={(e) => setVehInquiryPassengers(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
+                      >
+                        <option value="1-2 Passengers">1 - 2 Passengers</option>
+                        <option value="3-4 Passengers">3 - 4 Passengers</option>
+                        <option value="5-6 Passengers">5 - 6 Passengers</option>
+                        <option value="7-10 Passengers">7 - 10 Passengers</option>
+                        <option value="11+ Group">11+ Large Group / Team</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">
-                      Passengers &amp; Luggage Notes
+                      Luggage, Flight &amp; Mountain Notes
                     </label>
                     <textarea
                       rows={2}
                       value={vehInquiryNotes}
                       onChange={(e) => setVehInquiryNotes(e.target.value)}
-                      placeholder="Number of travelers, gear bags, or guide requirements..."
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                      placeholder="e.g. Arriving flight PK-451 at Skardu, 6 heavy expedition duffels, need roof rack and English-speaking mountain driver..."
+                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#5191fa]"
                     />
+                  </div>
+
+                  <div className="bg-slate-50 rounded-xl p-2.5 border border-slate-200 text-[11px] text-slate-600 flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Includes licensed mountain driver, route clearance permits &amp; fuel allowance.</span>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-2.5 px-4 bg-[#5191fa] hover:bg-[#3875dc] text-white font-bold text-xs uppercase rounded-xl transition-all cursor-pointer shadow-md mt-2"
+                    disabled={vehInquirySubmitting}
+                    className="w-full py-3 px-4 bg-[#5191fa] hover:bg-[#3875dc] text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-md mt-2 flex items-center justify-center gap-2 disabled:opacity-60"
                   >
-                    Dispatch Charter Inquiry
+                    {vehInquirySubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Dispatching Charter Request...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Car className="w-4 h-4" />
+                        <span>Dispatch Charter Inquiry &rarr;</span>
+                      </>
+                    )}
                   </button>
                 </form>
               </>

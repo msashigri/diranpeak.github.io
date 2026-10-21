@@ -24,4 +24,34 @@ async function testConnection() {
 
 testConnection();
 
+/**
+ * Recursively strips undefined fields and unsupported types so Firestore
+ * setDoc/updateDoc never fails with "Unsupported field value: undefined".
+ */
+export function cleanFirestoreData<T = any>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return null as any;
+  }
+  if (typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(cleanFirestoreData).filter(item => item !== undefined) as any;
+  }
+  if (obj instanceof Date) {
+    return obj;
+  }
+  const result: Record<string, any> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (val !== undefined) {
+      if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+        result[key] = cleanFirestoreData(val);
+      } else {
+        result[key] = val;
+      }
+    }
+  }
+  return result as T;
+}
+
 export default app;

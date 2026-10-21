@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, ADMIN_USER_ID, Booking, TravelerActivity, ContactInquiry, PartnerRequest, NewsletterSubscriber, Broadcast, AlertSettings } from '../context/AuthContext';
 import { TOURS_DATA } from '../data/toursData';
+import { PLATFORM_ROLES, UserRole, getRoleConfig } from '../types/roles';
+import { AdminAddUserModal } from '../components/AdminAddUserModal';
+import { AdminRoleMatrixModal } from '../components/AdminRoleMatrixModal';
+import { AdminInquirySection } from '../components/AdminInquirySection';
 import {
   User, CalendarCheck, CheckCircle, ShieldCheck, LogOut, ArrowRight,
   Search, RefreshCw, X, Edit3, Trash2, Mail, Phone, Calendar,
   AlertTriangle, Eye, Shield, KeyRound, Check, XCircle, Clock,
   Heart, Activity, Filter, Copy, FileText, Sparkles, MessageSquare,
   Handshake, Bell, Send, CheckCircle2, ChevronRight, ExternalLink, Globe,
-  Users, FileDown
+  Users, FileDown, Car, Building2, Award, Mountain, Plus, ShieldAlert,
+  BadgeCheck, UserCheck, UserX
 } from 'lucide-react';
 
 interface FirestoreUserRecord {
@@ -17,6 +22,9 @@ interface FirestoreUserRecord {
   lastName?: string;
   phone?: string;
   role?: string;
+  verified?: boolean;
+  isVerified?: boolean;
+  country?: string;
   createdAt?: string;
   lastLoginAt?: string;
   bookingCount?: number;
@@ -24,9 +32,10 @@ interface FirestoreUserRecord {
   emergencyContact?: string;
   passportNumber?: string;
   bio?: string;
+  permissions?: string[];
 }
 
-type AdminTab = 'bookings' | 'messages' | 'partners' | 'subscribers' | 'alerts' | 'users' | 'activities';
+type AdminTab = 'bookings' | 'messages' | 'vehicle_inquiries' | 'hotel_inquiries' | 'guide_applications' | 'partners' | 'subscribers' | 'alerts' | 'users' | 'activities';
 
 export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (route: string, param?: string) => void }> = ({ initialTab, onNavigate }) => {
   const {
@@ -69,7 +78,11 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
     deletePartnerRequest,
     updateContactStatus,
     deleteContactInquiry,
-    deleteSubscriber
+    deleteSubscriber,
+    adminCreateUser,
+    adminUpdateUserRole,
+    adminVerifyUser,
+    adminLogout
   } = useAuth();
 
   const isUserAdmin = Boolean(
@@ -90,6 +103,10 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
   const [selectedUser, setSelectedUser] = useState<FirestoreUserRecord | null>(null);
   const [loadingAdminData, setLoadingAdminData] = useState(false);
   const [passwordResetNotice, setPasswordResetNotice] = useState<string | null>(null);
+
+  // Role Management & Add User Modals State
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [isRoleMatrixOpen, setIsRoleMatrixOpen] = useState(false);
 
   // Contact Inquiries Tab State
   const [inquiryFilter, setInquiryFilter] = useState<'ALL' | 'New' | 'Contacted' | 'Closed'>('ALL');
@@ -230,6 +247,8 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
         ).length;
         return {
           ...u,
+          role: u.role || 'traveler',
+          verified: u.verified ?? u.isVerified ?? true,
           bookingCount: userBookingCount
         };
       });
@@ -279,6 +298,44 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
     setAdminAllBookings(prev => prev.filter(b => b.id !== bookingId));
     setPasswordResetNotice('Booking deleted from Firestore.');
     setTimeout(() => setPasswordResetNotice(null), 4000);
+  };
+
+  // Admin: Role assignment & Verification handlers
+  const handleUpdateRole = async (userId: string, newRole: string) => {
+    try {
+      const res = await adminUpdateUserRole(userId, newRole);
+      if (res.success) {
+        setAdminUsers(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u));
+        if (selectedUser && selectedUser.id === userId) {
+          setSelectedUser(prev => prev ? { ...prev, role: newRole } : null);
+        }
+        setPasswordResetNotice(`Role updated to "${getRoleConfig(newRole).label}" in Firestore.`);
+        setTimeout(() => setPasswordResetNotice(null), 4000);
+      } else {
+        alert(res.error || 'Failed to update user role');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error updating user role');
+    }
+  };
+
+  const handleToggleVerification = async (userId: string, currentVerified: boolean) => {
+    try {
+      const newStatus = !currentVerified;
+      const res = await adminVerifyUser(userId, newStatus);
+      if (res.success) {
+        setAdminUsers(prev => prev.map(u => u.id === userId ? { ...u, verified: newStatus, isVerified: newStatus } : u));
+        if (selectedUser && selectedUser.id === userId) {
+          setSelectedUser(prev => prev ? { ...prev, verified: newStatus, isVerified: newStatus } : null);
+        }
+        setPasswordResetNotice(newStatus ? 'User credentials marked as Verified in Firestore.' : 'User verification status revoked.');
+        setTimeout(() => setPasswordResetNotice(null), 4000);
+      } else {
+        alert(res.error || 'Failed to update verification status');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'Error updating verification status');
+    }
   };
 
   // Admin: Contact Inquiry handlers
@@ -654,6 +711,12 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
       return fullName.includes(q) || email.includes(q) || uid.includes(q);
     });
 
+    const contactFormInquiries = contactInquiries.filter(i => !i.type || i.type === 'contact');
+    const vehicleFleetInquiries = contactInquiries.filter(i => i.type === 'vehicle');
+    const hotelReservationInquiries = contactInquiries.filter(i => i.type === 'hotel');
+    const guidePorterApplications = contactInquiries.filter(i => i.type === 'guide_porter' || (i as any).category === 'Mountain Guides & Porters');
+    const b2bPartnerRequests = partnerRequests.filter(p => p.category !== 'Mountain Guides & Porters');
+
     const selectedUserBookings = selectedUser
       ? adminAllBookings.filter(
           b => b.userId === selectedUser.id || (b.customerEmail && b.customerEmail.toLowerCase() === selectedUser.email?.toLowerCase())
@@ -743,7 +806,12 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                   <span>Edit My Profile</span>
                 </button>
                 <button
-                  onClick={logout}
+                  type="button"
+                  onClick={async () => {
+                    await logout();
+                    adminLogout();
+                    onNavigate('home');
+                  }}
                   className="px-4 py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
                   title="Log out of admin session"
                 >
@@ -754,26 +822,34 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
             </div>
 
             {/* Quick Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-8 pt-6 border-t border-slate-800">
-              <div className="bg-slate-800/60 p-3.5 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Tour Bookings</div>
-                <div className="text-xl font-black text-[#5191fa] mt-1">{adminAllBookings.length}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mt-8 pt-6 border-t border-slate-800">
+              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bookings</div>
+                <div className="text-lg font-black text-[#5191fa] mt-0.5">{adminAllBookings.length}</div>
               </div>
-              <div className="bg-slate-800/60 p-3.5 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Contact Messages</div>
-                <div className="text-xl font-black text-emerald-400 mt-1">{contactInquiries.length}</div>
+              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contact Form</div>
+                <div className="text-lg font-black text-emerald-400 mt-0.5">{contactFormInquiries.length}</div>
               </div>
-              <div className="bg-slate-800/60 p-3.5 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Partners Network</div>
-                <div className="text-xl font-black text-amber-400 mt-1">{partnerRequests.length}</div>
+              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fleet Inquiries</div>
+                <div className="text-lg font-black text-orange-400 mt-0.5">{vehicleFleetInquiries.length}</div>
               </div>
-              <div className="bg-slate-800/60 p-3.5 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Subscribers</div>
-                <div className="text-xl font-black text-purple-400 mt-1">{newsletterSubscribers.length}</div>
+              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Hotel Rooms</div>
+                <div className="text-lg font-black text-cyan-400 mt-0.5">{hotelReservationInquiries.length}</div>
               </div>
-              <div className="bg-slate-800/60 p-3.5 rounded-2xl border border-slate-700/60">
-                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Registered Users</div>
-                <div className="text-xl font-black text-white mt-1">{adminUsers.length}</div>
+              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Guide Apps</div>
+                <div className="text-lg font-black text-indigo-400 mt-0.5">{guidePorterApplications.length}</div>
+              </div>
+              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">B2B Partners</div>
+                <div className="text-lg font-black text-amber-400 mt-0.5">{b2bPartnerRequests.length}</div>
+              </div>
+              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Platform Users</div>
+                <div className="text-lg font-black text-white mt-0.5">{adminUsers.length}</div>
               </div>
             </div>
           </div>
@@ -781,8 +857,9 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
           {/* Admin Navigation Tabs */}
           <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-200 pb-3">
             <button
+              type="button"
               onClick={() => setAdminTab('bookings')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
                 adminTab === 'bookings'
                   ? 'bg-[#1a2b48] text-white shadow-md'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -793,32 +870,87 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
             </button>
 
             <button
+              type="button"
               onClick={() => setAdminTab('messages')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
                 adminTab === 'messages'
                   ? 'bg-[#1a2b48] text-white shadow-md'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               <MessageSquare className="w-4 h-4 text-emerald-500" />
-              <span>Contact Messages ({contactInquiries.length})</span>
+              <span>Contact Messages ({contactFormInquiries.length})</span>
             </button>
 
             <button
+              type="button"
+              onClick={() => setAdminTab('vehicle_inquiries')}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'vehicle_inquiries'
+                  ? 'bg-[#1a2b48] text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Car className="w-4 h-4 text-orange-500" />
+              <span>Vehicle Fleet ({vehicleFleetInquiries.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAdminTab('hotel_inquiries')}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'hotel_inquiries'
+                  ? 'bg-[#1a2b48] text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Building2 className="w-4 h-4 text-cyan-500" />
+              <span>Hotel Reservations ({hotelReservationInquiries.length})</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setAdminTab('guide_applications')}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'guide_applications'
+                  ? 'bg-[#1a2b48] text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <Award className="w-4 h-4 text-indigo-500" />
+              <span>Guide &amp; Porter Apps ({guidePorterApplications.length})</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setAdminTab('partners')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
                 adminTab === 'partners'
                   ? 'bg-[#1a2b48] text-white shadow-md'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
               }`}
             >
               <Handshake className="w-4 h-4 text-amber-500" />
-              <span>Partners ({partnerRequests.length})</span>
+              <span>B2B Partners ({b2bPartnerRequests.length})</span>
             </button>
 
             <button
+              type="button"
+              onClick={() => setAdminTab('users')}
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+                adminTab === 'users'
+                  ? 'bg-[#1a2b48] text-white shadow-md'
+                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              <User className="w-4 h-4 text-blue-400" />
+              <span>Users &amp; Roles ({adminUsers.length})</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => setAdminTab('subscribers')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
                 adminTab === 'subscribers'
                   ? 'bg-[#1a2b48] text-white shadow-md'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -829,8 +961,9 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
             </button>
 
             <button
+              type="button"
               onClick={() => setAdminTab('alerts')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
+              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
                 adminTab === 'alerts'
                   ? 'bg-[#1a2b48] text-white shadow-md'
                   : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
@@ -841,18 +974,7 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
             </button>
 
             <button
-              onClick={() => setAdminTab('users')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'users'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <User className="w-4 h-4" />
-              <span>Registered Travelers ({adminUsers.length})</span>
-            </button>
-
-            <button
+              type="button"
               onClick={() => setAdminTab('activities')}
               className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
                 adminTab === 'activities'
@@ -872,23 +994,45 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                 <div>
                   <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
                     <User className="w-5 h-5 text-[#5191fa]" />
-                    <span>Firestore Users Directory ({adminUsers.length})</span>
+                    <span>Firestore Users &amp; Role Management ({adminUsers.length})</span>
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Click on any user to view booking details, accept/decline trips, edit profiles, or reset passwords.
+                    Manage platform roles (Admin, Manager, Moderator, Traveler, Climber, Fleet/Hotel Partner, Guide), verify accounts, and add users manually.
                   </p>
                 </div>
 
-                {/* Search Bar */}
-                <div className="relative w-full sm:w-72">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={adminSearch}
-                    onChange={(e) => setAdminSearch(e.target.value)}
-                    placeholder="Search by email, name or UID..."
-                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa] focus:bg-white"
-                  />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsRoleMatrixOpen(true)}
+                    className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer border border-slate-200"
+                    title="View permissions breakdown for all 8 platform roles"
+                  >
+                    <Shield className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Role &amp; Permissions Matrix</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsAddUserModalOpen(true)}
+                    className="px-3.5 py-2 bg-[#5191fa] hover:bg-[#3875dc] text-white font-bold text-xs rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                    title="Manually create a new platform user with defined role"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add User Manually</span>
+                  </button>
+
+                  {/* Search Bar */}
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={adminSearch}
+                      onChange={(e) => setAdminSearch(e.target.value)}
+                      placeholder="Search email, name or UID..."
+                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa] focus:bg-white"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -902,7 +1046,9 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                   <table className="w-full text-left text-xs border border-slate-200 rounded-2xl overflow-hidden">
                     <thead className="bg-slate-50 text-slate-600 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                       <tr>
-                        <th className="py-3.5 px-4">User / Traveler</th>
+                        <th className="py-3.5 px-4">User Account</th>
+                        <th className="py-3.5 px-4">System Role</th>
+                        <th className="py-3.5 px-4">Verification</th>
                         <th className="py-3.5 px-4">Firebase Email</th>
                         <th className="py-3.5 px-4">Account Created</th>
                         <th className="py-3.5 px-4 text-center">Trip Bookings</th>
@@ -912,6 +1058,8 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                     <tbody className="divide-y divide-slate-100">
                       {filteredUsers.map((u) => {
                         const isSelected = selectedUser?.id === u.id;
+                        const roleCfg = getRoleConfig(u.role);
+                        const isVerified = u.verified !== false && u.isVerified !== false;
                         const formattedDate = u.createdAt
                           ? new Date(u.createdAt).toLocaleDateString('en-US', {
                               month: 'short',
@@ -938,16 +1086,62 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                                     <span>
                                       {u.firstName || 'Traveler'} {u.lastName || ''}
                                     </span>
-                                    {u.id === ADMIN_USER_ID && (
-                                      <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase bg-amber-100 text-amber-800">
-                                        Admin
-                                      </span>
-                                    )}
                                   </div>
                                   <div className="text-[11px] text-slate-400 font-mono">
                                     UID: {u.id.substring(0, 14)}...
                                   </div>
                                 </div>
+                              </div>
+                            </td>
+
+                            {/* System Role column with badge & dropdown */}
+                            <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex flex-col gap-1.5">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border w-fit ${roleCfg.badgeBg} ${roleCfg.badgeText} ${roleCfg.borderColor}`}>
+                                  <Shield className="w-3 h-3 shrink-0" />
+                                  <span>{roleCfg.label}</span>
+                                </span>
+                                <select
+                                  value={u.role || 'traveler'}
+                                  onChange={(e) => handleUpdateRole(u.id, e.target.value)}
+                                  className="text-[11px] font-semibold bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-slate-700 focus:outline-none focus:border-[#5191fa] cursor-pointer"
+                                  title="Change role for this user"
+                                >
+                                  {PLATFORM_ROLES.map((r) => (
+                                    <option key={r.id} value={r.id}>
+                                      {r.shortTitle} - {r.category}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </td>
+
+                            {/* Verification column */}
+                            <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center gap-2">
+                                {isVerified ? (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    <BadgeCheck className="w-3 h-3 text-emerald-600" />
+                                    <span>Verified</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                    <ShieldAlert className="w-3 h-3 text-amber-600" />
+                                    <span>Unverified</span>
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleVerification(u.id, isVerified)}
+                                  className={`px-2 py-0.5 text-[10px] font-bold rounded-lg transition-colors cursor-pointer border ${
+                                    isVerified
+                                      ? 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border-slate-200'
+                                      : 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600 shadow-2xs'
+                                  }`}
+                                  title={isVerified ? 'Click to revoke verification' : 'Click to verify user credentials'}
+                                >
+                                  {isVerified ? 'Revoke' : 'Verify'}
+                                </button>
                               </div>
                             </td>
 
@@ -1187,180 +1381,42 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
 
           {/* TAB: CONTACT MESSAGES */}
           {adminTab === 'messages' && (
-            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <div>
-                  <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-emerald-500" />
-                    <span>Contact Messages &amp; Inquiries ({contactInquiries.length})</span>
-                  </h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Messages received through the Contact page and expedition inquiry desks, saved directly in Cloud Firestore.
-                  </p>
-                </div>
+            <AdminInquirySection
+              type="contact"
+              title="Contact Messages &amp; Traveler Queries"
+              subtitle="Direct messages, route inquiries, and questions submitted through the Contact Basecamp form."
+              inquiries={contactFormInquiries}
+            />
+          )}
 
-                {/* Search Bar */}
-                <div className="relative w-full sm:w-72">
-                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={inquirySearch}
-                    onChange={(e) => setInquirySearch(e.target.value)}
-                    placeholder="Search by name, email or message..."
-                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-[#5191fa] focus:bg-white"
-                  />
-                </div>
-              </div>
+          {/* TAB: VEHICLE FLEET INQUIRIES */}
+          {adminTab === 'vehicle_inquiries' && (
+            <AdminInquirySection
+              type="vehicle"
+              title="4x4 Jeep &amp; Transport Fleet Charter Inquiries"
+              subtitle="Charter inquiries for 4x4 Land Cruisers, Toyota Prado, Hilux Revo, Hiace Grand Cabin, and Coaster Saloon."
+              inquiries={vehicleFleetInquiries}
+            />
+          )}
 
-              {/* Status Filter Tabs */}
-              <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-slate-100">
-                <span className="text-[11px] font-bold text-slate-400 uppercase mr-1">Status:</span>
-                {(['ALL', 'New', 'Contacted', 'Closed'] as const).map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setInquiryFilter(st)}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
-                      inquiryFilter === st
-                        ? 'bg-[#1a2b48] text-white shadow-xs'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {st === 'ALL' ? `All Inquiries (${contactInquiries.length})` : `${st} (${contactInquiries.filter(i => i.status === st).length})`}
-                  </button>
-                ))}
-              </div>
+          {/* TAB: HOTEL ROOM RESERVATIONS */}
+          {adminTab === 'hotel_inquiries' && (
+            <AdminInquirySection
+              type="hotel"
+              title="Hotel &amp; Resort Room Reservations"
+              subtitle="Hospitality bookings and room allocations submitted for hotels and boutique resorts in Gilgit-Baltistan."
+              inquiries={hotelReservationInquiries}
+            />
+          )}
 
-              {/* Messages List */}
-              {(() => {
-                const filteredInquiries = contactInquiries.filter(inq => {
-                  if (inquiryFilter !== 'ALL' && inq.status !== inquiryFilter) return false;
-                  if (inquirySearch.trim()) {
-                    const q = inquirySearch.toLowerCase().trim();
-                    const str = `${inq.name} ${inq.email} ${inq.subject} ${inq.message} ${inq.phone || ''}`.toLowerCase();
-                    return str.includes(q);
-                  }
-                  return true;
-                });
-
-                if (filteredInquiries.length === 0) {
-                  return (
-                    <div className="py-12 text-center text-slate-500 text-xs">
-                      No contact messages recorded matching this filter.
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="space-y-4">
-                    {filteredInquiries.map((inq) => (
-                      <div
-                        key={inq.id}
-                        className="p-5 bg-slate-50/80 rounded-2xl border border-slate-200 hover:border-emerald-400 transition-all"
-                      >
-                        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
-                          <div>
-                            <div className="flex flex-wrap items-center gap-2 mb-1">
-                              <span className="font-bold text-sm text-[#1a2b48]">{inq.name}</span>
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                  inq.status === 'New'
-                                    ? 'bg-amber-100 text-amber-800'
-                                    : inq.status === 'Contacted'
-                                    ? 'bg-blue-100 text-blue-800'
-                                    : 'bg-emerald-100 text-emerald-800'
-                                }`}
-                              >
-                                {inq.status}
-                              </span>
-                              {(inq.isGuest || !inq.userId || inq.userId.startsWith('guest')) && (
-                                <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
-                                  Guest Inquiry
-                                </span>
-                              )}
-                              {inq.tourTitle && (
-                                <span className="text-[11px] font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
-                                  {inq.tourTitle}
-                                </span>
-                              )}
-                              <span className="text-[11px] text-slate-400">· {inq.date}</span>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                              <a href={`mailto:${inq.email}`} className="flex items-center gap-1 text-[#5191fa] hover:underline">
-                                <Mail className="w-3.5 h-3.5" />
-                                <span>{inq.email}</span>
-                              </a>
-                              {inq.phone && (
-                                <a
-                                  href={`https://wa.me/${inq.phone.replace(/[^0-9]/g, '')}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="flex items-center gap-1 text-emerald-600 hover:underline font-semibold"
-                                  title="WhatsApp this traveler directly"
-                                >
-                                  <Phone className="w-3.5 h-3.5" />
-                                  <span>{inq.phone}</span>
-                                </a>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={() => handleUpdateInquiryStatus(inq.id, 'Contacted')}
-                              className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors cursor-pointer ${
-                                inq.status === 'Contacted'
-                                  ? 'bg-blue-600 text-white'
-                                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                              }`}
-                            >
-                              Mark Contacted
-                            </button>
-                            <button
-                              onClick={() => handleUpdateInquiryStatus(inq.id, 'Closed')}
-                              className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors cursor-pointer ${
-                                inq.status === 'Closed'
-                                  ? 'bg-emerald-600 text-white'
-                                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                              }`}
-                            >
-                              Mark Closed
-                            </button>
-                          </div>
-                        </div>
-
-                        <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 mb-3">
-                          <div className="text-xs font-bold text-slate-800 mb-1">
-                            Subject: {inq.subject || 'Expedition & Trekking Inquiry'}
-                          </div>
-                          <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">
-                            {inq.message}
-                          </p>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-200/60 text-xs">
-                          <a
-                            href={`mailto:${inq.email}?subject=Re: ${encodeURIComponent(inq.subject || 'Your Diran Peak Adventure Inquiry')}&body=Dear ${encodeURIComponent(inq.name)},%0D%0A%0D%0AThank you for contacting Diran Peak Adventure regarding your mountain expedition inquiry.%0D%0A%0D%0A`}
-                            className="inline-flex items-center gap-1.5 text-xs font-bold text-[#5191fa] hover:text-[#3875dc]"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                            <span>Reply via Email</span>
-                          </a>
-
-                          <button
-                            onClick={() => handleDeleteInquiry(inq.id)}
-                            className="text-xs text-rose-500 hover:text-rose-700 flex items-center gap-1 font-semibold cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
-            </div>
+          {/* TAB: GUIDE & PORTER APPLICATIONS */}
+          {adminTab === 'guide_applications' && (
+            <AdminInquirySection
+              type="guide_porter"
+              title="Mountain Guide &amp; Alpine Porter Applications"
+              subtitle="Field staff applications submitted by licensed alpine mountain guides, High-Altitude Porters (HAP), and expedition cooks."
+              inquiries={guidePorterApplications}
+            />
           )}
 
           {/* TAB: PARTNERS */}
@@ -1370,10 +1426,10 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                 <div>
                   <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
                     <Handshake className="w-5 h-5 text-amber-500" />
-                    <span>Partners Network &amp; Applications ({partnerRequests.length})</span>
+                    <span>B2B Inquiries &amp; Commercial Partner Network ({partnerRequests.length})</span>
                   </h2>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Official partnerships with 4x4 transport fleets, hotels/resorts, international alpine agencies, and mountain guides.
+                    Official partnership submissions from B2B travel agencies, overseas tour outfitters, vehicle fleet operators, and hotel vendors.
                   </p>
                 </div>
 
@@ -1395,9 +1451,9 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                 <span className="text-[11px] font-bold text-slate-400 uppercase mr-1">Category:</span>
                 {[
                   { id: 'ALL', label: 'All Partners' },
+                  { id: 'agency', label: 'B2B Travel Agencies' },
                   { id: 'hotel', label: 'Hotels & Resorts' },
                   { id: 'vehicle', label: '4x4 Vehicles & Transport' },
-                  { id: 'agency', label: 'B2B Travel Agencies' },
                   { id: 'gear', label: 'Gear & Equipment' }
                 ].map((cat) => (
                   <button
@@ -1421,7 +1477,7 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                     const c = (p.category || '').toLowerCase();
                     if (partnerFilter === 'hotel' && !c.includes('hotel')) return false;
                     if (partnerFilter === 'vehicle' && !c.includes('vehicle') && !c.includes('transport') && !c.includes('car')) return false;
-                    if (partnerFilter === 'agency' && !c.includes('agency') && !c.includes('outfitter')) return false;
+                    if (partnerFilter === 'agency' && !c.includes('agency') && !c.includes('outfitter') && !c.includes('b2b')) return false;
                     if (partnerFilter === 'gear' && !c.includes('gear')) return false;
                   }
                   if (partnerSearch.trim()) {
@@ -1463,6 +1519,8 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                                   ? 'bg-emerald-100 text-emerald-800'
                                   : partner.status === 'Declined'
                                   ? 'bg-rose-100 text-rose-800'
+                                  : partner.status === 'Replied'
+                                  ? 'bg-purple-100 text-purple-800'
                                   : 'bg-amber-100 text-amber-800'
                               }`}
                             >
@@ -1484,14 +1542,23 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
 
                           {partner.details && (
                             <div className="p-3 bg-slate-50 rounded-xl text-xs text-slate-600 leading-relaxed mb-4 border border-slate-100">
-                              <div className="font-semibold text-slate-800 mb-0.5">Fleet / Facility Details:</div>
+                              <div className="font-semibold text-slate-800 mb-0.5">Fleet / Facility / Proposal:</div>
                               {partner.details}
                             </div>
                           )}
                         </div>
 
-                        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                        <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
                           <div className="flex items-center gap-1.5">
+                            <a
+                              href={`mailto:${partner.email}?subject=Diran Peak Adventure - B2B Partnership Discussion (${encodeURIComponent(partner.companyName)})&body=Dear ${encodeURIComponent(partner.contactName)},%0D%0A%0D%0AThank you for submitting your partnership application to Diran Peak Adventure for ${encodeURIComponent(partner.category)}.%0D%0A%0D%0AAs a DTS licensed tour operator (#1842) based in Skardu, Gilgit-Baltistan, we would like to discuss collaboration and ground operations.%0D%0A%0D%0A`}
+                              onClick={() => handleUpdatePartnerStatus(partner.id, 'Replied')}
+                              className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                              <span>Reply via Email</span>
+                            </a>
+
                             <button
                               onClick={() => handleUpdatePartnerStatus(partner.id, 'Approved')}
                               className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer"
@@ -2166,6 +2233,119 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                     </div>
                   </div>
 
+                  {/* Platform Role & Permissions Management Card */}
+                  <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold">
+                          <Shield className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="font-heading font-bold text-sm text-[#1a2b48]">
+                            Platform Role &amp; Access Permissions
+                          </h4>
+                          <p className="text-[11px] text-slate-500">
+                            Configure user capabilities across admin panel, tour bookings, logistics, and partner tools.
+                          </p>
+                        </div>
+                      </div>
+
+                      {(() => {
+                        const rCfg = getRoleConfig(selectedUser.role);
+                        return (
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${rCfg.badgeBg} ${rCfg.badgeText} ${rCfg.borderColor}`}>
+                            {rCfg.label}
+                          </span>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-700">
+                        Assign New Role to This User:
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={selectedUser.role || 'traveler'}
+                          onChange={(e) => handleUpdateRole(selectedUser.id, e.target.value)}
+                          className="flex-1 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-[#5191fa]"
+                        >
+                          {PLATFORM_ROLES.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              {r.label} ({r.category}) {r.canAccessAdminPanel ? '· Admin Panel Access' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => setIsRoleMatrixOpen(true)}
+                          className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 cursor-pointer"
+                        >
+                          Full Matrix
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Permissions Preview for current role */}
+                    {(() => {
+                      const rCfg = getRoleConfig(selectedUser.role);
+                      return (
+                        <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                          <div className="font-bold text-slate-800 mb-1 flex items-center justify-between">
+                            <span>Active Permissions ({rCfg.permissions.length}):</span>
+                            {rCfg.canAccessAdminPanel ? (
+                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                Can Access Admin Panel
+                              </span>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 font-medium bg-slate-200 px-2 py-0.5 rounded">
+                                Standard Portal User
+                              </span>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
+                            {rCfg.permissions.map((p, idx) => (
+                              <div key={idx} className="flex items-center gap-1.5 text-slate-700 text-[11px]">
+                                <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span>{p}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Verification Toggle */}
+                    <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-700">Verification Status:</span>
+                        {selectedUser.verified !== false && selectedUser.isVerified !== false ? (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Verified User &amp; Credentials
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            Unverified User Profile
+                          </span>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleVerification(selectedUser.id, selectedUser.verified !== false && selectedUser.isVerified !== false)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-xl cursor-pointer transition-colors shadow-2xs ${
+                          selectedUser.verified !== false && selectedUser.isVerified !== false
+                            ? 'bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200'
+                            : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+                        }`}
+                      >
+                        {selectedUser.verified !== false && selectedUser.isVerified !== false
+                          ? 'Revoke Verification'
+                          : 'Verify User Account'}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* User's Bookings */}
                   <div>
                     <h4 className="font-heading font-bold text-base text-[#1a2b48] mb-3 flex items-center justify-between">
@@ -2673,6 +2853,23 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
             </div>
           )}
 
+          {/* Admin Add User Modal */}
+          <AdminAddUserModal
+            isOpen={isAddUserModalOpen}
+            onClose={() => setIsAddUserModalOpen(false)}
+            onUserCreated={(newUser) => {
+              setAdminUsers(prev => [newUser, ...prev]);
+              setPasswordResetNotice(`User ${newUser.email} created successfully with role "${newUser.role}" in Firestore!`);
+              setTimeout(() => setPasswordResetNotice(null), 5000);
+            }}
+          />
+
+          {/* Admin Role Matrix Modal */}
+          <AdminRoleMatrixModal
+            isOpen={isRoleMatrixOpen}
+            onClose={() => setIsRoleMatrixOpen(false)}
+          />
+
           {/* Edit Profile Modal for Admin */}
           {renderEditProfileModal()}
         </div>
@@ -2981,7 +3178,12 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                 Book New Adventure
               </button>
               <button
-                onClick={logout}
+                type="button"
+                onClick={async () => {
+                  await logout();
+                  adminLogout();
+                  onNavigate('home');
+                }}
                 className="p-2 border border-slate-200 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-all cursor-pointer"
                 title="Log Out"
               >
