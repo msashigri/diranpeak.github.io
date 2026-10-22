@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, MapPin, Compass, ArrowRight, X } from 'lucide-react';
-import { TOURS_DATA, Tour } from '../data/toursData';
+import { Tour } from '../data/toursData';
+import { useAuth } from '../context/AuthContext';
 
 interface HeroProps {
   onSearch: (params: { destination?: string; category?: string; duration?: string }) => void;
@@ -9,6 +10,7 @@ interface HeroProps {
 }
 
 export const Hero: React.FC<HeroProps> = ({ onSearch, onSelectTour }) => {
+  const { siteSettings, tours } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [muted, setMuted] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
@@ -18,7 +20,7 @@ export const Hero: React.FC<HeroProps> = ({ onSearch, onSelectTour }) => {
   // Filter tours matching search query
   const query = searchTerm.trim().toLowerCase();
   const suggestions: Tour[] = query.length >= 1
-    ? TOURS_DATA.filter((tour) => {
+    ? (tours || []).filter((tour) => {
         return (
           tour.title.toLowerCase().includes(query) ||
           tour.location.toLowerCase().includes(query) ||
@@ -122,11 +124,16 @@ export const Hero: React.FC<HeroProps> = ({ onSearch, onSelectTour }) => {
 
         {/* Content */}
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 py-16 text-center text-white w-full">
+          {siteSettings?.heroBadge && (
+            <div className="inline-block px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs sm:text-sm font-semibold tracking-wider uppercase mb-3 border border-white/30 text-white shadow-sm">
+              {siteSettings.heroBadge}
+            </div>
+          )}
           <h1 className="text-3xl sm:text-5xl lg:text-[54px] font-bold text-white mb-2 leading-tight tracking-tight drop-shadow-md">
-            Discover The Best Of Pakistan
+            {siteSettings?.heroHeading || 'Discover The Best Of Pakistan'}
           </h1>
-          <h2 className="text-base sm:text-xl font-normal text-white mb-8 tracking-wide drop-shadow">
-            Trekking | Tour | Expedition
+          <h2 className="text-base sm:text-xl font-normal text-white/95 mb-8 tracking-wide drop-shadow max-w-2xl mx-auto">
+            {siteSettings?.heroSubheading || 'Trekking | Tour | Expedition'}
           </h2>
 
           {/* Search Form with Autocomplete Dropdown */}

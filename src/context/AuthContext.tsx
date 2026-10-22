@@ -23,8 +23,9 @@ import {
 import { auth, db, googleProvider, cleanFirestoreData } from '../firebase/config';
 import { handleFirestoreError, OperationType } from '../firebase/errorHandler';
 import { initLanguageTranslator, translateWholeWebsite, getLanguageByCodeOrName } from '../utils/translator';
-import { TOURS_DATA } from '../data/toursData';
+import { TOURS_DATA, Tour } from '../data/toursData';
 import { downloadBookingVoucherPDF } from '../utils/pdfVoucherGenerator';
+import { UserRole, canUserAccessAdmin, getRoleConfig, PLATFORM_ROLES } from '../types/roles';
 
 export const ADMIN_USER_ID = '83oYhWqa5ONqFdaJUVs26BnhEZl1';
 
@@ -174,6 +175,46 @@ export interface AlertSettings {
   autoNotifySubscribersOnPackageUpdate: boolean;
 }
 
+export interface SiteSettings {
+  siteName: string;
+  siteTitle: string;
+  tagline: string;
+  logoUrl: string;
+  faviconUrl: string;
+  metaDescription: string;
+  metaKeywords: string;
+  contactEmail: string;
+  contactPhone: string;
+  contactWhatsApp: string;
+  officeAddress: string;
+  businessHours: string;
+  heroBadge: string;
+  heroHeading: string;
+  heroSubheading: string;
+  footerText: string;
+  copyrightText: string;
+}
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  siteName: 'Diran Peak Adventure',
+  siteTitle: 'Diran Peak Adventure - Pakistan Treks, Expeditions & Tours',
+  tagline: 'Premier Pakistan Trekking & Karakoram Expeditions',
+  logoUrl: '',
+  faviconUrl: '/favicon.png',
+  metaDescription: 'Official website of Diran Peak Adventure. Premier mountaineering expeditions, K2 base camp treks, and cultural Silk Road tours in Pakistan with licensed Balti guides.',
+  metaKeywords: 'Pakistan trekking, K2 base camp, Karakoram expeditions, Diran Peak, Rakaposhi trek, Hunza tours, mountaineering Pakistan',
+  contactEmail: 'info@diranpeakadventure.com',
+  contactPhone: '+92 344 5678901',
+  contactWhatsApp: '+92 344 5678901',
+  officeAddress: 'Ali Abad, Main Karakoram Highway, Hunza Valley, Gilgit-Baltistan, Pakistan',
+  businessHours: 'Monday - Saturday: 8:00 AM - 8:00 PM PKT',
+  heroBadge: 'Diran Peak Adventure · Est. 2012',
+  heroHeading: 'Discover the Crown of Karakoram & Himalayas',
+  heroSubheading: 'Authentic high-altitude treks, legendary 8,000m expeditions, and Silk Road cultural journeys led by native Karakoram mountaineers.',
+  footerText: 'Licensed Government of Pakistan Tour Operator (DTS Lic #1842). Pioneer of authentic sustainable trekking and high-altitude logistics across the Karakoram, Western Himalayas, and Hindu Kush.',
+  copyrightText: '© 2027 Diran Peak Adventure (Pvt) Ltd. All rights reserved.'
+};
+
 export interface AdminSettings {
   notificationEmail: string;
   notificationPhone: string;
@@ -213,6 +254,10 @@ interface AuthContextType {
   adminLogin: (loginIdOrEmail: string, pass: string) => Promise<{ success: boolean; error?: string }>;
   adminLogout: () => void;
   updateAdminCredentials: (creds: { loginId: string; email: string; password: string }) => { success: boolean; error?: string };
+  userRole: UserRole;
+  activeRoleView: UserRole | null;
+  setActiveRoleView: (role: UserRole | null) => void;
+  canAccessAdminPanel: boolean;
   loginModalOpen: boolean;
   registerModalOpen: boolean;
   forgotModalOpen: boolean;
@@ -328,6 +373,15 @@ interface AuthContextType {
   dismissLatestBooking: () => void;
   exportBookingsToCsv: () => void;
   exportContactsToCsv: () => void;
+  siteSettings: SiteSettings;
+  updateSiteSettings: (settings: Partial<SiteSettings>) => Promise<void>;
+  resetSiteSettings: () => Promise<void>;
+  tours: Tour[];
+  updateTourPackage: (tourId: string, updates: Partial<Tour>) => Promise<void>;
+  toggleTourFeatured: (tourId: string) => Promise<void>;
+  addTourPackage: (tour: Tour) => Promise<void>;
+  deleteTourPackage: (tourId: string) => Promise<void>;
+  resetToursToDefaults: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -386,6 +440,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
+  const [activeRoleView, setActiveRoleView] = useState<UserRole | null>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_active_role_view');
+      return (saved as UserRole) || null;
+    } catch {
+      return null;
+    }
+  });
+
+  const handleSetActiveRoleView = (role: UserRole | null) => {
+    setActiveRoleView(role);
+    if (role) {
+      localStorage.setItem('dpa_active_role_view', role);
+    } else {
+      localStorage.removeItem('dpa_active_role_view');
+    }
+  };
+
   const [bookings, setBookings] = useState<Booking[]>(() => {
     try {
       const saved = localStorage.getItem('dpa_guest_bookings');
@@ -440,6 +512,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     newSubscriberAlert: true,
     autoNotifySubscribersOnNewPackage: true,
     autoNotifySubscribersOnPackageUpdate: true
+  });
+
+  const [siteSettings, setSiteSettings] = useState<SiteSettings>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_site_settings');
+      if (saved) return { ...DEFAULT_SITE_SETTINGS, ...JSON.parse(saved) };
+    } catch {
+      // ignore
+    }
+    return DEFAULT_SITE_SETTINGS;
+  });
+
+  const [tours, setTours] = useState<Tour[]>(() => {
+    try {
+      const saved = localStorage.getItem('dpa_custom_tours');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return TOURS_DATA;
   });
 
   const [latestBooking, setLatestBooking] = useState<Booking | null>(null);
@@ -573,6 +668,106 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [adminAuth]);
 
+  // Synchronize siteSettings with document title, favicon, and SEO meta tags
+  useEffect(() => {
+    try {
+      localStorage.setItem('dpa_site_settings', JSON.stringify(siteSettings));
+    } catch {
+      // ignore
+    }
+
+    if (typeof document !== 'undefined') {
+      if (siteSettings.siteTitle) {
+        document.title = siteSettings.siteTitle;
+      }
+      if (siteSettings.faviconUrl) {
+        let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = siteSettings.faviconUrl;
+      }
+      let metaDesc = document.querySelector<HTMLMetaElement>("meta[name='description']");
+      if (!metaDesc) {
+        metaDesc = document.createElement('meta');
+        metaDesc.name = 'description';
+        document.head.appendChild(metaDesc);
+      }
+      metaDesc.content = siteSettings.metaDescription || '';
+
+      let metaKeywords = document.querySelector<HTMLMetaElement>("meta[name='keywords']");
+      if (!metaKeywords) {
+        metaKeywords = document.createElement('meta');
+        metaKeywords.name = 'keywords';
+        document.head.appendChild(metaKeywords);
+      }
+      metaKeywords.content = siteSettings.metaKeywords || '';
+
+      let ogTitle = document.querySelector<HTMLMetaElement>("meta[property='og:title']");
+      if (ogTitle) ogTitle.content = siteSettings.siteTitle || siteSettings.siteName;
+      let ogDesc = document.querySelector<HTMLMetaElement>("meta[property='og:description']");
+      if (ogDesc) ogDesc.content = siteSettings.metaDescription || '';
+    }
+  }, [siteSettings]);
+
+  // Firestore snapshot listener for siteSettings
+  useEffect(() => {
+    try {
+      const siteSettingsDocRef = doc(db, 'siteSettings', 'global');
+      const unsub = onSnapshot(siteSettingsDocRef, (snap) => {
+        if (snap.exists()) {
+          const data = snap.data() as Partial<SiteSettings>;
+          setSiteSettings(prev => ({ ...prev, ...data }));
+        }
+      }, (err) => {
+        console.warn('siteSettings Firestore snapshot:', err);
+      });
+      return () => unsub();
+    } catch (err) {
+      console.warn('Failed to listen to siteSettings:', err);
+    }
+  }, []);
+
+  // Firestore snapshot listener for tourPackages
+  useEffect(() => {
+    try {
+      const tourColRef = collection(db, 'tourPackages');
+      const unsub = onSnapshot(tourColRef, (snap) => {
+        if (!snap.empty) {
+          const fetchedTours: Record<string, Partial<Tour>> = {};
+          snap.forEach(docSnap => {
+            fetchedTours[docSnap.id] = docSnap.data() as Partial<Tour>;
+          });
+          setTours(prev => {
+            const updated = prev.map(t => {
+              if (fetchedTours[t.id]) {
+                return { ...t, ...fetchedTours[t.id] };
+              }
+              return t;
+            });
+            snap.forEach(docSnap => {
+              const data = docSnap.data() as Tour;
+              if (!updated.some(t => t.id === docSnap.id)) {
+                updated.push(data);
+              }
+            });
+            try {
+              localStorage.setItem('dpa_custom_tours', JSON.stringify(updated));
+            } catch {}
+            return updated;
+          });
+        }
+      }, (err) => {
+        console.warn('tourPackages Firestore snapshot:', err);
+      });
+      return () => unsub();
+    } catch (err) {
+      console.warn('Failed to listen to tourPackages:', err);
+    }
+  }, []);
+
   // Synchronize Firebase Auth state listener
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (fbUser) => {
@@ -582,6 +777,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const snap = await getDoc(userDocRef);
           if (snap.exists()) {
             const data = snap.data();
+            const userRole = (data.role || (fbUser.uid === ADMIN_USER_ID ? 'admin' : 'traveler')) as UserRole;
             const profileUser: User = {
               id: fbUser.uid,
               firstName: data.firstName || fbUser.displayName?.split(' ')[0] || 'Traveler',
@@ -592,12 +788,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               emergencyContact: data.emergencyContact || undefined,
               passportNumber: data.passportNumber || undefined,
               bio: data.bio || undefined,
+              country: data.country || undefined,
+              role: userRole,
+              verified: Boolean(data.verified ?? data.isVerified),
+              isVerified: Boolean(data.verified ?? data.isVerified),
+              permissions: data.permissions || [],
+              tempPassword: data.tempPassword || undefined,
               favorites: data.favorites || [],
               joinedDate: data.createdAt
                 ? new Date(data.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
                 : 'March 2027'
             };
             setUser(profileUser);
+
+            // If the signed-in user is NOT an admin, ensure adminAuth is cleared
+            if (userRole !== 'admin' && fbUser.uid !== ADMIN_USER_ID && profileUser.email.toLowerCase() !== 'msa78677@gmail.com') {
+              setAdminAuth(null);
+              localStorage.removeItem('dpa_admin_session');
+            }
+
             if (data.favorites && Array.isArray(data.favorites)) {
               setFavorites(data.favorites);
               localStorage.setItem('dpa_user_favorites', JSON.stringify(data.favorites));
@@ -605,6 +814,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('dpa_user', JSON.stringify(profileUser));
           } else {
             const nameParts = (fbUser.displayName || 'Traveler Explorer').split(' ');
+            const userRole = (fbUser.uid === ADMIN_USER_ID ? 'admin' : 'traveler') as UserRole;
             const fallbackUser: User = {
               id: fbUser.uid,
               firstName: nameParts[0] || 'Traveler',
@@ -612,10 +822,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: fbUser.email || '',
               phone: fbUser.phoneNumber || '+92 345 6412992',
               avatar: fbUser.photoURL || undefined,
+              role: userRole,
               joinedDate: 'March 2027'
             };
             setUser(fallbackUser);
             localStorage.setItem('dpa_user', JSON.stringify(fallbackUser));
+
+            if (userRole !== 'admin' && fbUser.uid !== ADMIN_USER_ID && fallbackUser.email.toLowerCase() !== 'msa78677@gmail.com') {
+              setAdminAuth(null);
+              localStorage.removeItem('dpa_admin_session');
+            }
 
             // Persist document to Firestore so directory listing has it
             try {
@@ -625,7 +841,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 lastName: fallbackUser.lastName,
                 email: (fbUser.email || '').toLowerCase(),
                 phone: fallbackUser.phone || '',
-                role: fbUser.uid === ADMIN_USER_ID ? 'admin' : 'customer',
+                role: userRole,
                 createdAt: new Date().toISOString(),
                 lastLoginAt: new Date().toISOString()
               });
@@ -650,9 +866,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Helper to determine if current session has admin privileges
   const isCurrentAdmin = Boolean(
-    adminAuth?.isAuthenticated ||
-    (user && (user.id === ADMIN_USER_ID || user.email?.toLowerCase() === 'msa78677@gmail.com' || user.email?.toLowerCase() === 'admin@diranpeak.com' || user.role === 'admin')) ||
-    (auth.currentUser && (auth.currentUser.uid === ADMIN_USER_ID || auth.currentUser.email?.toLowerCase() === 'msa78677@gmail.com' || auth.currentUser.email?.toLowerCase() === 'admin@diranpeak.com'))
+    (user && (user.id === ADMIN_USER_ID || user.email?.toLowerCase() === 'msa78677@gmail.com' || user.email?.toLowerCase() === 'admin@diranpeak.com' || user.role === 'admin' || user.role === 'superadmin')) ||
+    (auth.currentUser && (auth.currentUser.uid === ADMIN_USER_ID || auth.currentUser.email?.toLowerCase() === 'msa78677@gmail.com' || auth.currentUser.email?.toLowerCase() === 'admin@diranpeak.com')) ||
+    (adminAuth?.isAuthenticated && (!user || user.role === 'admin' || user.role === 'superadmin'))
   );
 
   // Real-time Firestore Bookings synchronization (Admin gets ALL bookings; logged-in travelers get own; guests retain local reservations)
@@ -1117,6 +1333,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           setAdminAuth(session);
           localStorage.setItem('dpa_admin_session', JSON.stringify(session));
+        } else {
+          setAdminAuth(null);
+          localStorage.removeItem('dpa_admin_session');
         }
 
         await logActivity({
@@ -2413,6 +2632,94 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setAdminSettings(prev => ({ ...prev, ...settings }));
   };
 
+  const updateSiteSettings = async (updates: Partial<SiteSettings>) => {
+    const merged = { ...siteSettings, ...updates };
+    setSiteSettings(merged);
+    try {
+      localStorage.setItem('dpa_site_settings', JSON.stringify(merged));
+    } catch {}
+    try {
+      await setDoc(doc(db, 'siteSettings', 'global'), cleanFirestoreData(merged), { merge: true });
+    } catch (e) {
+      console.warn('Error saving siteSettings to Firestore:', e);
+    }
+  };
+
+  const resetSiteSettings = async () => {
+    setSiteSettings(DEFAULT_SITE_SETTINGS);
+    try {
+      localStorage.setItem('dpa_site_settings', JSON.stringify(DEFAULT_SITE_SETTINGS));
+    } catch {}
+    try {
+      await setDoc(doc(db, 'siteSettings', 'global'), cleanFirestoreData(DEFAULT_SITE_SETTINGS));
+    } catch (e) {
+      console.warn('Error resetting siteSettings in Firestore:', e);
+    }
+  };
+
+  const updateTourPackage = async (tourId: string, updates: Partial<Tour>) => {
+    const updated = tours.map(t => (t.id === tourId ? { ...t, ...updates } : t));
+    setTours(updated);
+    try {
+      localStorage.setItem('dpa_custom_tours', JSON.stringify(updated));
+    } catch {}
+
+    const targetTour = updated.find(t => t.id === tourId);
+    if (targetTour) {
+      try {
+        await setDoc(doc(db, 'tourPackages', tourId), cleanFirestoreData(targetTour), { merge: true });
+      } catch (e) {
+        console.warn('Error updating tour in Firestore:', e);
+      }
+      if (alertSettings.autoNotifySubscribersOnPackageUpdate) {
+        notifySubscribersOfPackageChange('updated', targetTour.title, tourId).catch(() => {});
+      }
+    }
+  };
+
+  const toggleTourFeatured = async (tourId: string) => {
+    const target = tours.find(t => t.id === tourId);
+    if (!target) return;
+    const newFeatured = !target.featured;
+    await updateTourPackage(tourId, { featured: newFeatured });
+  };
+
+  const addTourPackage = async (newTour: Tour) => {
+    const updated = [newTour, ...tours];
+    setTours(updated);
+    try {
+      localStorage.setItem('dpa_custom_tours', JSON.stringify(updated));
+    } catch {}
+    try {
+      await setDoc(doc(db, 'tourPackages', newTour.id), cleanFirestoreData(newTour));
+    } catch (e) {
+      console.warn('Error creating tour in Firestore:', e);
+    }
+    if (alertSettings.autoNotifySubscribersOnNewPackage) {
+      notifySubscribersOfPackageChange('added', newTour.title, newTour.id).catch(() => {});
+    }
+  };
+
+  const deleteTourPackage = async (tourId: string) => {
+    const updated = tours.filter(t => t.id !== tourId);
+    setTours(updated);
+    try {
+      localStorage.setItem('dpa_custom_tours', JSON.stringify(updated));
+    } catch {}
+    try {
+      await deleteDoc(doc(db, 'tourPackages', tourId));
+    } catch (e) {
+      console.warn('Error deleting tour in Firestore:', e);
+    }
+  };
+
+  const resetToursToDefaults = async () => {
+    setTours(TOURS_DATA);
+    try {
+      localStorage.removeItem('dpa_custom_tours');
+    } catch {}
+  };
+
   const dismissLatestBooking = () => {
     setLatestBooking(null);
   };
@@ -2478,11 +2785,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     document.body.removeChild(link);
   };
 
-  const isAdmin =
-    user?.id === ADMIN_USER_ID ||
-    auth.currentUser?.uid === ADMIN_USER_ID ||
-    user?.role === 'admin' ||
-    Boolean(adminAuth?.isAuthenticated);
+  const isAdmin = Boolean(
+    (user && (user.id === ADMIN_USER_ID || user.email?.toLowerCase() === 'msa78677@gmail.com' || user.email?.toLowerCase() === adminCredentials.email.toLowerCase() || user.role === 'admin' || user.role === 'superadmin')) ||
+    (auth.currentUser && (auth.currentUser.uid === ADMIN_USER_ID || auth.currentUser.email?.toLowerCase() === 'msa78677@gmail.com' || auth.currentUser.email?.toLowerCase() === adminCredentials.email.toLowerCase())) ||
+    (adminAuth?.isAuthenticated && (!user || user.role === 'admin' || user.role === 'superadmin'))
+  );
+
+  const userRole: UserRole = (activeRoleView || user?.role || (isAdmin ? 'admin' : 'traveler')) as UserRole;
+  const canAccessAdminPanel = canUserAccessAdmin(userRole);
 
   const updateUserProfile = async (data: Partial<User>): Promise<{ success: boolean; error?: string }> => {
     if (!user) return { success: false, error: 'Please log in to update your account.' };
@@ -2561,6 +2871,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!user,
         adminAuth,
         isAdmin,
+        userRole,
+        activeRoleView,
+        setActiveRoleView: handleSetActiveRoleView,
+        canAccessAdminPanel,
         adminCredentials,
         adminLogin,
         adminLogout,
@@ -2640,7 +2954,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         downloadVoucher,
         dismissLatestBooking,
         exportBookingsToCsv,
-        exportContactsToCsv
+        exportContactsToCsv,
+        siteSettings,
+        updateSiteSettings,
+        resetSiteSettings,
+        tours,
+        updateTourPackage,
+        toggleTourFeatured,
+        addTourPackage,
+        deleteTourPackage,
+        resetToursToDefaults
       }}
     >
       {children}

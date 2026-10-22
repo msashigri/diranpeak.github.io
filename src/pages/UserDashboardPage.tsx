@@ -5,6 +5,8 @@ import { PLATFORM_ROLES, UserRole, getRoleConfig } from '../types/roles';
 import { AdminAddUserModal } from '../components/AdminAddUserModal';
 import { AdminRoleMatrixModal } from '../components/AdminRoleMatrixModal';
 import { AdminInquirySection } from '../components/AdminInquirySection';
+import { AdminTourPackagesSection } from '../components/AdminTourPackagesSection';
+import { AdminWebsiteSettingsSection } from '../components/AdminWebsiteSettingsSection';
 import {
   User, CalendarCheck, CheckCircle, ShieldCheck, LogOut, ArrowRight,
   Search, RefreshCw, X, Edit3, Trash2, Mail, Phone, Calendar,
@@ -14,6 +16,20 @@ import {
   Users, FileDown, Car, Building2, Award, Mountain, Plus, ShieldAlert,
   BadgeCheck, UserCheck, UserX
 } from 'lucide-react';
+
+import { TravelieSidebar, TravelieTab } from '../components/admin/TravelieSidebar';
+import { TravelieTopBar } from '../components/admin/TravelieTopBar';
+import { TravelieDashboardView } from '../components/admin/TravelieDashboardView';
+import { TraveliePackagesView } from '../components/admin/TraveliePackagesView';
+import { TravelieBookingsView } from '../components/admin/TravelieBookingsView';
+import { TravelieCalendarView } from '../components/admin/TravelieCalendarView';
+import { TravelieTravelersView } from '../components/admin/TravelieTravelersView';
+import { TravelieGuidesView } from '../components/admin/TravelieGuidesView';
+import { TravelieGalleryView } from '../components/admin/TravelieGalleryView';
+import { TravelieMessagesView } from '../components/admin/TravelieMessagesView';
+import { TravelieDealsView } from '../components/admin/TravelieDealsView';
+import { TravelieFeedbackView } from '../components/admin/TravelieFeedbackView';
+import { RoleSpecificDashboard } from '../components/dashboards/RoleSpecificDashboard';
 
 interface FirestoreUserRecord {
   id: string;
@@ -35,12 +51,16 @@ interface FirestoreUserRecord {
   permissions?: string[];
 }
 
-type AdminTab = 'bookings' | 'messages' | 'vehicle_inquiries' | 'hotel_inquiries' | 'guide_applications' | 'partners' | 'subscribers' | 'alerts' | 'users' | 'activities';
+type AdminTab = 'bookings' | 'packages' | 'site_settings' | 'messages' | 'vehicle_inquiries' | 'hotel_inquiries' | 'guide_applications' | 'partners' | 'subscribers' | 'alerts' | 'users' | 'activities';
 
 export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (route: string, param?: string) => void }> = ({ initialTab, onNavigate }) => {
   const {
     user,
     isAuthenticated,
+    userRole,
+    canAccessAdminPanel,
+    activeRoleView,
+    setActiveRoleView,
     bookings,
     formatPrice,
     downloadVoucher,
@@ -82,16 +102,25 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
     adminCreateUser,
     adminUpdateUserRole,
     adminVerifyUser,
-    adminLogout
+    adminLogout,
+    tours
   } = useAuth();
 
+  // Strict RBAC: Only admin, manager, moderator, or verified admin credentials can access admin panel
   const isUserAdmin = Boolean(
-    isAdmin ||
-    adminAuth?.isAuthenticated ||
-    user?.id === ADMIN_USER_ID ||
-    user?.email?.toLowerCase() === 'msa78677@gmail.com' ||
-    user?.email?.toLowerCase() === 'admin@diranpeak.com' ||
-    user?.role === 'admin'
+    canAccessAdminPanel ||
+    userRole === 'admin' ||
+    userRole === 'manager' ||
+    userRole === 'moderator' ||
+    (isAdmin && (user?.role === 'admin' || adminAuth?.isAuthenticated))
+  );
+
+  // Travelie layout active tab
+  const [travelieTab, setTravelieTab] = useState<TravelieTab>(
+    initialTab === 'site_settings' ? 'site_settings' :
+    initialTab === 'packages' ? 'packages' :
+    initialTab === 'bookings' ? 'bookings' :
+    'dashboard'
   );
 
   // Admin tabs & state - strictly direct to Firebase Firestore (no local sync)
@@ -741,251 +770,181 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
       return true;
     });
 
+    const handleAdminLogout = async () => {
+      await logout();
+      adminLogout();
+      onNavigate('home');
+    };
+
     return (
-      <div className="bg-[#f7f8fa] min-h-screen py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Breadcrumb */}
-          <div className="text-xs text-slate-500 mb-4 flex items-center gap-1.5 font-medium">
-            <button onClick={() => onNavigate('home')} className="hover:text-[#5191fa]">Home</button>
-            <span>/</span>
-            <span className="text-slate-800 font-semibold">Admin Dashboard</span>
-          </div>
+      <div className="flex bg-[#f7f8fa] min-h-screen text-slate-800 font-sans">
+        {/* Travelie Sidebar matching attached image 3112800 */}
+        <TravelieSidebar
+          currentTab={travelieTab}
+          onTabChange={(t) => setTravelieTab(t)}
+          onLogout={handleAdminLogout}
+        />
 
-          {/* Admin Notification Banner */}
-          {passwordResetNotice && (
-            <div className="mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>{passwordResetNotice}</span>
-              </div>
-              <button onClick={() => setPasswordResetNotice(null)} className="text-emerald-700 hover:text-emerald-900 cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+        {/* Main Content Area */}
+        <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+          {/* Travelie Top Bar matching attached image */}
+          <TravelieTopBar
+            currentTab={travelieTab}
+            onSearch={(q) => setAdminSearch(q)}
+            onLogout={handleAdminLogout}
+          />
 
-          {/* Admin Header with Prominent Indicator Badge */}
-          <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 shadow-xl mb-8 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#5191fa]/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-start sm:items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-amber-500/20 border border-amber-400/40 text-amber-400 flex items-center justify-center shrink-0">
-                  <Shield className="w-8 h-8" />
+          {/* Scrollable View Container */}
+          <main className="p-6 sm:p-8 flex-1 overflow-y-auto space-y-6">
+            {passwordResetNotice && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{passwordResetNotice}</span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2.5 mb-1.5">
-                    {/* Official Admin Indicator Badge */}
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider bg-amber-500 text-slate-950 shadow-md">
-                      <ShieldCheck className="w-3.5 h-3.5" />
-                      ADMINISTRATOR VIEW
-                    </span>
-                    <span className="text-xs text-slate-400 font-mono hidden sm:inline">
-                      Admin UID: {ADMIN_USER_ID}
-                    </span>
-                  </div>
-                  <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-white">
-                    Master Command Center
-                  </h1>
-                  <p className="text-xs text-slate-300 mt-1">
-                    Direct Firebase Firestore access to all user accounts, password reset controls, booking approvals, and live activity tracking.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 bg-emerald-950/60 border border-emerald-500/30 rounded-xl text-emerald-400 text-xs font-semibold">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Cloud Firestore Live</span>
-                </div>
-                <button
-                  onClick={handleOpenEditProfile}
-                  className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
-                  title="Edit your admin profile details"
-                >
-                  <Edit3 className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Edit My Profile</span>
+                <button onClick={() => setPasswordResetNotice(null)} className="text-emerald-700 hover:text-emerald-900 cursor-pointer">
+                  <X className="w-4 h-4" />
                 </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await logout();
-                    adminLogout();
-                    onNavigate('home');
+              </div>
+            )}
+
+            {/* TAB: DASHBOARD (Matching image 3112800) */}
+            {travelieTab === 'dashboard' && (
+              <TravelieDashboardView
+                onSelectTour={(t) => onNavigate('detail', t.id)}
+                onOpenAddBooking={() => {
+                  setEditingBooking({
+                    id: 'new-bkg',
+                    bookingCode: `DPA-${Date.now().toString().slice(-5)}`,
+                    userId: user?.id || 'admin',
+                    customerName: '',
+                    customerEmail: '',
+                    customerPhone: '',
+                    tourId: tours[0]?.id || '',
+                    tourTitle: tours[0]?.title || '',
+                    startDate: '10 July 2028',
+                    endDate: '24 July 2028',
+                    adults: 2,
+                    children: 0,
+                    totalPrice: 4200,
+                    status: 'Confirmed',
+                    bookingDate: new Date().toLocaleDateString()
+                  } as any);
+                }}
+                onEditBooking={handleOpenEditBooking}
+              />
+            )}
+
+            {/* TAB: PACKAGES (Matching image 3112803) */}
+            {travelieTab === 'packages' && (
+              <div className="space-y-8">
+                <TraveliePackagesView
+                  onOpenAddPackage={() => {
+                    const el = document.getElementById('admin-tour-packages-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className="px-4 py-2 bg-rose-600/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/30 text-xs font-semibold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-                  title="Log out of admin session"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>Log Out</span>
-                </button>
+                  onEditPackage={(t) => {
+                    const el = document.getElementById('admin-tour-packages-section');
+                    if (el) el.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  onSelectTour={(t) => onNavigate('detail', t.id)}
+                />
+                <div id="admin-tour-packages-section" className="pt-6 border-t border-slate-200">
+                  <AdminTourPackagesSection />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Quick Metrics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5 mt-8 pt-6 border-t border-slate-800">
-              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Bookings</div>
-                <div className="text-lg font-black text-[#5191fa] mt-0.5">{adminAllBookings.length}</div>
+            {/* TAB: BOOKINGS (Matching image 3112802) */}
+            {travelieTab === 'bookings' && (
+              <div className="space-y-6">
+                <TravelieBookingsView
+                  onOpenAddBooking={() => {
+                    setEditingBooking({
+                      id: 'new-bkg',
+                      bookingCode: `DPA-${Date.now().toString().slice(-5)}`,
+                      userId: user?.id || 'admin',
+                      customerName: '',
+                      customerEmail: '',
+                      customerPhone: '',
+                      tourId: tours[0]?.id || '',
+                      tourTitle: tours[0]?.title || '',
+                      startDate: '10 July 2028',
+                      endDate: '24 July 2028',
+                      adults: 2,
+                      children: 0,
+                      totalPrice: 4200,
+                      status: 'Confirmed',
+                      bookingDate: new Date().toLocaleDateString()
+                    } as any);
+                  }}
+                  onEditBooking={handleOpenEditBooking}
+                  onDeleteBooking={async (b) => {
+                    if (window.confirm(`Are you sure you want to delete booking ${b.bookingCode}?`)) {
+                      await deleteBooking(b.id);
+                      setAdminAllBookings(prev => prev.filter(x => x.id !== b.id));
+                    }
+                  }}
+                />
               </div>
-              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contact Form</div>
-                <div className="text-lg font-black text-emerald-400 mt-0.5">{contactFormInquiries.length}</div>
+            )}
+
+            {/* TAB: CALENDAR (Matching image 3112804) */}
+            {travelieTab === 'calendar' && (
+              <TravelieCalendarView />
+            )}
+
+            {/* TAB: TRAVELERS (Matching image 3112804) */}
+            {travelieTab === 'travelers' && (
+              <div className="space-y-8">
+                <TravelieTravelersView
+                  onOpenAddUser={() => setIsAddUserModalOpen(true)}
+                  onOpenRoleMatrix={() => setIsRoleMatrixOpen(true)}
+                  onResetPassword={handleOpenPasswordModal}
+                  onEditUser={handleOpenEditTraveler}
+                />
               </div>
-              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Fleet Inquiries</div>
-                <div className="text-lg font-black text-orange-400 mt-0.5">{vehicleFleetInquiries.length}</div>
+            )}
+
+            {/* TAB: GUIDES (Matching image 3112804) */}
+            {travelieTab === 'guides' && (
+              <TravelieGuidesView />
+            )}
+
+            {/* TAB: GALLERY (Matching image 3112804) */}
+            {travelieTab === 'gallery' && (
+              <TravelieGalleryView />
+            )}
+
+            {/* TAB: MESSAGES (Matching image 3112805) */}
+            {travelieTab === 'messages' && (
+              <div className="space-y-8">
+                <TravelieMessagesView />
+                <div className="pt-6 border-t border-slate-200">
+                  <AdminInquirySection
+                    type="contact"
+                    title="All Inbound Contact Form Messages"
+                    subtitle="Direct inquiries submitted through the contact page"
+                    inquiries={contactFormInquiries}
+                  />
+                </div>
               </div>
-              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Hotel Rooms</div>
-                <div className="text-lg font-black text-cyan-400 mt-0.5">{hotelReservationInquiries.length}</div>
-              </div>
-              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Guide Apps</div>
-                <div className="text-lg font-black text-indigo-400 mt-0.5">{guidePorterApplications.length}</div>
-              </div>
-              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">B2B Partners</div>
-                <div className="text-lg font-black text-amber-400 mt-0.5">{b2bPartnerRequests.length}</div>
-              </div>
-              <div className="bg-slate-800/60 p-3 rounded-2xl border border-slate-700/60">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Platform Users</div>
-                <div className="text-lg font-black text-white mt-0.5">{adminUsers.length}</div>
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Admin Navigation Tabs */}
-          <div className="flex flex-wrap items-center gap-2 mb-6 border-b border-slate-200 pb-3">
-            <button
-              type="button"
-              onClick={() => setAdminTab('bookings')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'bookings'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <CalendarCheck className="w-4 h-4 text-[#5191fa]" />
-              <span>Tour Bookings ({adminAllBookings.length})</span>
-            </button>
+            {/* TAB: DEALS (Matching image 3112805) */}
+            {travelieTab === 'deals' && (
+              <TravelieDealsView />
+            )}
 
-            <button
-              type="button"
-              onClick={() => setAdminTab('messages')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'messages'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <MessageSquare className="w-4 h-4 text-emerald-500" />
-              <span>Contact Messages ({contactFormInquiries.length})</span>
-            </button>
+            {/* TAB: FEEDBACK (Matching image 3112805) */}
+            {travelieTab === 'feedback' && (
+              <TravelieFeedbackView />
+            )}
 
-            <button
-              type="button"
-              onClick={() => setAdminTab('vehicle_inquiries')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'vehicle_inquiries'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Car className="w-4 h-4 text-orange-500" />
-              <span>Vehicle Fleet ({vehicleFleetInquiries.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAdminTab('hotel_inquiries')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'hotel_inquiries'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Building2 className="w-4 h-4 text-cyan-500" />
-              <span>Hotel Reservations ({hotelReservationInquiries.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAdminTab('guide_applications')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'guide_applications'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Award className="w-4 h-4 text-indigo-500" />
-              <span>Guide &amp; Porter Apps ({guidePorterApplications.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAdminTab('partners')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'partners'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Handshake className="w-4 h-4 text-amber-500" />
-              <span>B2B Partners ({b2bPartnerRequests.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAdminTab('users')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'users'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <User className="w-4 h-4 text-blue-400" />
-              <span>Users &amp; Roles ({adminUsers.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAdminTab('subscribers')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'subscribers'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Send className="w-4 h-4 text-purple-500" />
-              <span>Subscribers ({newsletterSubscribers.length})</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAdminTab('alerts')}
-              className={`px-3.5 py-2 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'alerts'
-                  ? 'bg-[#1a2b48] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Bell className="w-4 h-4 text-rose-500" />
-              <span>Alert Settings</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAdminTab('activities')}
-              className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-                adminTab === 'activities'
-                  ? 'bg-[#5191fa] text-white shadow-md'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <Activity className="w-4 h-4 text-amber-300" />
-              <span>Traveler Activity Feed ({liveActivitiesList.length})</span>
-            </button>
-          </div>
+            {/* TAB: WEBSITE CMS */}
+            {travelieTab === 'site_settings' && (
+              <AdminWebsiteSettingsSection />
+            )}
 
           {/* TAB 1: USERS DIRECTORY */}
           {adminTab === 'users' && (
@@ -1377,6 +1336,18 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
                 </div>
               )}
             </div>
+          )}
+
+          {/* TAB: TOUR PACKAGES & FEATURED GROUPS */}
+          {adminTab === 'packages' && (
+            <AdminTourPackagesSection
+              onNavigateToDetail={(tour) => onNavigate('tour-detail', tour.slug || tour.id)}
+            />
+          )}
+
+          {/* TAB: WEBSITE CONTENT & SEO CMS */}
+          {adminTab === 'site_settings' && (
+            <AdminWebsiteSettingsSection />
           )}
 
           {/* TAB: CONTACT MESSAGES */}
@@ -2872,6 +2843,7 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
 
           {/* Edit Profile Modal for Admin */}
           {renderEditProfileModal()}
+          </main>
         </div>
       </div>
     );
@@ -3117,441 +3089,7 @@ export const UserDashboardPage: React.FC<{ initialTab?: string; onNavigate: (rou
   }
 
   // =========================================================================
-  // NORMAL TRAVELER DASHBOARD VIEW (Every other user sees their own dashboard)
+  // ROLE-SPECIFIC USER DASHBOARD VIEW (Every role sees their own dedicated dashboard)
   // =========================================================================
-  const myBookings = bookings.filter(
-    b => b.userId === user.id || (b.customerEmail && b.customerEmail.toLowerCase() === user.email.toLowerCase())
-  );
-
-  const favoritedTours = TOURS_DATA.filter(t => isFavorite(t.id));
-
-  return (
-    <div className="bg-[#f7f8fa] min-h-screen py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Breadcrumb */}
-        <div className="text-xs text-slate-500 mb-4 flex items-center gap-1.5 font-medium">
-          <button onClick={() => onNavigate('home')} className="hover:text-[#5191fa] cursor-pointer">Home</button>
-          <span>/</span>
-          <span className="text-slate-800 font-semibold">User Dashboard</span>
-        </div>
-
-        {/* User Profile Card */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#1a2b48] to-[#5191fa] text-white flex items-center justify-center font-extrabold text-2xl shadow-md">
-                {(user.firstName || user.email)[0].toUpperCase()}
-              </div>
-              <div>
-                <h1 className="font-heading text-xl sm:text-2xl font-bold text-[#1a2b48]">
-                  {user.firstName} {user.lastName}
-                </h1>
-                <div className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                  <span>{user.email}</span>
-                  <span>·</span>
-                  <span className="text-emerald-600 font-semibold">Verified Member</span>
-                </div>
-                <div className="text-[11px] text-slate-400 font-mono mt-1">
-                  Firebase UID: {user.id}
-                </div>
-                {user.phone && (
-                  <div className="text-xs text-slate-500 mt-1 flex items-center gap-1.5">
-                    <Phone className="w-3 h-3 text-slate-400" />
-                    <span>{user.phone}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                onClick={handleOpenEditProfile}
-                className="px-3.5 py-2 border border-slate-200 hover:border-[#5191fa] text-slate-700 hover:text-[#5191fa] text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit My Details</span>
-              </button>
-              <button
-                onClick={() => onNavigate('tours', 'all')}
-                className="px-4 py-2 bg-[#5191fa] text-white text-xs font-bold rounded-xl hover:bg-[#3d7be3] transition-all cursor-pointer shadow-xs"
-              >
-                Book New Adventure
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  await logout();
-                  adminLogout();
-                  onNavigate('home');
-                }}
-                className="p-2 border border-slate-200 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl transition-all cursor-pointer"
-                title="Log Out"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* User Details Profile Badges */}
-          {(user.emergencyContact || user.passportNumber || user.bio) && (
-            <div className="mt-6 pt-6 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-              {user.emergencyContact && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 uppercase font-bold">Emergency Contact</div>
-                  <div className="font-semibold text-slate-800 mt-0.5">{user.emergencyContact}</div>
-                </div>
-              )}
-              {user.passportNumber && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="text-[10px] text-slate-400 uppercase font-bold">Passport / ID Document</div>
-                  <div className="font-semibold text-slate-800 mt-0.5">{user.passportNumber}</div>
-                </div>
-              )}
-              {user.bio && (
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 sm:col-span-3">
-                  <div className="text-[10px] text-slate-400 uppercase font-bold">Travel Bio &amp; Climbing Experience</div>
-                  <div className="font-normal text-slate-700 mt-0.5">{user.bio}</div>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* User Dashboard Navigation Tabs: Bookings & Favorites */}
-        <div className="flex items-center gap-2 mb-6 border-b border-slate-200 pb-3">
-          <button
-            onClick={() => setUserTab('bookings')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-              userTab === 'bookings'
-                ? 'bg-[#1a2b48] text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <CalendarCheck className="w-4 h-4" />
-            <span>My Expedition Bookings ({myBookings.length})</span>
-          </button>
-
-          <button
-            onClick={() => setUserTab('favorites')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-              userTab === 'favorites'
-                ? 'bg-rose-500 text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <Heart className={`w-4 h-4 ${userTab === 'favorites' ? 'fill-white' : 'text-rose-500'}`} />
-            <span>Saved Favorites / Wishlist ({favorites.length})</span>
-          </button>
-
-          <button
-            onClick={() => setUserTab('profile')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer transition-all ${
-              userTab === 'profile'
-                ? 'bg-[#5191fa] text-white shadow-md'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>My Profile &amp; Travel Documents</span>
-          </button>
-        </div>
-
-        {/* TAB 1: MY BOOKINGS SECTION */}
-        {userTab === 'bookings' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
-                  <CalendarCheck className="w-5 h-5 text-[#5191fa]" />
-                  <span>My Expedition Bookings ({myBookings.length})</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Real-time booking confirmations and itinerary vouchers synced with Firebase.
-                </p>
-              </div>
-            </div>
-
-            {myBookings.length > 0 ? (
-              <div className="space-y-4">
-                {myBookings.map((b) => (
-                  <div
-                    key={b.id}
-                    className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs hover:border-[#5191fa] transition-colors"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="font-mono text-xs font-bold text-[#5191fa] bg-blue-50 px-2 py-0.5 rounded">
-                            {b.bookingCode}
-                          </span>
-                          <span
-                            className={`text-[11px] font-bold px-2 py-0.5 rounded ${
-                              b.status === 'Confirmed' || (b.status as any) === 'Accepted'
-                                ? 'bg-emerald-50 text-emerald-700'
-                                : b.status === 'Cancelled' || (b.status as any) === 'Declined'
-                                ? 'bg-rose-50 text-rose-700'
-                                : 'bg-amber-50 text-amber-700'
-                            }`}
-                          >
-                            {b.status}
-                          </span>
-                        </div>
-                        <h3 className="font-heading font-bold text-slate-900 text-base">
-                          {b.tourTitle}
-                        </h3>
-                        <div className="text-xs text-slate-500 mt-1">
-                          <strong>Dates:</strong> {b.startDate} - {b.endDate} · <strong>Party:</strong> {b.adults} Adults
-                        </div>
-                        {b.specialRequests && (
-                          <div className="text-xs text-slate-600 mt-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                            <strong>Note:</strong> {b.specialRequests}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex sm:flex-col items-center sm:items-end justify-between gap-2 sm:border-l sm:pl-4 border-slate-100">
-                        <div className="text-right">
-                          <div className="text-[10px] text-slate-400 uppercase font-bold">Total Price</div>
-                          <div className="text-base font-extrabold text-[#1a2b48]">
-                            {formatPrice(b.totalPrice)}
-                          </div>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => downloadVoucher(b)}
-                            className="px-3.5 py-1.5 bg-[#1a2b48] hover:bg-[#283d63] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                            title="Download official PDF booking voucher"
-                          >
-                            <FileDown className="w-3.5 h-3.5 text-[#5191fa]" />
-                            <span>Download PDF Voucher</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => deleteUserBooking(b.id)}
-                            className="text-xs text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Cancel Booking</span>
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-12 text-center text-slate-500 text-xs">
-                <CalendarCheck className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p>You have not placed any expedition bookings yet.</p>
-                <button
-                  onClick={() => onNavigate('tours', 'all')}
-                  className="mt-4 px-4 py-2 bg-[#5191fa] text-white font-semibold rounded-xl text-xs cursor-pointer hover:bg-[#3d7be3]"
-                >
-                  Explore Expeditions &amp; Treks
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 2: MY FAVORITES SECTION ("For login user there must be option to save as favorite") */}
-        {userTab === 'favorites' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-rose-500 fill-rose-500" />
-                  <span>My Saved Favorites &amp; Wishlist ({favoritedTours.length})</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Expeditions you have marked to keep track of. Synced across all your devices.
-                </p>
-              </div>
-            </div>
-
-            {favoritedTours.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {favoritedTours.map((t) => (
-                  <div
-                    key={t.id}
-                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-                  >
-                    <div className="relative h-44 bg-slate-100 overflow-hidden">
-                      <img
-                        src={t.image}
-                        alt={t.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => toggleFavorite(t.id)}
-                        className="absolute top-3 right-3 p-2 bg-rose-500 text-white rounded-full shadow-md hover:bg-rose-600 cursor-pointer"
-                        title="Remove from favorites"
-                      >
-                        <Heart className="w-4 h-4 fill-white text-white" />
-                      </button>
-                    </div>
-
-                    <div className="p-4 flex-1 flex flex-col justify-between">
-                      <div>
-                        <div className="text-[11px] font-bold text-[#5191fa] uppercase tracking-wider mb-1">
-                          {t.location} · {t.category || 'Expedition'}
-                        </div>
-                        <h4 className="font-heading font-bold text-slate-900 text-sm mb-2 line-clamp-2">
-                          {t.title}
-                        </h4>
-                      </div>
-
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <div>
-                          <div className="text-[10px] text-slate-400 uppercase font-bold">Duration</div>
-                          <div className="text-xs font-semibold text-slate-700">{t.daysCount} Days</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-[10px] text-slate-400 uppercase font-bold">From</div>
-                          <div className="text-sm font-extrabold text-[#1a2b48]">{formatPrice(t.price)}</div>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 pt-3 border-t border-slate-100 flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onNavigate('detail', t.id)}
-                          className="flex-1 py-2 bg-[#5191fa] hover:bg-[#3875dc] text-white text-xs font-bold rounded-xl text-center cursor-pointer transition-colors shadow-xs"
-                        >
-                          Book / View Tour
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleFavorite(t.id)}
-                          className="p-2 border border-slate-200 hover:bg-rose-50 text-slate-500 hover:text-rose-600 rounded-xl cursor-pointer"
-                          title="Remove from wishlist"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-12 text-center text-slate-500 text-xs">
-                <Heart className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                <p className="text-slate-600 font-medium">You haven&apos;t saved any expeditions to your favorites yet.</p>
-                <p className="text-slate-400 mt-1">Browse our mountaineering and trekking packages and tap the heart icon on any trip.</p>
-                <button
-                  onClick={() => onNavigate('tours', 'all')}
-                  className="mt-4 px-4 py-2 bg-[#5191fa] text-white font-semibold rounded-xl text-xs cursor-pointer hover:bg-[#3d7be3]"
-                >
-                  Explore Expeditions &amp; Treks
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB 3: MY PROFILE & TRAVEL DOCUMENTS SECTION */}
-        {userTab === 'profile' && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-sm border border-slate-200 mb-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
-              <div>
-                <h2 className="text-xl font-heading font-bold text-[#1a2b48] flex items-center gap-2">
-                  <User className="w-5 h-5 text-[#5191fa]" />
-                  <span>My Profile &amp; Travel Documents</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Personal paperwork and information used for Karakoram climbing permits and flight bookings.
-                </p>
-              </div>
-
-              <button
-                onClick={handleOpenEditProfile}
-                className="px-4 py-2.5 bg-[#5191fa] hover:bg-[#3d7be3] text-white text-xs font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer shadow-xs self-start sm:self-auto"
-              >
-                <Edit3 className="w-4 h-4" />
-                <span>Edit Profile</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Personal Information */}
-              <div className="bg-slate-50/70 rounded-2xl p-5 border border-slate-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-                  <User className="w-4 h-4 text-[#5191fa]" />
-                  <span>Personal Details</span>
-                </h3>
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="text-slate-400 font-medium block text-[10px] uppercase">Full Name</span>
-                    <span className="font-bold text-[#1a2b48] text-sm">
-                      {user.firstName || 'Traveler'} {user.lastName || ''}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block text-[10px] uppercase">Email Address</span>
-                    <span className="font-semibold text-slate-700">{user.email}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block text-[10px] uppercase">Phone Number</span>
-                    <span className="font-semibold text-slate-700">{user.phone || 'Not provided'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block text-[10px] uppercase">Account Member Since</span>
-                    <span className="font-semibold text-slate-700">{user.joinedDate || '2027'}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Expeditions & Permit Documentation */}
-              <div className="bg-slate-50/70 rounded-2xl p-5 border border-slate-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#5191fa]" />
-                  <span>Government Permit &amp; Safety Info</span>
-                </h3>
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="text-slate-400 font-medium block text-[10px] uppercase">Passport / National ID</span>
-                    <span className="font-bold text-[#1a2b48]">{user.passportNumber || 'Not provided yet'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block text-[10px] uppercase">Emergency Contact</span>
-                    <span className="font-semibold text-slate-700">{user.emergencyContact || 'Not provided yet'}</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 font-medium block text-[10px] uppercase">Climbing Bio &amp; Preferences</span>
-                    <p className="text-slate-600 leading-relaxed mt-1">
-                      {user.bio || 'No climbing background or dietary restrictions saved yet. Click "Edit Profile" above to update.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-              <button
-                onClick={handleOpenEditProfile}
-                className="px-4 py-2 bg-blue-50 text-[#5191fa] hover:bg-blue-100 text-xs font-bold rounded-xl flex items-center gap-2 transition-all cursor-pointer"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Update Contact &amp; Passport Info</span>
-              </button>
-
-              <button
-                onClick={() => setDeleteConfirmOpen(true)}
-                className="text-xs text-rose-500 hover:text-rose-700 hover:underline cursor-pointer flex items-center gap-1.5"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Delete Traveler Account</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Edit Profile Modal */}
-        {renderEditProfileModal()}
-      </div>
-    </div>
-  );
+  return <RoleSpecificDashboard onNavigate={onNavigate} />;
 };

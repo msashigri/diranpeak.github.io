@@ -40,6 +40,7 @@ interface VehicleItem {
   fuel: string;
   features: string[];
   dailyRate: string;
+  dailyRateUSD: number;
 }
 
 interface HotelItem {
@@ -56,6 +57,7 @@ interface HotelItem {
   roomTypes: string;
   nightlyRate: string;
   pkrRate: string;
+  nightlyRateUSD: number;
 }
 
 const VEHICLE_FLEET: VehicleItem[] = [
@@ -74,7 +76,8 @@ const VEHICLE_FLEET: VehicleItem[] = [
     transmission: 'Automatic 4WD',
     fuel: 'Diesel / Turbo',
     features: ['Dual AC/Heating', 'Snorkel Equipped', 'Roof Cargo Carrier', 'Driver Included'],
-    dailyRate: '$125 / day'
+    dailyRate: '$125 / day',
+    dailyRateUSD: 125
   },
   {
     id: 'hilux-revo',
@@ -91,7 +94,8 @@ const VEHICLE_FLEET: VehicleItem[] = [
     transmission: '6-Speed Manual 4x4',
     fuel: '2.8L D-4D Diesel',
     features: ['High Clearance', 'Water Fording Snorkel', 'Steel Bull Bar', 'Extreme Trail Driver'],
-    dailyRate: '$135 / day'
+    dailyRate: '$135 / day',
+    dailyRateUSD: 135
   },
   {
     id: 'hiace-grand-cabin',
@@ -108,7 +112,8 @@ const VEHICLE_FLEET: VehicleItem[] = [
     transmission: 'Automatic',
     fuel: 'Diesel',
     features: ['High Roof Standing Room', 'Dual Climate Control', 'PA Microphone System', 'USB Charging Outlets'],
-    dailyRate: '$140 / day'
+    dailyRate: '$140 / day',
+    dailyRateUSD: 140
   },
   {
     id: 'coaster-saloon',
@@ -125,7 +130,8 @@ const VEHICLE_FLEET: VehicleItem[] = [
     transmission: 'Heavy Manual',
     fuel: '4.2L Diesel',
     features: ['Chilled Air Condition', 'Underbelly Luggage Bay', 'High-Power Braking', 'Senior KKH Captain'],
-    dailyRate: '$195 / day'
+    dailyRate: '$195 / day',
+    dailyRateUSD: 195
   },
   {
     id: 'land-cruiser-v8',
@@ -142,7 +148,8 @@ const VEHICLE_FLEET: VehicleItem[] = [
     transmission: 'Automatic Full-Time 4WD',
     fuel: '4.5L Twin Turbo V8',
     features: ['Full Leather Interior', 'Quad-Zone Climate', 'Active Height Control', 'Executive Chauffeur'],
-    dailyRate: '$240 / day'
+    dailyRate: '$240 / day',
+    dailyRateUSD: 240
   },
   {
     id: 'classic-mountain-jeep',
@@ -159,7 +166,8 @@ const VEHICLE_FLEET: VehicleItem[] = [
     transmission: 'Manual 4-Low Gear',
     fuel: 'Diesel',
     features: ['Ultra High Clearance', 'Open Air Canvas Top', 'Locking Differentials', 'Native Mountain Driver'],
-    dailyRate: '$85 / day'
+    dailyRate: '$85 / day',
+    dailyRateUSD: 85
   }
 ];
 
@@ -177,7 +185,8 @@ const HOTEL_LIST: HotelItem[] = [
     amenities: ['Panoramic Terrace', 'Campfire Evenings', 'High-Speed WiFi', 'Traditional Hunza Food', 'Hot Water 24/7'],
     roomTypes: 'Deluxe Mountain View, Duikar Executive Suite, Alpine Balcony Room',
     nightlyRate: '$85',
-    pkrRate: '24,000 PKR'
+    pkrRate: '24,000 PKR',
+    nightlyRateUSD: 85
   },
   {
     id: 'shangrila-skardu',
@@ -192,7 +201,8 @@ const HOTEL_LIST: HotelItem[] = [
     amenities: ['Private Lake Boating', 'Fresh Trout Dining', 'Airport VIP Shuttle', '24/7 Power Generator', 'Flower Gardens'],
     roomTypes: 'Lakeside Swiss Cottage, Pagoda Presidential Suite, Garden VIP Villa',
     nightlyRate: '$140',
-    pkrRate: '39,000 PKR'
+    pkrRate: '39,000 PKR',
+    nightlyRateUSD: 140
   },
   {
     id: 'grand-islamabad',
@@ -207,7 +217,8 @@ const HOTEL_LIST: HotelItem[] = [
     amenities: ['Airport Pick & Drop', 'Gear Storage Lockers', 'Free Fast WiFi', 'Hot Buffet Breakfast', 'Briefing Room'],
     roomTypes: 'Executive King, Twin Expedition Room, Deluxe Family Suite',
     nightlyRate: '$65',
-    pkrRate: '18,000 PKR'
+    pkrRate: '18,000 PKR',
+    nightlyRateUSD: 65
   },
   {
     id: 'serena-shigar-fort',
@@ -222,7 +233,8 @@ const HOTEL_LIST: HotelItem[] = [
     amenities: ['Living Museum Grounds', 'Ancient Walnut Orchard', 'Royal Courtyard Dining', 'Wood Fireplaces', 'Heritage Suites'],
     roomTypes: 'Royal Raja Suite, Heritage Palace Deluxe, Garden Pavilion Room',
     nightlyRate: '$165',
-    pkrRate: '46,000 PKR'
+    pkrRate: '46,000 PKR',
+    nightlyRateUSD: 165
   },
   {
     id: 'luxus-hunza',
@@ -237,7 +249,8 @@ const HOTEL_LIST: HotelItem[] = [
     amenities: ['Jet-Boat Charters', 'Full-Glass Balconies', 'Lakeside Bistro Deck', 'Stargazing Sky Roofs', 'Luxury Heating'],
     roomTypes: 'Glacial Turquoise Suite, Waterfront Luxury Chalet, Family Penthouse',
     nightlyRate: '$175',
-    pkrRate: '49,000 PKR'
+    pkrRate: '49,000 PKR',
+    nightlyRateUSD: 175
   },
   {
     id: 'raikot-serai',
@@ -252,7 +265,8 @@ const HOTEL_LIST: HotelItem[] = [
     amenities: ['Pine Log Architecture', 'Wood-Burning Stoves', 'Base Camp Trek Desk', 'Nightly Campfire', 'Mountain Tea Service'],
     roomTypes: 'Cedar Log Cottage, Alpine Glamping Tent, Mountain Team Dorm',
     nightlyRate: '$55',
-    pkrRate: '15,000 PKR'
+    pkrRate: '15,000 PKR',
+    nightlyRateUSD: 55
   }
 ];
 
@@ -260,7 +274,7 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
   onNavigate,
   initialCategory
 }) => {
-  const { addPartnerRequest, addVehicleInquiry, addHotelInquiry, addGuideApplication, user } = useAuth();
+  const { addPartnerRequest, addVehicleInquiry, addHotelInquiry, addGuideApplication, user, formatPrice } = useAuth();
   const [activeTab, setActiveTab] = useState<'all' | 'vehicles' | 'hotels' | 'agencies'>(
     initialCategory === 'car' || initialCategory === 'vehicles' ? 'vehicles' :
     initialCategory === 'hotel' || initialCategory === 'hotels' ? 'hotels' : 'all'
@@ -841,8 +855,8 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
                       <div>
                         <div className="text-[10px] uppercase font-bold text-slate-400">Nightly Rate</div>
                         <div className="text-base font-extrabold text-emerald-600">
-                          {hotel.nightlyRate}{' '}
-                          <span className="text-[11px] font-normal text-slate-400">/ {hotel.pkrRate}</span>
+                          {formatPrice(hotel.nightlyRateUSD)}{' '}
+                          <span className="text-[11px] font-normal text-slate-400">/ night</span>
                         </div>
                       </div>
                       <button
@@ -1176,7 +1190,9 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
                     <div className="mt-auto pt-3 border-t border-slate-100 flex items-center justify-between">
                       <div>
                         <div className="text-[10px] uppercase font-bold text-slate-400">Charter Rate</div>
-                        <div className="text-base font-extrabold text-[#5191fa]">{vehicle.dailyRate}</div>
+                        <div className="text-base font-extrabold text-[#5191fa]">
+                          {formatPrice(vehicle.dailyRateUSD)} <span className="text-xs font-normal text-slate-500">/ day</span>
+                        </div>
                       </div>
                       <button
                         onClick={() => handleOpenVehicleInquiry(vehicle)}
@@ -1844,7 +1860,7 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
                   </h3>
                   <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-500">
                     <div>
-                      Daily Tariff: <strong className="text-[#5191fa] font-bold">{selectedVehicleForInquiry.dailyRate}</strong>
+                      Daily Tariff: <strong className="text-[#5191fa] font-bold">{formatPrice(selectedVehicleForInquiry.dailyRateUSD)} / day</strong>
                     </div>
                     <div className="text-slate-300">·</div>
                     <div>Seats: <strong className="text-slate-700">{selectedVehicleForInquiry.seats}</strong></div>
@@ -2043,8 +2059,8 @@ export const PartnerPage: React.FC<{ onNavigate: (route: string) => void; initia
                     {selectedHotelForInquiry.name}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    Nightly Rate: <strong className="text-emerald-600">{selectedHotelForInquiry.nightlyRate}</strong>{' '}
-                    ({selectedHotelForInquiry.pkrRate})
+                    Nightly Rate: <strong className="text-emerald-600 font-bold">{formatPrice(selectedHotelForInquiry.nightlyRateUSD)}</strong>{' '}
+                    <span className="text-slate-400">/ night</span>
                   </p>
                 </div>
 

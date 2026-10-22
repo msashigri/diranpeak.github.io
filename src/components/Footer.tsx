@@ -8,7 +8,7 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
-  const { addNewsletterSubscriber } = useAuth();
+  const { addNewsletterSubscriber, siteSettings } = useAuth();
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
 
@@ -106,7 +106,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
               </a>
             </div>
             <p className="text-xs text-slate-500 max-w-md">
-              Licensed Karakoram &amp; Himalayan mountaineering operator (SECP Registered). Specializing in K2, Gondogoro La, Diran Peak, and Spantik climbing expeditions.
+              {siteSettings?.footerText || 'Licensed Karakoram & Himalayan mountaineering operator (SECP Registered). Specializing in K2, Gondogoro La, Diran Peak, and Spantik climbing expeditions.'}
             </p>
           </div>
 
@@ -120,11 +120,11 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <div className="sub">
                   <a
                     className="text-sm text-[#5e6d77] hover:text-[#5191fa] transition-colors"
-                    href="tel:+923456412992"
+                    href={`tel:${(siteSettings?.contactPhone || '+923445678901').replace(/\s+/g, '')}`}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    +923456412992
+                    {siteSettings?.contactPhone || '+92 344 5678901'}
                   </a>
                   <div className="text-xs text-slate-400 mt-1">24/7 Operations Desk</div>
                 </div>
@@ -140,9 +140,9 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 <div className="sub">
                   <a
                     className="text-sm text-[#5e6d77] hover:text-[#5191fa] transition-colors"
-                    href="mailto:info@diranpeakadventure.com"
+                    href={`mailto:${siteSettings?.contactEmail || 'info@diranpeakadventure.com'}`}
                   >
-                    info@diranpeakadventure.com
+                    {siteSettings?.contactEmail || 'info@diranpeakadventure.com'}
                   </a>
                   <div className="text-xs text-slate-400 mt-1">Expedition Dispatch</div>
                 </div>
@@ -226,7 +226,7 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
       {/* Exact Copyright Bar from diranpeakadventure.com */}
       <div className="copy-right border-t border-[#eaeef3] py-6 text-xs text-[#5e6d77]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <p>Copyright © 2027 by Diran Peak Adventure</p>
+          <p>{siteSettings?.copyrightText || 'Copyright © 2027 by Diran Peak Adventure'}</p>
           <div className="f-visa">
             <p>
               Your reports and suggestions are important to us{' '}

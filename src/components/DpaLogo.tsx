@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../context/AuthContext';
 
 interface DpaLogoProps {
   variant?: 'light' | 'dark';
@@ -11,7 +12,34 @@ export const DpaLogo: React.FC<DpaLogoProps> = ({
   className = 'h-11',
   showText = true
 }) => {
+  const { siteSettings } = useAuth();
   const isDark = variant === 'dark';
+
+  if (siteSettings?.logoUrl) {
+    return (
+      <div className={`flex items-center gap-2.5 select-none ${className}`}>
+        <img
+          src={siteSettings.logoUrl}
+          alt={siteSettings.siteName || 'Logo'}
+          className="h-10 sm:h-11 w-auto max-w-[180px] object-contain"
+        />
+        {showText && (
+          <div className="flex flex-col justify-center leading-none text-left">
+            <span
+              className={`font-heading font-black tracking-tight text-base sm:text-lg ${
+                isDark ? 'text-white' : 'text-[#1a2b48]'
+              }`}
+            >
+              {siteSettings.siteName}
+            </span>
+            <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-[0.2em] text-[#5e6d77] mt-0.5 truncate max-w-[200px]">
+              {siteSettings.tagline}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`flex items-center gap-2.5 select-none ${className}`}>

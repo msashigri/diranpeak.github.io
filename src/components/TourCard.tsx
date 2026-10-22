@@ -32,7 +32,7 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
           src={tour.image}
           alt={tour.title}
           referrerPolicy="no-referrer"
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
         />
 
         {/* Diagonal Sale Badge - exact BookingCore style */}
@@ -84,7 +84,7 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
           onClick={handleFavoriteClick}
           aria-label={liked ? 'Remove from favorites' : 'Save as favorite'}
           title={isAuthenticated ? (liked ? 'Remove from favorites' : 'Save as favorite') : 'Log in to save favorite'}
-          className={`absolute bottom-2 right-2 p-2 rounded-full backdrop-blur-xs transition-all z-10 cursor-pointer ${
+          className={`absolute bottom-2 right-2 p-2 rounded-full backdrop-blur-xs transition-all z-20 cursor-pointer ${
             liked
               ? 'bg-rose-500 text-white shadow-md scale-105'
               : 'bg-black/40 text-white hover:bg-black/70 hover:scale-110'
@@ -92,6 +92,16 @@ export const TourCard: React.FC<TourCardProps> = ({ tour, onSelect }) => {
         >
           <Heart className={`w-4 h-4 ${liked ? 'fill-white text-white' : 'text-white'}`} />
         </button>
+
+        {/* Hover Center "Book Now" Button with Zoom-in Effect */}
+        <div className="absolute inset-0 bg-slate-900/35 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center z-15 pointer-events-none">
+          <div className="transform scale-60 group-hover:scale-100 transition-all duration-300 ease-out">
+            <span className="bg-[#5191fa] hover:bg-[#3875dc] text-white text-xs sm:text-sm font-bold uppercase tracking-wider px-5 py-2.5 rounded-full shadow-2xl flex items-center gap-2 border border-white/40 backdrop-blur-xs pointer-events-auto cursor-pointer transition-transform hover:scale-105 active:scale-95">
+              <span>Book Now</span>
+              <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Details */}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { TourCard } from './TourCard';
-import { TOURS_DATA, Tour } from '../data/toursData';
+import { Tour } from '../data/toursData';
+import { useAuth } from '../context/AuthContext';
 
 interface FeaturedToursProps {
   onSelectTour: (tour: Tour) => void;
@@ -8,33 +9,45 @@ interface FeaturedToursProps {
 }
 
 export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onViewAll }) => {
-  // Section 1: Handpicked Best Sellers
-  const handpickedTours = TOURS_DATA.filter(t =>
-    ['k2-base-camp-trek', 'nanga-parbat-rakaposhi-base-camp-trek', 'k2-gondogoro-la-trek', 'cultural-heritage-lahore-multan-peshawar-swat', 'spantik-peak-expedition', 'broad-peak-expedition'].includes(t.id)
-  );
+  const { tours } = useAuth();
 
-  // Section 2: Top Rated Expeditions
-  const expeditionTours = TOURS_DATA.filter(t => t.category === 'expedition' || t.category === '6000m');
+  // Section 1: Handpicked Best Sellers / Trekkings (Top 3 only)
+  const trekkingTours = (tours || [])
+    .filter(t => t.category === 'trekking')
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    .slice(0, 3);
 
-  // Section 3: Cultural Tours
-  const culturalTours = TOURS_DATA.filter(t => t.category === 'cultural');
+  // Section 2: Top Rated Expeditions in Pakistan (Top 3 only)
+  const expeditionTours = (tours || [])
+    .filter(t => t.category === 'expedition' || t.category === '6000m')
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    .slice(0, 3);
+
+  // Section 3: Cultural Tours (Top 3 only)
+  const culturalTours = (tours || [])
+    .filter(t => t.category === 'cultural')
+    .sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0))
+    .slice(0, 3);
 
   return (
     <div className="space-y-16 py-12 bg-white">
       {/* ================= SECTION 1: BEST HANDPICKED TOURS ================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
+          <div className="inline-block px-3 py-1 bg-blue-50 text-[#5191fa] text-xs font-bold uppercase tracking-wider rounded-full mb-2">
+            Featured Treks
+          </div>
           <h2 className="relative inline-block text-3xl font-semibold text-[#1a2b48] pb-3">
             Best Handpicked Tours
             <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-[3px] bg-[#5191fa] rounded-full" />
           </h2>
           <p className="text-sm text-[#5e6d77] mt-2 max-w-xl mx-auto">
-            Discover our best-selling, handpicked tours, trekking and expeditions carefully crafted for an unforgettable journey.
+            Discover our best-selling, handpicked trekking adventures carefully crafted for an unforgettable journey.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {handpickedTours.slice(0, 6).map((tour) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {trekkingTours.map((tour) => (
             <TourCard key={tour.id} tour={tour} onSelect={onSelectTour} />
           ))}
         </div>
@@ -55,11 +68,14 @@ export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onVi
         <div
           style={{
             backgroundColor: '#f5f5f5',
-            borderRadius: '12px',
-            padding: '30px'
+            borderRadius: '16px',
+            padding: '36px 24px'
           }}
         >
           <div className="text-center mb-10">
+            <div className="inline-block px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-wider rounded-full mb-2">
+              Extreme Mountaineering
+            </div>
             <h2 className="relative inline-block text-3xl font-semibold text-[#1a2b48] pb-3">
               Top Rated Expeditions in Pakistan
               <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-[3px] bg-[#5191fa] rounded-full" />
@@ -69,8 +85,8 @@ export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onVi
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {expeditionTours.slice(0, 6).map((tour) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {expeditionTours.map((tour) => (
               <TourCard key={tour.id} tour={tour} onSelect={onSelectTour} />
             ))}
           </div>
@@ -90,6 +106,9 @@ export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onVi
       {/* ================= SECTION 3: EXPLORE CULTURAL TOURS ================= */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10">
+          <div className="inline-block px-3 py-1 bg-amber-50 text-amber-600 text-xs font-bold uppercase tracking-wider rounded-full mb-2">
+            Heritage &amp; History
+          </div>
           <h2 className="relative inline-block text-3xl font-semibold text-[#1a2b48] pb-3">
             Explore Cultural Tours
             <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-16 h-[3px] bg-[#5191fa] rounded-full" />
@@ -99,10 +118,19 @@ export const FeaturedTours: React.FC<FeaturedToursProps> = ({ onSelectTour, onVi
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {culturalTours.map((tour) => (
             <TourCard key={tour.id} tour={tour} onSelect={onSelectTour} />
           ))}
+        </div>
+
+        <div className="text-center mt-8">
+          <button
+            onClick={() => onViewAll('cultural')}
+            className="trekking-btn cursor-pointer"
+          >
+            All Cultural Tours
+          </button>
         </div>
       </section>
     </div>
